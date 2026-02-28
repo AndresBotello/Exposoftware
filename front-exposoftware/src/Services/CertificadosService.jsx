@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE_URL = 'https://z6gasdnp5zp6v6egg4kg3jsitu0ffcqu.lambda-url.us-east-1.on.aws';
+import { API_BASE_URL } from '../utils/constants';
 
 /**
  * Servicio para gestionar certificados

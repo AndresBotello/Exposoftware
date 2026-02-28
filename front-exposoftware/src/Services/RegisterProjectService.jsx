@@ -1,4 +1,6 @@
-const API_URL = 'https://z6gasdnp5zp6v6egg4kg3jsitu0ffcqu.lambda-url.us-east-1.on.aws';
+import { API_BASE_URL } from '../utils/constants';
+
+const API_URL = API_BASE_URL;
 
 /**
  * Obtener el token de autenticación
@@ -711,17 +713,17 @@ class RegisterProjectService {
     try {
       console.log('🔍 Obteniendo lista de todos los estudiantes...');
       
-      // 🔥 Intentar primero endpoint público (para acceso sin permisos de admin)
-      console.log('🔄 Intentando endpoint público: /estudiantes');
-      let response = await fetch(`${API_URL}/estudiantes?limit=100`, {
+      // Intentar endpoint admin (el que realmente existe en el backend)
+      console.log('🔄 Intentando endpoint: /api/v1/admin/estudiantes');
+      let response = await fetch(`${API_URL}/api/v1/admin/estudiantes?limit=100`, {
         method: 'GET',
         headers: getAuthHeaders(),
       });
 
-      // Si falla con 403 o 404, intentar endpoint de admin
+      // Si falla con 403 o 404, intentar endpoint público con prefijo correcto
       if (response.status === 403 || response.status === 404) {
-        console.log('⚠️ Endpoint público falló, intentando endpoint admin...');
-        response = await fetch(`${API_URL}/api/v1/admin/estudiantes?limit=100`, {
+        console.log('⚠️ Endpoint admin falló, intentando endpoint público...');
+        response = await fetch(`${API_URL}/api/v1/estudiantes?limit=100`, {
           method: 'GET',
           headers: getAuthHeaders(),
         });

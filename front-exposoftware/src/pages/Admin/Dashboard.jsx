@@ -343,9 +343,10 @@ export default function AdminDashboard() {
                     </span>
                   </div>
                 </div>
-                <div style={{ height: '500px', position: 'relative' }}>
+                <div style={{ height: '541px', position: 'relative' }}>
                   <iframe
-                    src="https://app.powerbi.com/reportEmbed?reportId=7b4c14dc-cbf5-45dc-b61e-563a4c940115&autoAuth=true&ctid=e2bf1c48-1dae-47ba-9808-67da61e2588d&config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly9XQUJJLVNPVVRILUNFTlRSQUwtVVMtcmVkaXJlY3QuYW5hbHlzaXMud2luZG93cy5uZXQiLCJlbWJlZEZlYXR1cmVzIjp7Im1vZGVybkVtYmVkIjp0cnVlLCJjZXJ0aWZpZWRUZWxlbWV0cnlFbWJlZCI6dHJ1ZSwidXNhZ2VNZXRyaWNzVk5leHQiOnRydWUsInNraXBab25lUGlja2VyIjp0cnVlfX0%3d&pageName=465c14b0268e55932d6f&filterPaneEnabled=false&navContentPaneEnabled=false&$filter=_VisualsInFocusMode eq 'd8ce33b98a17ce9af097'"
+                    title="DASHBOARD  - SISTEMAS DE INFORMACION EXPOSOFTWARE"
+                    src="https://app.powerbi.com/reportEmbed?reportId=498afa32-93b1-487f-9f01-d67b9297c30f&autoAuth=true&ctid=e2bf1c48-1dae-47ba-9808-67da61e2588d"
                     width="100%"
                     height="100%"
                     frameBorder="0"

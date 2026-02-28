@@ -15,7 +15,7 @@ import * as AuthService from '../../Services/AuthService';
 import EventosService from '../../Services/EventosService';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://z6gasdnp5zp6v6egg4kg3jsitu0ffcqu.lambda-url.us-east-1.on.aws';
+const API_BASE_URL = 'https://mtfr4g8e3k.execute-api.us-east-2.amazonaws.com';
 
 /**
  * Componente para la gestión administrativa de proyectos

@@ -1,4 +1,5 @@
-export const API_BASE_URL = 'https://z6gasdnp5zp6v6egg4kg3jsitu0ffcqu.lambda-url.us-east-1.on.aws';
+// Siempre usa rutas relativas: en dev el proxy de Vite las redirige, en producción el proxy de Netlify (_redirects)
+export const API_BASE_URL = '';
 
 // Endpoints de la API
 export const API_ENDPOINTS = {
@@ -36,8 +37,8 @@ export const API_ENDPOINTS = {
   ASIGNACION_BY_ID: (id) => `${API_BASE_URL}/api/v1/admin/asignaciones-docentes/${id}`,
   
   // Estudiantes (Público)
-  ESTUDIANTES: `${API_BASE_URL}/estudiantes`,
-  ESTUDIANTE_BY_ID: (id) => `${API_BASE_URL}/estudiantes/${id}`,
+  ESTUDIANTES: `${API_BASE_URL}/api/v1/estudiantes`,
+  ESTUDIANTE_BY_ID: (id) => `${API_BASE_URL}/api/v1/estudiantes/${id}`,
   MI_PERFIL_ESTUDIANTE: `${API_BASE_URL}/api/v1/estudiantes/mi-perfil`,
   
   // Estudiantes (Admin) - Gestión administrativa

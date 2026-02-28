@@ -358,8 +358,6 @@ export const eliminarMateria = async (id) => {
  * @returns {Promise<Object>} Resultado de la operación
  */
 export const agregarGrupoAMateria = async (codigoMateria, codigoGrupo) => {
-  // Obtener la URL base de las constantes
-  const API_BASE_URL = 'https://z6gasdnp5zp6v6egg4kg3jsitu0ffcqu.lambda-url.us-east-1.on.aws';
   const url = `${API_BASE_URL}/api/v1/admin/materias/${codigoMateria}/grupos/${codigoGrupo}`;
   
   console.log(`📤 Agregando grupo ${codigoGrupo} a materia ${codigoMateria}`);
@@ -389,8 +387,6 @@ export const agregarGrupoAMateria = async (codigoMateria, codigoGrupo) => {
  * @returns {Promise<Object>} Resultado de la operación
  */
 export const eliminarGrupoDeMateria = async (codigoMateria, codigoGrupo) => {
-  // Obtener la URL base de las constantes
-  const API_BASE_URL = 'https://z6gasdnp5zp6v6egg4kg3jsitu0ffcqu.lambda-url.us-east-1.on.aws';
   const url = `${API_BASE_URL}/api/v1/admin/materias/${codigoMateria}/grupos/${codigoGrupo}`;
   
   console.log(`🗑️ Eliminando grupo ${codigoGrupo} de materia ${codigoMateria}`);

@@ -43,6 +43,7 @@ function NavbarWrapper() {
     "/admin/proyectos",
     "/admin/evento",
     "/admin/eventos-asistencias",
+    "/admin/registro-eventos-anual",
     "/graduate/dashboard",
     "/graduate/profile",
     "/graduate/proyectos",

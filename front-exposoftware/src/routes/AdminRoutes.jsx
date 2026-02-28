@@ -27,6 +27,9 @@ import GestionarEventos from "../pages/Admin/ManageEvents";
 import GestionAsistencia from "../pages/Admin/AttendanceAdmin";
 import EventsAttendance from "../pages/Admin/EventsAttendance";
 
+// Registro de eventos por año
+import EventLog from "../pages/Admin/EventLog";
+
 // Otros
 import GestionCertificados from "../pages/Admin/GestionCertificados";
 import GestionProyectos from "../pages/Admin/GestionProyectos";
@@ -198,7 +201,17 @@ export default function AdminRoutes() {
         } 
       />
 
-      {/* 📜 CERTIFICADOS Y PROYECTOS */}
+      {/* � REGISTRO DE EVENTOS POR AÑO */}
+      <Route 
+        path="registro-eventos-anual" 
+        element={
+          <AdminRoute>
+            <EventLog />
+          </AdminRoute>
+        } 
+      />
+
+      {/* �📜 CERTIFICADOS Y PROYECTOS */}
       <Route 
         path="certificados" 
         element={

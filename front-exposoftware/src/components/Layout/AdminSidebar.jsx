@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { memo } from "react";
 
 /**
  * Sidebar para el panel de administración
@@ -6,7 +7,7 @@ import { Link, useLocation } from "react-router-dom";
  * @param {string} props.userName - Nombre del usuario administrador (opcional, default: "Carlos Mendoza")
  * @param {string} props.userRole - Rol del usuario (opcional, default: "Administrador")
  */
-export default function AdminSidebar({ userName = "Carlos Mendoza", userRole = "Administrador" }) {
+const AdminSidebar = memo(({ userName = "Carlos Mendoza", userRole = "Administrador" }) => {
   const location = useLocation();
 
   // Función para determinar si un link está activo
@@ -83,6 +84,11 @@ export default function AdminSidebar({ userName = "Carlos Mendoza", userRole = "
       label: "Administrar Eventos"
     },
     {
+      to: "/admin/registro-eventos-anual",
+      icon: "pi-folder",
+      label: "Registro de Eventos por Año"
+    },
+    {
       to: "/admin/certificados",
       icon: "pi-file-pdf",
       label: "Gestión de Certificados"
@@ -130,4 +136,8 @@ export default function AdminSidebar({ userName = "Carlos Mendoza", userRole = "
       </div>
     </aside>
   );
-}
+});
+
+AdminSidebar.displayName = 'AdminSidebar';
+
+export default AdminSidebar;

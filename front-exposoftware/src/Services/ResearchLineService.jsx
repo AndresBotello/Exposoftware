@@ -1,4 +1,6 @@
-const API_URL = 'https://z6gasdnp5zp6v6egg4kg3jsitu0ffcqu.lambda-url.us-east-1.on.aws';
+import { API_BASE_URL } from '../utils/constants';
+
+const API_URL = API_BASE_URL;
 
 // ==================== SISTEMA DE CACHÉ Y DEDUPLICACIÓN ====================
 
