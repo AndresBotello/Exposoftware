@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Mail, Lock, Leaf, Users, Trophy, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Leaf, Users, Trophy, Eye, EyeOff, Globe } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import * as AuthService from "../../Services/AuthService";
 import { useAuth } from "../../contexts/AuthContext";
@@ -12,7 +12,8 @@ export default function LoginPage() {
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
   const [recordarme, setRecordarme] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingLogin, setLoadingLogin] = useState(false);
+  const [loadingGuest, setLoadingGuest] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -39,7 +40,7 @@ export default function LoginPage() {
             navigate('/graduate/dashboard');
             break;
           case 'invitado':
-            navigate('/guest/dashboard');
+            // El token de invitado es local (no real), no redirigir
             break;
           default:
             navigate('/');
@@ -72,7 +73,7 @@ export default function LoginPage() {
       return;
     }
 
-    setLoading(true);
+    setLoadingLogin(true);
     setError("");
 
     try {
@@ -150,7 +151,31 @@ export default function LoginPage() {
         setError(err.message || "Error al iniciar sesión. Por favor, intenta nuevamente.");
       }
     } finally {
-      setLoading(false);
+      setLoadingLogin(false);
+    }
+  };
+
+  // Manejar inicio de sesión como invitado
+  const handleGuestLogin = async () => {
+    try {
+      setLoadingGuest(true);
+      setError("");
+
+      console.log("📤 Intentando iniciar sesión como invitado...");
+
+      // loginAsGuest guarda el token y rol localmente, no requiere backend
+      const resultado = await AuthService.loginAsGuest();
+
+      if (!resultado.success) {
+        throw new Error(resultado.error || "Error al iniciar sesión como invitado");
+      }
+
+      navigate('/invited');
+    } catch (err) {
+      console.error("❌ Error en login de invitado:", err);
+      setError(err.message || "Error al iniciar sesión como invitado");
+    } finally {
+      setLoadingGuest(false);
     }
   };
 
@@ -258,7 +283,7 @@ export default function LoginPage() {
                   placeholder="usuario@unicesar.edu.co"
                   value={correo}
                   onChange={(e) => setCorreo(e.target.value)}
-                  disabled={loading}
+                  disabled={loadingLogin}
                 />
               </div>
             </div>
@@ -273,7 +298,7 @@ export default function LoginPage() {
                   placeholder="********"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
+                  disabled={loadingLogin}
                 />
                 <button
                   type="button"
@@ -303,10 +328,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loadingLogin || loadingGuest}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
             >
-              {loading ? (
+              {loadingLogin ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Iniciando sesión...
@@ -316,6 +341,33 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-gray-300"></div>
+            <span className="text-xs text-gray-500 font-medium">O</span>
+            <div className="flex-1 h-px bg-gray-300"></div>
+          </div>
+
+          {/* Botón Continuar como Invitado */}
+          <button
+            type="button"
+            onClick={handleGuestLogin}
+            disabled={loadingLogin || loadingGuest}
+            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 sm:py-3 rounded-lg transition flex items-center justify-center gap-2"
+          >
+            {loadingGuest ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Entrando como invitado...
+              </>
+            ) : (
+              <>
+                <Globe size={20} />
+                Continuar como Invitado
+              </>
+            )}
+          </button>
 
           <p className="text-sm text-gray-600 text-center mt-6">
             ¿No tienes una cuenta?{" "}

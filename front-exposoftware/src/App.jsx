@@ -51,6 +51,7 @@ function NavbarWrapper() {
     "/guest/dashboard",
     "/guest/profile",
     "/guest/proyectos",
+    "/invited",
     "/home-dinamico",
   ];
 

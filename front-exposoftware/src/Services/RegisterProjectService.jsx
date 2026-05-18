@@ -70,8 +70,8 @@ class RegisterProjectService {
         headers: getAuthHeaders(),
       });
 
-      // Si falla con 403 (sin permisos), intentar endpoint de admin
-      if (response.status === 403) {
+      // Si falla con 403 o 405 (sin permisos / método no permitido), intentar endpoint de admin
+      if (response.status === 403 || response.status === 405) {
         console.log('⚠️ Endpoint público falló (403), intentando endpoint admin...');
         response = await fetch(`${API_URL}/api/v1/admin/profesores?limit=100`, {
           method: 'GET',
@@ -498,6 +498,43 @@ class RegisterProjectService {
     } catch (error) {
       console.error('❌ Error creando proyecto:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Obtener todas las materias disponibles
+   * Intenta el endpoint admin; retorna [] si no tiene permisos
+   */
+  static async obtenerMaterias() {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/admin/materias?limit=200`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        console.warn(`⚠️ No se pudieron cargar las materias (${response.status})`);
+        return [];
+      }
+
+      const data = await response.json();
+      let materias = [];
+
+      if (Array.isArray(data)) {
+        materias = data;
+      } else if (data.data && Array.isArray(data.data)) {
+        materias = data.data;
+      } else if (data.materias && Array.isArray(data.materias)) {
+        materias = data.materias;
+      }
+
+      return materias.map(m => ({
+        codigo: m.codigo_materia || m.codigo,
+        nombre: m.nombre_materia || m.nombre,
+      }));
+    } catch (error) {
+      console.error('❌ Error obteniendo materias:', error);
+      return [];
     }
   }
 

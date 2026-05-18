@@ -8,6 +8,7 @@ import ResearchLinesService from "../../Services/ResearchLinesService";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import logo from "../../assets/Logo-unicesar.png";
 import ReportGenerator from "../../components/ReportGenerator";
+import ProjectsGrid from "../../components/ProjectsGrid";
 
 export default function GuestDashboard() {
   const { logout, user } = useAuth();
@@ -584,7 +585,33 @@ const coloresLineas = [
               </div>
             </div>
 
-                        {/* Información del Evento */}
+            {/* Sección de Proyectos en Tarjetas */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                    <i className="pi pi-briefcase text-white text-sm"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Explora Todos los Proyectos</h3>
+                    <p className="text-sm text-gray-600">Descubre las iniciativas de nuestros estudiantes</p>
+                  </div>
+                </div>
+              </div>
+              
+              <ProjectsGrid
+                projects={todosProyectos}
+                loading={cargandoGraficas}
+                error={null}
+                columns={3}
+                onProjectClick={(project) => {
+                  console.log('Proyecto seleccionado:', project);
+                  // Aquí puedes agregar funcionalidad para ver detalles del proyecto
+                }}
+              />
+            </div>
+
+            {/* Información del Evento */}
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
               <div className="flex items-start justify-between mb-4">
                 <div>

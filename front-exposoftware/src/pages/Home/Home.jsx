@@ -5,6 +5,15 @@ export default function Home() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   const images = [
     "https://elpilon2024.s3.us-west-2.amazonaws.com/2024/12/IMG_0427.jpeg",
     "https://elpilon2024.s3.us-west-2.amazonaws.com/2025/04/upc-2.jpg"
@@ -61,8 +70,8 @@ export default function Home() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
-                <span className="hidden xs:inline">Evento en curso • 2025</span>
-                <span className="xs:hidden">2025</span>
+                <span className="hidden xs:inline">Evento en curso • {getCurrentDate()}</span>
+                <span className="xs:hidden">{getCurrentDate()}</span>
               </div>
 
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-green-600 leading-tight drop-shadow-sm">
@@ -203,95 +212,6 @@ export default function Home() {
               <p className="text-gray-600 text-center text-sm sm:text-base">
                 Prepara tu presentación y demuestre el potencial de tu proyecto ante los jurados y la comunidad.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sección Fechas Clave */}
-      <section className="bg-gradient-to-br from-green-50 to-white py-12 sm:py-16 lg:py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-green-600 mb-4">
-              Fechas Clave
-            </h2>
-          </div>
-          
-          <div className="max-w-4xl mx-auto">
-            {/* Timeline vertical */}
-            <div className="relative">
-              {/* Línea vertical */}
-              <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-green-300 hidden md:block"></div>
-              
-              {/* Evento 1 - Lanzamiento */}
-              <div className="relative mb-8 md:mb-12">
-                <div className="flex flex-col md:flex-row items-center">
-                  <div className="w-full md:w-5/12 md:text-right md:pr-8 mb-4 md:mb-0">
-                    <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all border-2 border-green-100">
-                      <span className="text-yellow-500 font-bold text-sm">30 de Octubre, 2025</span>
-                      <h3 className="text-xl font-bold text-gray-800 mt-2">Lanzamiento de la Convocatoria</h3>
-                      <p className="text-gray-600 text-sm mt-2">Se abren las inscripciones para todos los proyectos.</p>
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 bg-yellow-400 rounded-full border-4 border-white shadow-lg z-10 flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
-                  </div>
-                  <div className="w-full md:w-5/12 md:pl-8"></div>
-                </div>
-              </div>
-              
-              {/* Evento 2 - Cierre Inscripciones */}
-              <div className="relative mb-8 md:mb-12">
-                <div className="flex flex-col md:flex-row items-center">
-                  <div className="w-full md:w-5/12 md:pr-8"></div>
-                  <div className="w-8 h-8 bg-yellow-400 rounded-full border-4 border-white shadow-lg z-10 flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
-                  </div>
-                  <div className="w-full md:w-5/12 md:pl-8 md:mt-0 mt-4">
-                    <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all border-2 border-green-100">
-                      <span className="text-yellow-500 font-bold text-sm">5 de Noviembre, 2025</span>
-                      <h3 className="text-xl font-bold text-gray-800 mt-2">Cierre de Inscripciones</h3>
-                      <p className="text-gray-600 text-sm mt-2">Último día para registrar tu proyecto en la plataforma.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Evento 3 - Publicación */}
-              <div className="relative mb-8 md:mb-12">
-                <div className="flex flex-col md:flex-row items-center">
-                  <div className="w-full md:w-5/12 md:text-right md:pr-8 mb-4 md:mb-0">
-                    <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all border-2 border-green-100">
-                      <span className="text-yellow-500 font-bold text-sm">15 de Noviembre, 2025</span>
-                      <h3 className="text-xl font-bold text-gray-800 mt-2">Presentación de Proyectos Inscritos</h3>
-                      <p className="text-gray-600 text-sm mt-2">Exhibición de los proyectos que harán parte de la exposición.</p>
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 bg-yellow-400 rounded-full border-4 border-white shadow-lg z-10 flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
-                  </div>
-                  <div className="w-full md:w-5/12 md:pl-8"></div>
-                </div>
-              </div>
-              
-              {/* Evento 4 - Días del Evento */}
-              <div className="relative">
-                <div className="flex flex-col md:flex-row items-center">
-                  <div className="w-full md:w-5/12 md:pr-8"></div>
-                  <div className="w-8 h-8 bg-green-500 rounded-full border-4 border-white shadow-lg z-10 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                  </div>
-                  <div className="w-full md:w-5/12 md:pl-8 md:mt-0 mt-4">
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105">
-                      <span className="text-yellow-300 font-bold text-sm">15 de Noviembre, 2025</span>
-                      <h3 className="text-xl font-bold text-white mt-2">Día del Evento</h3>
-                      <p className="text-green-50 text-sm mt-2">Presentaciones, conferencias, ponencias y premiación.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

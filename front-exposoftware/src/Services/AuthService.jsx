@@ -202,6 +202,63 @@ export const login = async (credentials) => {
 };
 
 /**
+ * Login como Invitado - Acceso sin credenciales
+ * Crea una sesión temporal para usuario invitado que puede ver proyectos públicos
+ * @returns {Promise<Object>} Datos del usuario invitado, token y rol
+ */
+export const loginAsGuest = async () => {
+  console.log('👥 Iniciando login como invitado...');
+  
+  try {
+    // Generar ID único para invitado
+    const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const timestamp = new Date().toISOString();
+    
+    // Crear datos del usuario invitado
+    const guestData = {
+      id: guestId,
+      correo: `invitado@temporal.local`,
+      nombre: 'Invitado',
+      primer_nombre: 'Invitado',
+      apellido: 'Usuario',
+      primer_apellido: 'Usuario',
+      rol: 'invitado',
+      tipo_usuario: 'invitado',
+      estado: 'activo',
+      fecha_creacion: timestamp,
+      es_invitado: true
+    };
+    
+    // Token simple para invitado (puede ser enhebrado con datos del usuario)
+    const token = `guest_${guestId}_token`;
+    
+    // Guardar en localStorage
+    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(guestData));
+    localStorage.setItem(STORAGE_KEYS.USER_ROLE, 'invitado');
+    
+    // Guardar tiempo de expiración (24 horas)
+    const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+    localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
+    
+    console.log('✅ Login como invitado exitoso');
+    console.log('👥 ID del invitado:', guestId);
+    console.log('🎫 Token generado:', token.substring(0, 20) + '...');
+    
+    return {
+      success: true,
+      data: guestData,
+      token: token,
+      message: 'Login como invitado exitoso',
+      code: 'GUEST_LOGIN_SUCCESS'
+    };
+  } catch (error) {
+    console.error('❌ Error en login de invitado:', error.message);
+    throw new Error(`Error al iniciar sesión como invitado: ${error.message}`);
+  }
+};
+
+/**
  * Normalizar rol del usuario para consistencia interna
  * @param {string} rol - Rol recibido del backend
  * @returns {string} Rol normalizado: 'admin', 'docente', 'estudiante'

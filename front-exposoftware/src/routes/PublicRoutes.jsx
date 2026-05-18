@@ -7,6 +7,7 @@ import Projects from "../pages/Home/Projects";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import AsistenciaForm from "../pages/public/AttendanceForm.jsx";
+import PublicProjects from "../pages/Guest/PublicProjects";
 
 /**
  * PublicRoutes - Rutas accesibles sin autenticación
@@ -36,6 +37,9 @@ export default function PublicRoutes() {
       {/* 📂 Proyectos públicos */}
       <Route path="projects" element={<Projects />} />
       
+      {/* 👁️ Vista pública de proyectos para invitados */}
+      <Route path="invited" element={<PublicProjects />} />
+
       {/* ✅ Registro de asistencia (accesible públicamente) */}
       <Route path="asistencia/registrar/:id_evento" element={<AsistenciaForm />} />
       

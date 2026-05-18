@@ -7,6 +7,15 @@ export default function Home_dinamico() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   const images = [
     "https://elpilon2024.s3.us-west-2.amazonaws.com/2024/12/IMG_0427.jpeg",
     "https://elpilon2024.s3.us-west-2.amazonaws.com/2025/04/upc-2.jpg",
@@ -61,7 +70,7 @@ export default function Home_dinamico() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
-                    Evento en curso • {evento.periodo}
+                    Evento en curso • {getCurrentDate()}
               </div>
 
               {/* Título dinámico */}
