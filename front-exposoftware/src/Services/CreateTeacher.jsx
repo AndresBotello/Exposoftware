@@ -32,6 +32,95 @@ export const DEPARTAMENTOS_COLOMBIA = [
   "Vaupés", "Vichada"
 ];
 
+// Mapeos de valores UI a IDs de la API
+const TIPO_DOCUMENTO_MAP = {
+  "CC": 1,
+  "TI": 2,
+  "CE": 3,
+  "PEP": 4,
+  "Pasaporte": 5
+};
+
+const GENERO_MAP = {
+  "Hombre": 1,
+  "Mujer": 2,
+  "Hermafrodita": 3
+};
+
+const IDENTIDAD_MAP = {
+  "Heterosexual": 1,
+  "Homosexual": 2,
+  "Bisexual": 3,
+  "Pansexual": 4,
+  "Asexual": 5,
+  "Demisexual": 6,
+  "Sapiosexual": 7,
+  "Queer": 8,
+  "Graysexual": 9,
+  "Omnisexual": 10,
+  "Androsexual": 11,
+  "Gynesexual": 12,
+  "Polysexual": 13
+};
+
+const TIPO_VIA_MAP = {
+  "Calle": 1,
+  "Carrera": 2,
+  "Diagonal": 3,
+  "Transversal": 4,
+  "Avenida": 5
+};
+
+// Mapeo de códigos ISO 2 a códigos ISO 3 para países
+const PAIS_ISO_MAP = {
+  "CO": "COL",
+  "AR": "ARG",
+  "BR": "BRA",
+  "CL": "CHL",
+  "EC": "ECU",
+  "MX": "MEX",
+  "PE": "PER",
+  "VE": "VEN",
+  "US": "USA",
+  "ES": "ESP",
+  "OTROS": "OTR"
+};
+
+/**
+ * Convertir valores UI a IDs de la API
+ */
+const convertirAIds = (formData) => {
+  // Si vienen nombres y apellidos como strings combinados, usarlos; si no, combinar desde campos separados
+  const nombres = formData.nombres || `${formData.primerNombre || ""} ${formData.segundoNombre || ""}`.trim();
+  const apellidos = formData.apellidos || `${formData.primerApellido || ""} ${formData.segundoApellido || ""}`.trim();
+
+  // Separar nombres y apellidos
+  const partesNombre = nombres.trim().split(/\s+/);
+  const primerNombre = partesNombre[0] || "";
+  const segundoNombre = partesNombre.slice(1).join(" ") || "";
+
+  const partesApellido = apellidos.trim().split(/\s+/);
+  const primerApellido = partesApellido[0] || "";
+  const segundoApellido = partesApellido.slice(1).join(" ") || "";
+
+  // Mapear códigos de país de ISO 2 a ISO 3
+  const codigoPais = (codigoISO2) => PAIS_ISO_MAP[codigoISO2] || codigoISO2 || "COL";
+
+  return {
+    ...formData,
+    primerNombre,
+    segundoNombre,
+    primerApellido,
+    segundoApellido,
+    tipoDocumento: TIPO_DOCUMENTO_MAP[formData.tipoDocumento] || formData.tipoDocumento,
+    genero: GENERO_MAP[formData.genero] || formData.genero,
+    identidadSexual: formData.identidadSexual ? IDENTIDAD_MAP[formData.identidadSexual] : null,
+    tipoVia: TIPO_VIA_MAP[formData.tipoVia] || 2,
+    codigoPaisNacimiento: codigoPais(formData.nacionalidad),
+    codigoPaisNacionalidad: codigoPais(formData.nacionalidad),
+  };
+};
+
 // ==================== FUNCIONES DE API ====================
 
 /**
@@ -70,11 +159,12 @@ const separarApellidos = (apellidosCompletos) => {
  */
 export const obtenerDocentes = async () => {
   try {
-    console.log('📥 Cargando profesores desde:', API_ENDPOINTS.PROFESORES);
+    console.log('📥 Cargando profesores desde:', API_ENDPOINTS.ADMIN_DOCENTES);
     const headers = AuthService.getAuthHeaders();
     console.log('🔑 Headers de autenticación:', headers);
-    
-    const response = await fetch(API_ENDPOINTS.PROFESORES, {
+
+    const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
+      credentials: 'include',
       method: 'GET',
       headers: headers
     });
@@ -113,12 +203,12 @@ export const obtenerDocentes = async () => {
  */
 export const crearDocente = async (datosDocente) => {
   // Validaciones básicas
-  if (!datosDocente.tipo_documento || !datosDocente.identificacion) {
+  if (!datosDocente.id_tipo_doc || !datosDocente.identificacion) {
     throw new Error("El tipo de documento e identificación son obligatorios");
   }
 
-  if (!datosDocente.nombres || !datosDocente.apellidos) {
-    throw new Error("Los nombres y apellidos son obligatorios");
+  if (!datosDocente.p_nombre || !datosDocente.p_apellido) {
+    throw new Error("El nombre y apellido son obligatorios");
   }
 
   if (!datosDocente.correo) {
@@ -129,7 +219,7 @@ export const crearDocente = async (datosDocente) => {
     throw new Error("El correo debe ser institucional (@unicesar.edu.co)");
   }
 
-  if (!datosDocente.contraseña && !datosDocente.esEdicion) {
+  if (!datosDocente.contrasena) {
     throw new Error("La contraseña es obligatoria");
   }
 
@@ -137,41 +227,43 @@ export const crearDocente = async (datosDocente) => {
     throw new Error("La categoría del docente es obligatoria");
   }
 
-  // Separar nombres y apellidos según el nuevo formato del backend
-  const { primer_nombre, segundo_nombre } = separarNombres(datosDocente.nombres);
-  const { primer_apellido, segundo_apellido } = separarApellidos(datosDocente.apellidos);
-
-  // Estructura del payload según el OpenAPI actualizado: TeacherCreateWithUser
+  // Estructura del payload según el nuevo OpenAPI: TeacherCreate
   const payload = {
-    categoria_docente: datosDocente.categoria_docente,
-    codigo_programa: datosDocente.codigo_programa || null,
     usuario: {
-      tipo_documento: datosDocente.tipo_documento,
+      id_tipo_doc: datosDocente.id_tipo_doc,
       identificacion: datosDocente.identificacion,
-      primer_nombre: primer_nombre,
-      segundo_nombre: segundo_nombre || null,
-      primer_apellido: primer_apellido,
-      segundo_apellido: segundo_apellido || null,
-      sexo: datosDocente.genero || "Hombre",
-      identidad_sexual: datosDocente.identidad_sexual || "Heterosexual",
-      fecha_nacimiento: datosDocente.fecha_nacimiento || "",
-      nacionalidad: datosDocente.nacionalidad || "Colombiana",
-      pais_residencia: datosDocente.pais_residencia || "Colombia",
-      departamento: datosDocente.departamento || "",
-      municipio: datosDocente.municipio || "",
-      ciudad_residencia: datosDocente.ciudad_residencia || "",
-      direccion_residencia: datosDocente.direccion_residencia || "",
-      telefono: datosDocente.telefono,
+      p_nombre: datosDocente.p_nombre,
+      s_nombre: datosDocente.s_nombre || null,
+      p_apellido: datosDocente.p_apellido,
+      s_apellido: datosDocente.s_apellido || null,
+      id_genero: datosDocente.id_genero,
+      id_identidad: datosDocente.id_identidad || null,
+      fecha_nacimiento: datosDocente.fecha_nacimiento,
+      id_tipo_via: datosDocente.id_tipo_via,
+      numero_via: datosDocente.numero_via,
+      numero_cruce: datosDocente.numero_cruce,
+      numero_placa: datosDocente.numero_placa,
+      complemento: datosDocente.complemento || null,
+      codigo_municipio_residencia: datosDocente.codigo_municipio_residencia,
+      codigo_municipio_nacimiento: datosDocente.codigo_municipio_nacimiento,
+      codigo_pais_nacimiento: datosDocente.codigo_pais_nacimiento,
+      codigo_pais_nacionalidad: datosDocente.codigo_pais_nacionalidad,
+      telefono: datosDocente.telefono || null,
       correo: datosDocente.correo,
-      contraseña: datosDocente.contraseña,
-      rol: "Docente"
+      activo: true,
+      contrasena: datosDocente.contrasena
+    },
+    perfil: {
+      categoria_docente: datosDocente.categoria_docente,
+      codigo_programa: datosDocente.codigo_programa || ""
     }
   };
 
   console.log('📤 Enviando docente al backend:', JSON.stringify(payload, null, 2));
 
   try {
-    const response = await fetch(API_ENDPOINTS.PROFESORES, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
+      credentials: 'include',
       method: 'POST',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -219,8 +311,8 @@ export const crearDocente = async (datosDocente) => {
  */
 export const actualizarDocente = async (idDocente, datosDocente) => {
   // Validaciones
-  if (!datosDocente.nombres || !datosDocente.apellidos) {
-    throw new Error("Los nombres y apellidos son obligatorios");
+  if (!datosDocente.p_nombre || !datosDocente.p_apellido) {
+    throw new Error("El nombre y apellido son obligatorios");
   }
 
   if (!datosDocente.correo) {
@@ -231,43 +323,45 @@ export const actualizarDocente = async (idDocente, datosDocente) => {
     throw new Error("El correo debe ser institucional (@unicesar.edu.co)");
   }
 
-  // Separar nombres y apellidos según la tabla
-  const { primer_nombre, segundo_nombre } = separarNombres(datosDocente.nombres);
-  const { primer_apellido, segundo_apellido } = separarApellidos(datosDocente.apellidos);
-
-  // Payload para actualización - SEPARADO según tabla
+  // Payload para actualización - estructura TeacherUpdate
   const payload = {
-    tipo_documento: datosDocente.tipo_documento,
-    identificacion: datosDocente.identificacion,
-    primer_nombre: primer_nombre,
-    segundo_nombre: segundo_nombre,
-    primer_apellido: primer_apellido,
-    segundo_apellido: segundo_apellido,
-    sexo: datosDocente.genero || "Hombre", // La tabla usa 'sexo'
-    identidad_sexual: datosDocente.identidad_sexual || "",
-    fecha_nacimiento: datosDocente.fecha_nacimiento || "",
-    nacionalidad: datosDocente.nacionalidad,
-    pais_residencia: datosDocente.pais_residencia,
-    departamento_residencia: datosDocente.departamento || "", // La tabla usa 'departamento_residencia'
-    ciudad_residencia: datosDocente.ciudad_residencia || "",
-    direccion_residencia: datosDocente.direccion_residencia || "",
-    telefono: datosDocente.telefono,
-    correo: datosDocente.correo,
-    rol: "Docente",
-    activo: true,
-    categoria_docente: datosDocente.categoria_docente,
-    codigo_programa: datosDocente.codigo_programa || ""
+    usuario: {
+      identificacion: datosDocente.identificacion,
+      p_nombre: datosDocente.p_nombre,
+      s_nombre: datosDocente.s_nombre || null,
+      p_apellido: datosDocente.p_apellido,
+      s_apellido: datosDocente.s_apellido || null,
+      id_genero: datosDocente.id_genero,
+      id_identidad: datosDocente.id_identidad || null,
+      fecha_nacimiento: datosDocente.fecha_nacimiento || "",
+      id_tipo_via: datosDocente.id_tipo_via,
+      numero_via: datosDocente.numero_via,
+      numero_cruce: datosDocente.numero_cruce,
+      numero_placa: datosDocente.numero_placa,
+      complemento: datosDocente.complemento || null,
+      codigo_municipio_residencia: datosDocente.codigo_municipio_residencia,
+      codigo_municipio_nacimiento: datosDocente.codigo_municipio_nacimiento,
+      codigo_pais_nacimiento: datosDocente.codigo_pais_nacimiento,
+      codigo_pais_nacionalidad: datosDocente.codigo_pais_nacionalidad,
+      telefono: datosDocente.telefono || null,
+      correo: datosDocente.correo
+    },
+    perfil: {
+      categoria_docente: datosDocente.categoria_docente,
+      codigo_programa: datosDocente.codigo_programa || ""
+    }
   };
 
   // Solo incluir contraseña si se proporcionó (para cambiarla)
-  if (datosDocente.contraseña && datosDocente.contraseña.trim() !== "") {
-    payload.contraseña = datosDocente.contraseña;
+  if (datosDocente.contrasena && datosDocente.contrasena.trim() !== "") {
+    payload.usuario.contrasena = datosDocente.contrasena;
   }
 
   console.log('📤 Actualizando docente (ID: ' + idDocente + '):', JSON.stringify(payload, null, 2));
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.PROFESORES}/${idDocente}`, {
+    const response = await fetch(`${API_ENDPOINTS.ADMIN_DOCENTES}/${idDocente}`, {
+      credentials: 'include',
       method: 'PUT',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -305,7 +399,8 @@ export const eliminarDocente = async (idDocente) => {
   console.log('🗑️ Eliminando docente - ID:', idDocente);
 
   try {
-    const response = await fetch(`${API_ENDPOINTS.PROFESORES}/${idDocente}`, {
+    const response = await fetch(`${API_ENDPOINTS.ADMIN_DOCENTES}/${idDocente}`, {
+      credentials: 'include',
       method: 'DELETE',
       headers: AuthService.getAuthHeaders()
     });
@@ -389,28 +484,36 @@ export const validarTelefono = (telefono) => {
 
 /**
  * Formatear datos del formulario para envío al backend
- * @param {Object} formData - Datos del formulario
- * @returns {Object} Datos formateados
+ * @param {Object} formData - Datos del formulario (con nombres de forma antigua)
+ * @returns {Object} Datos formateados para la API nueva
  */
 export const formatearDatosDocente = (formData) => {
+  // Convertir valores UI a IDs
+  const datosConIds = convertirAIds(formData);
+
   return {
-    tipo_documento: formData.tipoDocumento,
-    identificacion: formData.identificacion,
-    nombres: formData.nombres,
-    apellidos: formData.apellidos,
-    genero: formData.genero,
-    identidad_sexual: formData.identidadSexual || "",
-    fecha_nacimiento: formData.fechaNacimiento || "",
-    nacionalidad: formData.nacionalidad || "CO",
-    pais_residencia: formData.pais || "CO",
-    departamento: formData.departamento || "",
-    municipio: formData.municipio || "",
-    ciudad_residencia: formData.ciudadResidencia || "",
-    direccion_residencia: formData.direccionResidencia || "",
-    telefono: formData.telefono,
-    correo: formData.correo,
-    contraseña: formData.contraseña,
-    categoria_docente: formData.categoriaDocente,
-    codigo_programa: formData.codigoPrograma || ""
+    id_tipo_doc: datosConIds.tipoDocumento,
+    identificacion: datosConIds.identificacion,
+    p_nombre: datosConIds.primerNombre || "",
+    s_nombre: datosConIds.segundoNombre || null,
+    p_apellido: datosConIds.primerApellido || "",
+    s_apellido: datosConIds.segundoApellido || null,
+    id_genero: datosConIds.genero,
+    id_identidad: datosConIds.identidadSexual || null,
+    fecha_nacimiento: datosConIds.fechaNacimiento || "",
+    id_tipo_via: datosConIds.tipoVia || 2, // Carrera por defecto
+    numero_via: datosConIds.numeroVia || "0",
+    numero_cruce: datosConIds.numeroCruce || "0",
+    numero_placa: datosConIds.numeroPlaca || "0",
+    complemento: datosConIds.complemento || null,
+    codigo_municipio_residencia: datosConIds.codigoMunicipioResidencia || "08001", // Valledupar por defecto
+    codigo_municipio_nacimiento: datosConIds.codigoMunicipioNacimiento || "08001",
+    codigo_pais_nacimiento: datosConIds.codigoPaisNacimiento || "COL",
+    codigo_pais_nacionalidad: datosConIds.codigoPaisNacionalidad || "COL",
+    telefono: datosConIds.telefono || null,
+    correo: datosConIds.correo,
+    contrasena: datosConIds.contrasena || datosConIds.contraseña,
+    categoria_docente: datosConIds.categoriaDocente,
+    codigo_programa: datosConIds.codigoPrograma || ""
   };
 };

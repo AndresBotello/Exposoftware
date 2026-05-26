@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { obtenerMisProyectos } from "../../Services/ProjectsService";
+import MisClasesService from "../../Services/MisClasesService";
+import InvestigacionService from "../../Services/InvestigacionService";
 
 export function useStudentMetrics(user) {
   const [metricasEstudiante, setMetricasEstudiante] = useState({
@@ -20,12 +22,50 @@ export function useStudentMetrics(user) {
         let estudianteId = user.id_estudiante || user.id_usuario || user.uid;
         if (!estudianteId) return;
 
-        const proyectosData = await obtenerMisProyectos(estudianteId);
+        let proyectosData = await obtenerMisProyectos(estudianteId);
+
+        // Enriquecer proyectos con nombres de materia
+        proyectosData = await Promise.all(
+          proyectosData.map(async (proyecto) => {
+            const enriched = { ...proyecto };
+
+            // Obtener nombre de materia
+            if (proyecto.id_docente_materia && !proyecto.nombre_materia) {
+              try {
+                const detalles = await MisClasesService.obtenerDetallesDocente(proyecto.id_docente_materia);
+                if (detalles) {
+                  enriched.nombre_materia = detalles.nombre_materia;
+                }
+              } catch (error) {
+                console.warn('⚠️ Error enriqueciendo materia:', error);
+              }
+            }
+
+            // Obtener nombre de sublínea
+            if (proyecto.codigo_sublinea && !proyecto.nombre_sublinea) {
+              try {
+                const nombres = await InvestigacionService.obtenerNombresInvestigacion(
+                  proyecto.codigo_linea,
+                  proyecto.codigo_sublinea
+                );
+                if (nombres.sublinea) {
+                  enriched.nombre_sublinea = nombres.sublinea;
+                }
+              } catch (error) {
+                console.warn('⚠️ Error enriqueciendo sublínea:', error);
+              }
+            }
+
+            return enriched;
+          })
+        );
+
         setProyectos(proyectosData);
 
         const totalProyectos = proyectosData.length;
         const proyectosAprobados = proyectosData.filter(p => {
           if (p.estado_calificacion) return p.estado_calificacion === 'aprobado';
+          if (p.estado === 'aprobado') return true;
           if (p.calificacion !== null && !isNaN(p.calificacion)) {
             return parseFloat(p.calificacion) >= 3.0;
           }
@@ -34,6 +74,7 @@ export function useStudentMetrics(user) {
 
         const proyectosReprobados = proyectosData.filter(p => {
           if (p.estado_calificacion) return p.estado_calificacion === 'reprobado';
+          if (p.estado === 'rechazado') return true;
           if (p.calificacion !== null && !isNaN(p.calificacion)) {
             return parseFloat(p.calificacion) < 3.0;
           }

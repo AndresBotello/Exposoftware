@@ -13,7 +13,7 @@ const CredentialsSection = ({
 }) => {
   return (
     <>
-      <div className="col-span-2 border-l-4 border-green-600 pl-2 mt-4 mb-2">
+      <div className="lg:col-span-2 border-l-4 border-green-600 pl-2 mt-4 mb-2">
         <h2 className="text-lg font-semibold text-gray-700">
           🔐 Credenciales de Acceso
         </h2>

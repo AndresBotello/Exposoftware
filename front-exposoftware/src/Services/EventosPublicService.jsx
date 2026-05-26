@@ -1,5 +1,6 @@
-import { API_BASE_URL } from '../utils/constants';
+import { API_ENDPOINTS } from '../utils/constants';
 import { getAuthHeaders } from './AuthService';
+import CacheService from './CacheService';
 
 /**
  * 📋 Servicio para obtener información pública de eventos
@@ -12,37 +13,44 @@ import { getAuthHeaders } from './AuthService';
  * @returns {Promise<Array>} Lista de eventos
  */
 export const getAllEventos = async () => {
-  try {
-    console.log('🎪 Obteniendo lista de todos los eventos...');
-    
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/eventos`, {
-      method: 'GET',
-      headers: getAuthHeaders()
-    });
+  return CacheService.withCache(
+    'all_eventos',
+    async () => {
+      try {
+        console.log('🎪 Obteniendo lista de todos los eventos...');
 
-    if (!response.ok) {
-      throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
-    }
+        const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS, {
+          credentials: 'include',
+          method: 'GET',
+          headers: getAuthHeaders()
+        });
 
-    const result = await response.json();
-    console.log('✅ Eventos obtenidos:', result);
+        if (!response.ok) {
+          throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+        }
 
-    // El backend puede devolver: array directo, {data: array}, o {eventos: array}
-    let eventos = [];
-    if (Array.isArray(result)) {
-      eventos = result;
-    } else if (result.data && Array.isArray(result.data)) {
-      eventos = result.data;
-    } else if (result.eventos && Array.isArray(result.eventos)) {
-      eventos = result.eventos;
-    }
+        const result = await response.json();
+        console.log('✅ Eventos obtenidos:', result);
 
-    return eventos;
-    
-  } catch (error) {
-    console.error('❌ Error obteniendo eventos:', error);
-    throw error;
-  }
+        // El backend puede devolver: array directo, {data: array}, o {eventos: array}
+        let eventos = [];
+        if (Array.isArray(result)) {
+          eventos = result;
+        } else if (result.data && Array.isArray(result.data)) {
+          eventos = result.data;
+        } else if (result.eventos && Array.isArray(result.eventos)) {
+          eventos = result.eventos;
+        }
+
+        return eventos;
+
+      } catch (error) {
+        console.error('❌ Error obteniendo eventos:', error);
+        throw error;
+      }
+    },
+    10 * 60 * 1000 // 10 minutos de caché
+  );
 };
 
 /**
@@ -55,7 +63,8 @@ export const getEventoById = async (eventoId) => {
   try {
     console.log(`🎪 Obteniendo evento con ID: ${eventoId}`);
     
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/eventos/${eventoId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });

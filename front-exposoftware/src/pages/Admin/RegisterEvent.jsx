@@ -46,7 +46,8 @@ export default function RegisterAttendance() {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [lugarEvento, setLugarEvento] = useState("");
-  const [cupoMaximo, setCupoMaximo] = useState("");
+  const [fechaAperturaInscripciones, setFechaAperturaInscripciones] = useState("");
+  const [fechaCierreInscripciones, setFechaCierreInscripciones] = useState("");
   const [cargandoEvento, setCargandoEvento] = useState(false);
 
   // Estados para listar eventos
@@ -87,55 +88,49 @@ export default function RegisterAttendance() {
   const handleCrearEvento = async (e) => {
     e.preventDefault();
 
-    // Validar campos requeridos: nombre_evento, fecha_inicio, fecha_fin
-    if (!nombreEvento || !fechaInicio || !fechaFin) {
-      alert("Por favor completa los campos requeridos: Nombre, Fecha Inicio y Fecha Fin");
+    // Validar campos requeridos
+    if (!nombreEvento || !fechaInicio || !fechaFin || !fechaAperturaInscripciones || !fechaCierreInscripciones) {
+      alert("Por favor completa todos los campos requeridos");
       return;
     }
 
-    // Validar que cupo_maximo sea un número válido (si se proporciona)
-    let cupo = null;
-    if (cupoMaximo) {
-      cupo = parseInt(cupoMaximo);
-      if (isNaN(cupo) || cupo < 1) {
-        alert("El cupo máximo debe ser un número mayor a 0");
-        return;
-      }
-    }
-
-    // Validar que fecha_fin >= fecha_inicio
+    // Validaciones de fechas
     if (new Date(fechaFin) < new Date(fechaInicio)) {
       alert("La fecha de fin no puede ser anterior a la fecha de inicio");
       return;
     }
 
-    // Convertir fechas datetime-local a YYYY-MM-DD (formato requerido por el API)
-    const convertirFechaAPI = (dateString) => {
-      // dateString viene en formato "YYYY-MM-DDTHH:mm" de input datetime-local
-      // Lo convertimos a formato de fecha: "YYYY-MM-DD"
+    if (new Date(fechaCierreInscripciones) < new Date(fechaAperturaInscripciones)) {
+      alert("La fecha de cierre de inscripciones no puede ser anterior a la apertura");
+      return;
+    }
+
+    if (new Date(fechaAperturaInscripciones) > new Date(fechaInicio)) {
+      alert("La fecha de apertura de inscripciones no puede ser posterior a la fecha de inicio");
+      return;
+    }
+
+    // Convertir fechas a ISO string con hora
+    const convertirFechaISO = (dateString) => {
       const fecha = new Date(dateString);
-      return fecha.toISOString().split('T')[0];
+      return fecha.toISOString();
     };
 
     const payload = {
       nombre_evento: nombreEvento,
-      fecha_inicio: convertirFechaAPI(fechaInicio),
-      fecha_fin: convertirFechaAPI(fechaFin)
+      fecha_inicio: convertirFechaISO(fechaInicio),
+      fecha_fin: convertirFechaISO(fechaFin),
+      fecha_apertura_inscripciones: convertirFechaISO(fechaAperturaInscripciones),
+      fecha_cierre_inscripciones: convertirFechaISO(fechaCierreInscripciones)
     };
 
-    // Agregar campos opcionales solo si tienen valores válidos
+    // Agregar campos opcionales
     if (descripcion && descripcion.trim()) {
       payload.descripcion = descripcion.trim();
     }
-    
+
     if (lugarEvento && lugarEvento.trim()) {
       payload.lugar = lugarEvento.trim();
-    }
-    
-    // Agregar cupo_maximo si se validó correctamente
-    if (cupo !== null && cupo > 0) {
-      payload.cupo_maximo = cupo;
-      console.log(`✅ Cupo máximo incluido en payload: ${cupo} (tipo: ${typeof cupo})`);
     }
 
     console.log("📤 Creando evento:", payload);
@@ -165,7 +160,8 @@ export default function RegisterAttendance() {
     setFechaInicio("");
     setFechaFin("");
     setLugarEvento("");
-    setCupoMaximo("");
+    setFechaAperturaInscripciones("");
+    setFechaCierreInscripciones("");
   };
 
   return (
@@ -251,21 +247,6 @@ export default function RegisterAttendance() {
                     />
                   </div>
 
-                  {/* Cupo Máximo */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cupo Máximo <span className="text-gray-500">(Opcional)</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={cupoMaximo}
-                      onChange={(e) => setCupoMaximo(e.target.value)}
-                      placeholder="Ej: 100"
-                      min="1"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-
                   {/* Fecha de Inicio */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -289,6 +270,34 @@ export default function RegisterAttendance() {
                       type="datetime-local"
                       value={fechaFin}
                       onChange={(e) => setFechaFin(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Fecha Apertura Inscripciones */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fecha Apertura Inscripciones <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={fechaAperturaInscripciones}
+                      onChange={(e) => setFechaAperturaInscripciones(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Fecha Cierre Inscripciones */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fecha Cierre Inscripciones <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={fechaCierreInscripciones}
+                      onChange={(e) => setFechaCierreInscripciones(e.target.value)}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                       required
                     />

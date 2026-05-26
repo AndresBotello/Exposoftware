@@ -28,14 +28,15 @@ class AssistanceService {
    * @param {string} idEvento - ID del evento
    * @param {string} urlFront - URL base del frontend (opcional)
    */
-  static async generarQrEvento(idEvento, urlFront = 'https://exposoftware.netlify.app') {
+  static async generarQrEvento(idEvento, urlFront = 'https://exposoftware2026.netlify.app') {
     try {
       console.log('🔄 Generando QR para evento:', idEvento);
 
       const response = await fetch(
-        `${API_ENDPOINTS.GENERAR_QR_EVENTO(idEvento)}?url_front=${urlFront}`,
+        `${API_ENDPOINTS.GENERAR_QR(idEvento)}?url_front=${urlFront}`,
         {
           method: 'POST',
+          credentials: 'include',
           headers: getAuthHeaders()
         }
       );
@@ -64,6 +65,7 @@ class AssistanceService {
       console.log('📝 Registrando asistencia para:', correoUsuario);
 
       const response = await fetch(API_ENDPOINTS.REGISTRAR_ASISTENCIA(idEvento), {
+        credentials: 'include',
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ correo_usuario: correoUsuario })
@@ -99,9 +101,10 @@ class AssistanceService {
       console.log('📊 Obteniendo asistencias del evento:', idEvento);
 
       const response = await fetch(
-        `${API_ENDPOINTS.OBTENER_ASISTENCIAS_EVENTO(idEvento)}?limit=${limit}`,
+        `${API_ENDPOINTS.ASISTENCIAS_EVENTO(idEvento)}?limit=${limit}`,
         {
           method: 'GET',
+          credentials: 'include',
           headers: getAuthHeaders()
         }
       );

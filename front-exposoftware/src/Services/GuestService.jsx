@@ -1,11 +1,4 @@
-/**
- * GuestService.jsx
- * Servicio para gestionar operaciones de invitados
- */
-
-import { API_BASE_URL } from '../utils/constants';
-
-const API_URL = API_BASE_URL;
+import { API_ENDPOINTS } from '../utils/constants';
 
 // Definición de sectores disponibles
 const SECTORES = [
@@ -54,7 +47,8 @@ export const obtenerInformacionUsuario = async () => {
       throw new Error('No hay token de autenticación');
     }
 
-    const response = await fetch(`${API_URL}/api/v1/auth/me`, {
+    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -98,7 +92,8 @@ export const obtenerMiPerfilInvitado = async () => {
     console.log('🔑 Token encontrado, validando con el backend...');
 
     // Obtener TODA la información del usuario autenticado usando su token
-    const response = await fetch(`${API_URL}/api/v1/auth/me`, {
+    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -155,7 +150,8 @@ export const obtenerPerfilInvitadoPorId = async (guestId) => {
   try {
     console.log('📞 Obteniendo perfil del invitado con ID:', guestId);
     
-    const response = await fetch(`${API_URL}/api/v1/invitados/${guestId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_INVITADO_BY_ID(guestId), {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -193,7 +189,8 @@ export const actualizarPerfilInvitado = async (guestId, datosInvitado) => {
     
     const datosProcesados = prepararDatosParaBackend(datosInvitado);
     
-    const response = await fetch(`${API_URL}/api/v1/invitados/${guestId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_INVITADO_BY_ID(guestId), {
+      credentials: 'include',
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(datosProcesados)
@@ -377,7 +374,8 @@ export const obtenerTodosLosProyectos = async () => {
   try {
     console.log('📚 Obteniendo todos los proyectos...');
     
-    const response = await fetch(`${API_URL}/api/v1/proyectos`, {
+    const response = await fetch(API_ENDPOINTS.PROYECTOS, {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });

@@ -1,6 +1,4 @@
-import { API_BASE_URL } from '../utils/constants';
-
-const API_URL = API_BASE_URL;
+import { API_ENDPOINTS } from '../utils/constants';
 
 /**
  * Obtener el token de autenticación
@@ -65,7 +63,7 @@ class RegisterProjectService {
       
       // 🔥 Intentar primero endpoint público (para estudiantes)
       console.log('🔄 Intentando endpoint público: /api/v1/docentes');
-      let response = await fetch(`${API_URL}/api/v1/docentes?limit=100`, {
+      let response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
         method: 'GET',
         headers: getAuthHeaders(),
       });
@@ -73,7 +71,7 @@ class RegisterProjectService {
       // Si falla con 403 o 405 (sin permisos / método no permitido), intentar endpoint de admin
       if (response.status === 403 || response.status === 405) {
         console.log('⚠️ Endpoint público falló (403), intentando endpoint admin...');
-        response = await fetch(`${API_URL}/api/v1/admin/profesores?limit=100`, {
+        response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
           method: 'GET',
           headers: getAuthHeaders(),
         });
@@ -123,7 +121,7 @@ class RegisterProjectService {
       
       // INTENTO 1: Usar el endpoint del árbol completo
       console.log('🔄 Intentando obtener árbol completo desde /arbol-completo...');
-      const response = await fetch(`${API_URL}/api/v1/public-investigacion/arbol-completo`, {
+      const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
         method: 'GET',
         headers: getPublicHeaders(),
       });
@@ -199,7 +197,7 @@ class RegisterProjectService {
       console.log('🔄 Construyendo árbol de investigación desde endpoints individuales...');
       
       // Primero, obtener todas las líneas de investigación
-      const lineasResponse = await fetch(`${API_URL}/api/v1/public-investigacion/lineas`, {
+      const lineasResponse = await fetch(API_ENDPOINTS.PUBLIC_LINEAS_INVESTIGACION, {
         method: 'GET',
         headers: getPublicHeaders(),
       });
@@ -222,7 +220,7 @@ class RegisterProjectService {
           console.log(`🔍 Obteniendo jerarquía para línea ${codigoLinea}...`);
           
           const jerarquiaResponse = await fetch(
-            `${API_URL}/api/v1/public-investigacion/lineas/${codigoLinea}`, 
+            API_ENDPOINTS.PUBLIC_LINEA_BY_CODE(codigoLinea),
             {
               method: 'GET',
               headers: getPublicHeaders(),
@@ -340,8 +338,9 @@ class RegisterProjectService {
    * Crear un nuevo proyecto
    * ✅ Endpoint: /api/v1/api/v1/proyectos/
    * Nota: Sin calificación (la asigna el profesor después)
+   * @param {string} idUsuarioCreador - ID del usuario que crea el proyecto (será marcado como líder)
    */
-  static async crearProyecto(proyectoData, archivoPDF, archivoExtra = null) {
+  static async crearProyecto(proyectoData, archivoPDF, archivoExtra = null, idUsuarioCreador = null) {
     try {
       // Validaciones previas
       const required = [
@@ -380,20 +379,21 @@ class RegisterProjectService {
           uid_docente: proyectoData.id_docente,
           nombre: proyectoData.nombre_docente || "" // Necesitamos el nombre del docente
         },
-        // ✅ NUEVO: id_estudiantes como array de objetos con id_estudiante y nombre
-        id_estudiantes: proyectoData.id_estudiantes.map((id, index) => ({
-          id_estudiante: id,
-          nombre: proyectoData.nombres_estudiantes?.[index] || "" // Necesitamos los nombres
+        // ✅ NUEVO: integrantes (no id_estudiantes) como array de objetos con id_usuario, nombre y es_lider
+        integrantes: proyectoData.id_estudiantes.map((id, index) => ({
+          id_usuario: id,
+          nombre: proyectoData.nombres_estudiantes?.[index] || "",
+          es_lider: id === idUsuarioCreador // Marcar como líder si es el creador
         })),
-        // ✅ NUEVO: id_grupo es STRING, no number
-        id_grupo: proyectoData.id_grupo.toString(),
+        // ✅ id_docente_materia identifica la clase (docente + materia + grupo)
+        id_docente_materia: proyectoData.id_grupo.toString(),
         codigo_area: parseInt(proyectoData.codigo_area),
         id_evento: proyectoData.id_evento || '1jAZE5TKXakRd9ymq1Xu',
         codigo_materia: proyectoData.codigo_materia,
         codigo_linea: parseInt(proyectoData.codigo_linea),
         codigo_sublinea: parseInt(proyectoData.codigo_sublinea),
         titulo_proyecto: proyectoData.titulo_proyecto.trim(),
-        tipo_actividad: parseInt(proyectoData.tipo_actividad),
+        id_tipo_actividad: parseInt(proyectoData.tipo_actividad),
         // Campos opcionales (el backend los puede llenar)
         estado_calificacion: "Pendiente",
         // No incluir calificacion - la asigna el profesor después
@@ -401,8 +401,8 @@ class RegisterProjectService {
       
       console.log('🔍 VERIFICACIÓN FINAL (NUEVO FORMATO):');
       console.log('   - id_docente:', payload.id_docente);
-      console.log('   - id_estudiantes:', payload.id_estudiantes);
-      console.log('   - id_grupo:', payload.id_grupo, '(tipo:', typeof payload.id_grupo + ')');
+      console.log('   - integrantes:', payload.integrantes);
+      console.log('   - id_docente_materia:', payload.id_docente_materia, '(tipo:', typeof payload.id_docente_materia + ')');
       console.log('');
 
       console.log('📦 PAYLOAD COMPLETO A ENVIAR:');
@@ -410,15 +410,15 @@ class RegisterProjectService {
       console.log('');
       console.log('📋 VALIDACIÓN DEL PAYLOAD:');
       console.log('   ✓ id_docente:', payload.id_docente, '(tipo:', typeof payload.id_docente + ')');
-      console.log('   ✓ id_estudiantes:', payload.id_estudiantes, '(cantidad:', payload.id_estudiantes.length + ')');
-      console.log('   ✓ id_grupo:', payload.id_grupo, '(tipo:', typeof payload.id_grupo + ')');
+      console.log('   ✓ integrantes:', payload.integrantes, '(cantidad:', payload.integrantes.length + ')');
+      console.log('   ✓ id_docente_materia:', payload.id_docente_materia, '(tipo:', typeof payload.id_docente_materia + ')');
       console.log('   ✓ codigo_area:', payload.codigo_area, '(tipo:', typeof payload.codigo_area + ')');
       console.log('   ✓ id_evento:', payload.id_evento);
       console.log('   ✓ codigo_materia:', payload.codigo_materia);
       console.log('   ✓ codigo_linea:', payload.codigo_linea, '(tipo:', typeof payload.codigo_linea + ')');
       console.log('   ✓ codigo_sublinea:', payload.codigo_sublinea, '(tipo:', typeof payload.codigo_sublinea + ')');
       console.log('   ✓ titulo_proyecto:', payload.titulo_proyecto);
-      console.log('   ✓ tipo_actividad:', payload.tipo_actividad, '(tipo:', typeof payload.tipo_actividad + ')');
+      console.log('   ✓ id_tipo_actividad:', payload.id_tipo_actividad, '(tipo:', typeof payload.id_tipo_actividad + ')');
       console.log('');
 
       // Agregar proyecto_data como JSON string
@@ -433,13 +433,13 @@ class RegisterProjectService {
       console.log('📤 Enviando proyecto (FormData):', payload);
       console.log('📤 JSON que se envía:', JSON.stringify(payload, null, 2));
 
-      const response = await fetch(`${API_URL}/api/v1/proyectos`, {
+      const response = await fetch(API_ENDPOINTS.PROYECTOS, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
           // NO incluir Content-Type, lo maneja FormData automáticamente
         },
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -507,7 +507,7 @@ class RegisterProjectService {
    */
   static async obtenerMaterias() {
     try {
-      const response = await fetch(`${API_URL}/api/v1/admin/materias?limit=200`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS, {
         method: 'GET',
         headers: getAuthHeaders(),
       });
@@ -554,7 +554,7 @@ class RegisterProjectService {
       // INTENTO 1: Endpoint público completo
       console.log(`🔍 Intentando obtener materias de ${programCode} desde endpoint público...`);
       let response = await fetch(
-        `${API_URL}/api/v1/public-academico/facultades/${facultyId}/programas/${programCode}`,
+        API_ENDPOINTS.PUBLIC_PROGRAMA_MATERIAS(facultyId, programCode),
         {
           method: 'GET',
           headers: getPublicHeaders(),
@@ -564,7 +564,7 @@ class RegisterProjectService {
       // INTENTO 2: Endpoint admin de materias directamente
       if (!response.ok) {
         console.log('⚠️ Endpoint público falló, intentando obtener todas las materias...');
-        response = await fetch(`${API_URL}/api/v1/admin/materias`, {
+        response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS, {
           method: 'GET',
           headers: getAuthHeaders(),
         });
@@ -624,9 +624,9 @@ class RegisterProjectService {
         return [];
       }
 
-      console.log(`🔍 Obteniendo grupos de la materia: ${codigoMateria}`);
+      console.log(`🔍 Obteniendo asignaciones (docente-materia-grupo) para: ${codigoMateria}`);
       const response = await fetch(
-        `${API_URL}/api/v1/admin/grupos/materia/${codigoMateria}`,
+        API_ENDPOINTS.ADMIN_MATERIA_ASIGNACIONES(codigoMateria),
         {
           method: 'GET',
           headers: getAuthHeaders(),
@@ -634,33 +634,36 @@ class RegisterProjectService {
       );
 
       if (!response.ok) {
-        console.warn(`⚠️ No se pudieron cargar los grupos de la materia ${codigoMateria} (${response.status})`);
+        console.warn(`⚠️ No se pudieron cargar las asignaciones de la materia ${codigoMateria} (${response.status})`);
         return [];
       }
 
       const result = await response.json();
-      console.log('👥 Respuesta de grupos:', result);
+      console.log('📋 Respuesta de asignaciones:', result);
 
-      // La respuesta puede venir en result.data o directamente
-      let grupos = [];
-      if (result.data && Array.isArray(result.data)) {
-        grupos = result.data;
-      } else if (Array.isArray(result)) {
-        grupos = result;
-      } else {
-        console.warn('⚠️ Formato inesperado de grupos:', result);
-        return [];
-      }
+      // Extraer asignaciones del objeto materia
+      const asignaciones = result.data?.asignaciones || result.asignaciones || [];
+      console.log(`✅ ${asignaciones.length} asignaciones encontradas para la materia ${codigoMateria}`);
 
-      console.log(`✅ ${grupos.length} grupos encontrados para la materia ${codigoMateria}`);
+      // Mapear asignaciones a formato compatible
+      return asignaciones.map(asignacion => {
+        const docente = asignacion.docente || {};
+        const usuario = docente.usuario || asignacion.usuario || {};
+        const grupo = asignacion.grupo || {};
 
-      return grupos.map(g => ({
-        id: g.codigo_grupo || g.id_grupo,
-        nombre: g.nombre_grupo || `Grupo ${g.codigo_grupo}`,
-        codigoMateria: codigoMateria,
-        idDocente: g.id_docente,
-        nombreDocente: g.nombre_docente,
-      }));
+        const nombreDocente = usuario.nombre_completo ||
+                             `${usuario.p_nombre || ''} ${usuario.p_apellido || ''}`.trim() ||
+                             'Sin nombre';
+
+        return {
+          id: grupo.id || grupo.id_grupo,
+          nombre: grupo.nombre_grupo || `Grupo ${grupo.codigo_grupo}`,
+          codigoMateria: codigoMateria,
+          idDocente: docente.id_docente || asignacion.id_docente,
+          nombreDocente: nombreDocente,
+          idAsignacion: asignacion.id_docente_materia || asignacion.id,
+        };
+      });
     } catch (error) {
       console.error('❌ Error obteniendo grupos:', error);
       return [];
@@ -684,7 +687,7 @@ class RegisterProjectService {
       
       // Intentar endpoint público primero
       let response = await fetch(
-        `${API_URL}/api/v1/grupos/profesor/${idDocente}?limit=100`,
+        API_ENDPOINTS.GRUPOS_BY_TEACHER(idDocente),
         {
           method: 'GET',
           headers: getAuthHeaders(),
@@ -695,7 +698,7 @@ class RegisterProjectService {
       if (response.status === 403) {
         console.log('⚠️ Endpoint público falló, intentando endpoint admin...');
         response = await fetch(
-          `${API_URL}/api/v1/admin/grupos/profesor/${idDocente}?limit=100`,
+          API_ENDPOINTS.ADMIN_GRUPOS_BY_TEACHER(idDocente),
           {
             method: 'GET',
             headers: getAuthHeaders(),
@@ -752,7 +755,7 @@ class RegisterProjectService {
       
       // Intentar endpoint admin (el que realmente existe en el backend)
       console.log('🔄 Intentando endpoint: /api/v1/admin/estudiantes');
-      let response = await fetch(`${API_URL}/api/v1/admin/estudiantes?limit=100`, {
+      let response = await fetch(API_ENDPOINTS.ADMIN_ESTUDIANTES, {
         method: 'GET',
         headers: getAuthHeaders(),
       });
@@ -760,7 +763,7 @@ class RegisterProjectService {
       // Si falla con 403 o 404, intentar endpoint público con prefijo correcto
       if (response.status === 403 || response.status === 404) {
         console.log('⚠️ Endpoint admin falló, intentando endpoint público...');
-        response = await fetch(`${API_URL}/api/v1/estudiantes?limit=100`, {
+        response = await fetch(API_ENDPOINTS.ADMIN_ESTUDIANTES, {
           method: 'GET',
           headers: getAuthHeaders(),
         });

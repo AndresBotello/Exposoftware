@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import logo from "../../assets/Logo-unicesar.png";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
 import * as AuthService from "../../Services/AuthService";
-import { obtenerGrupos, obtenerProfesores, crearGrupo, actualizarGrupo, eliminarGrupo, filtrarGrupos } from "../../Services/CreateGroup";
-import { SelectProfesores, TablaGrupos } from "./GroupHelpers";
+import { obtenerGrupos, obtenerProfesores, crearGrupo, actualizarGrupo, eliminarGrupo, filtrarGrupos, obtenerMaterias, crearAsignacion, obtenerClasesMateria } from "../../Services/CreateGroup";
+import { SelectProfesores, TablaGrupos, extractProfessorInfo } from "./GroupHelpers";
 
 export default function CreateGroup() {
   const navigate = useNavigate();
@@ -18,9 +18,19 @@ export default function CreateGroup() {
   const [loadingProfesores, setLoadingProfesores] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editingCodigoGrupo, setEditingCodigoGrupo] = useState(null);
+  const [editingIdGrupo, setEditingIdGrupo] = useState(null);
+  const [editingNombreGrupo, setEditingNombreGrupo] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Estados para crear clase (asignación)
+  const [materias, setMaterias] = useState([]);
+  const [loadingMaterias, setLoadingMaterias] = useState(true);
+  const [codigoMateriaSeleccionada, setCodigoMateriaSeleccionada] = useState("");
+  const [docenteAsignacion, setDocenteAsignacion] = useState("");
+  const [grupoAsignacion, setGrupoAsignacion] = useState("");
+  const [clasesMateria, setClasesMateria] = useState([]);
+  const [loadingClases, setLoadingClases] = useState(false);
 
   useEffect(() => {
     const user = AuthService.getUserData();
@@ -30,7 +40,21 @@ export default function CreateGroup() {
   useEffect(() => {
     cargarGrupos();
     cargarProfesores();
+    cargarMaterias();
   }, []);
+
+  const cargarMaterias = async () => {
+    setLoadingMaterias(true);
+    try {
+      const data = await obtenerMaterias();
+      setMaterias(data);
+    } catch (error) {
+      console.error('❌ Error al cargar materias:', error);
+      setMaterias([]);
+    } finally {
+      setLoadingMaterias(false);
+    }
+  };
 
   const getUserName = () => {
     if (!userData) return 'Administrador';
@@ -48,6 +72,12 @@ export default function CreateGroup() {
     setLoadingGrupos(true);
     try {
       const data = await obtenerGrupos();
+      console.log('✅ Grupos cargados completos:', data);
+      if (data && data.length > 0) {
+        console.log('🔍 ESTRUCTURA COMPLETA PRIMER GRUPO:', data[0]);
+        console.log('🔍 JSON COMPLETO PRIMER GRUPO:', JSON.stringify(data[0], null, 2));
+        console.log('🔍 CLAVES DEL GRUPO:', Object.keys(data[0]));
+      }
       setGrupos(data);
     } catch (error) {
       console.error('❌ Error al cargar grupos:', error);
@@ -74,15 +104,15 @@ export default function CreateGroup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!idDocente || idDocente === '' || idDocente.startsWith('temp_')) {
-      alert('❌ Error: Debe seleccionar un profesor válido');
+    if (!codigoGrupo) {
+      alert('❌ Error: Debe ingresar un código de grupo');
       return;
     }
     setSubmitting(true);
     try {
-      await crearGrupo(codigoGrupo, idDocente);
+      await crearGrupo(codigoGrupo);
       await cargarGrupos();
-      alert("✅ Grupo creado exitosamente\n\nEl grupo ha sido registrado en el sistema.");
+      alert("✅ Grupo creado exitosamente\n\nEl grupo ha sido registrado en el sistema.\n\nAhora puedes crear una clase asignando un docente a una materia con este grupo.");
       limpiarFormulario();
     } catch (error) {
       alert(`❌ Error al crear el grupo:\n\n${error.message}`);
@@ -92,17 +122,21 @@ export default function CreateGroup() {
   };
 
   const handleEdit = (grupo) => {
-    setEditingCodigoGrupo(grupo.codigo_grupo);
-    setCodigoGrupo(grupo.codigo_grupo.toString());
-    setIdDocente(grupo.id_docente || "");
+    setEditingIdGrupo(grupo.id_grupo);
+    setEditingNombreGrupo(grupo.nombre_grupo);
+    setCodigoGrupo(grupo.nombre_grupo.toString());
     setIsEditing(true);
     setShowEditModal(true);
   };
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
+    if (!codigoGrupo) {
+      alert('❌ Error: El nombre del grupo no puede estar vacío');
+      return;
+    }
     try {
-      await actualizarGrupo(editingCodigoGrupo, codigoGrupo, idDocente);
+      await actualizarGrupo(editingIdGrupo, codigoGrupo);
       await cargarGrupos();
       alert("✅ Grupo actualizado exitosamente");
       handleCancelEdit();
@@ -113,21 +147,76 @@ export default function CreateGroup() {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setEditingCodigoGrupo(null);
+    setEditingIdGrupo(null);
+    setEditingNombreGrupo(null);
     setShowEditModal(false);
     limpiarFormulario();
   };
 
-  const handleDelete = async (codigoGrupo) => {
-    const grupoAEliminar = grupos.find(g => g.codigo_grupo === codigoGrupo);
-    if (window.confirm(`¿Está seguro de que desea eliminar el ${grupoAEliminar?.nombre_grupo}?`)) {
+  const handleDelete = async (nombreGrupo) => {
+    const grupoAEliminar = grupos.find(g => g.nombre_grupo === nombreGrupo);
+    if (window.confirm(`¿Está seguro de que desea eliminar el grupo ${grupoAEliminar?.nombre_grupo}?`)) {
       try {
-        await eliminarGrupo(codigoGrupo);
+        await eliminarGrupo(nombreGrupo);
         await cargarGrupos();
         alert("✅ Grupo eliminado exitosamente");
       } catch (error) {
         alert(`❌ ${error.message}`);
       }
+    }
+  };
+
+  const handleMateriaChange = async (e) => {
+    const codigo = e.target.value;
+    setCodigoMateriaSeleccionada(codigo);
+    setDocenteAsignacion("");
+    setGrupoAsignacion("");
+    setClasesMateria([]);
+
+    if (codigo) {
+      setLoadingClases(true);
+      try {
+        const clases = await obtenerClasesMateria(codigo, profesores, grupos);
+        setClasesMateria(clases);
+      } catch (error) {
+        console.error('❌ Error al cargar clases:', error);
+        setClasesMateria([]);
+      } finally {
+        setLoadingClases(false);
+      }
+    }
+  };
+
+  const limpiarFormularioAsignacion = () => {
+    setCodigoMateriaSeleccionada("");
+    setDocenteAsignacion("");
+    setGrupoAsignacion("");
+  };
+
+  const handleCrearAsignacion = async (e) => {
+    e.preventDefault();
+    if (!codigoMateriaSeleccionada || !docenteAsignacion || !grupoAsignacion) {
+      alert('❌ Error: Debe seleccionar materia, docente y grupo');
+      return;
+    }
+
+    // Obtener el id_grupo del grupo seleccionado
+    const grupoSeleccionado = grupos.find(g => g.nombre_grupo === grupoAsignacion);
+    if (!grupoSeleccionado || !grupoSeleccionado.id_grupo) {
+      alert('❌ Error: No se encontró el ID del grupo seleccionado');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await crearAsignacion(docenteAsignacion, codigoMateriaSeleccionada, grupoSeleccionado.id_grupo);
+      alert("✅ Clase creada exitosamente\n\nLa asignación ha sido registrada en el sistema.");
+      limpiarFormularioAsignacion();
+      await cargarMaterias();
+    } catch (error) {
+      alert(`❌ Error al crear la clase:\n\n${error.message}`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -170,7 +259,11 @@ export default function CreateGroup() {
           <main className="lg:col-span-3">
             <div className="bg-white rounded-lg border border-gray-200 p-2 mb-6">
               <div className="flex gap-2">
-                {[{ key: "crear", label: "➕ Crear Grupo" }, { key: "editar", label: "✏️ Editar Grupos" }].map(({ key, label }) => (
+                {[
+                  { key: "crear", label: "➕ Crear Grupo" },
+                  { key: "clase", label: "🎓 Crear Clase" },
+                  { key: "editar", label: "✏️ Editar Grupos" }
+                ].map(({ key, label }) => (
                   <button key={key} onClick={() => setActiveTab(key)}
                     className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${activeTab === key ? "bg-teal-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                   >{label}</button>
@@ -182,7 +275,7 @@ export default function CreateGroup() {
               <div className="bg-white rounded-lg border border-gray-200 p-8">
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Crear Nuevo Grupo</h2>
-                  <p className="text-sm text-gray-600">Ingresa el código del grupo y la materia asociada.</p>
+                  <p className="text-sm text-gray-600">Ingresa el código del grupo.</p>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
                   <div>
@@ -197,13 +290,6 @@ export default function CreateGroup() {
                     />
                     <p className="mt-1 text-xs text-gray-500">Código numérico único del grupo (Ej: 101, 102, 203).</p>
                   </div>
-                  <div>
-                    <label htmlFor="idDocente" className="block text-sm font-medium text-gray-700 mb-2">
-                      Asignar Profesor <span className="text-red-500">*</span>
-                    </label>
-                    <SelectProfesores value={idDocente} onChange={(e) => setIdDocente(e.target.value)} profesores={profesores} loadingProfesores={loadingProfesores} />
-                    <p className="mt-1 text-xs text-gray-500">Profesor responsable del grupo</p>
-                  </div>
                   <div className="pt-4">
                     <button type="submit" disabled={submitting || loadingProfesores}
                       className="w-full bg-teal-600 text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
@@ -217,6 +303,115 @@ export default function CreateGroup() {
                           Creando grupo...
                         </span>
                       ) : loadingProfesores ? 'Cargando datos...' : 'Crear Grupo'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {activeTab === "clase" && (
+              <div className="bg-white rounded-lg border border-gray-200 p-8">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Crear Clase</h2>
+                  <p className="text-sm text-gray-600">Asigna un docente a una materia y grupo. Una clase es la combinación de: Docente + Materia + Grupo.</p>
+                </div>
+                <form onSubmit={handleCrearAsignacion} className="space-y-6 max-w-2xl">
+                  <div>
+                    <label htmlFor="codigoMateria" className="block text-sm font-medium text-gray-700 mb-2">
+                      Seleccionar Materia <span className="text-red-500">*</span>
+                    </label>
+                    <select id="codigoMateria" value={codigoMateriaSeleccionada} onChange={handleMateriaChange}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                      required disabled={loadingMaterias}
+                    >
+                      <option value="">-- Selecciona una materia --</option>
+                      {materias.map((materia) => (
+                        <option key={materia.codigo_materia} value={materia.codigo_materia}>
+                          {materia.nombre_materia || materia.codigo_materia}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {codigoMateriaSeleccionada && (
+                    <>
+                      <div>
+                        <label htmlFor="docenteAsignacion" className="block text-sm font-medium text-gray-700 mb-2">
+                          Seleccionar Docente <span className="text-red-500">*</span>
+                        </label>
+                        <select id="docenteAsignacion" value={docenteAsignacion} onChange={(e) => setDocenteAsignacion(e.target.value)}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                          required disabled={loadingProfesores}
+                        >
+                          <option value="">-- Selecciona un docente --</option>
+                          {profesores.map((profesor) => {
+                            const { profesorId, displayText } = extractProfessorInfo(profesor);
+                            if (!profesorId) return null;
+                            return (
+                              <option key={`docente_${profesorId}`} value={profesorId}>
+                                {displayText}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor="grupoAsignacion" className="block text-sm font-medium text-gray-700 mb-2">
+                          Seleccionar Grupo <span className="text-red-500">*</span>
+                        </label>
+                        <select id="grupoAsignacion" value={grupoAsignacion} onChange={(e) => setGrupoAsignacion(e.target.value)}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                          required
+                        >
+                          <option value="">-- Selecciona un grupo --</option>
+                          {grupos.map((grupo) => (
+                            <option key={grupo.nombre_grupo} value={grupo.nombre_grupo}>
+                              Grupo {grupo.nombre_grupo}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {loadingClases && <p className="text-sm text-gray-600">Cargando clases existentes...</p>}
+
+                      {clasesMateria.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-sm font-medium text-blue-900 mb-3">Clases existentes en esta materia:</p>
+                          <div className="space-y-2">
+                            {clasesMateria.map((clase, idx) => (
+                              <div key={idx} className="bg-white rounded p-2 border border-blue-100 text-sm">
+                                <div className="flex gap-4">
+                                  <div>
+                                    <span className="font-medium text-gray-700">Docente:</span>
+                                    <span className="text-gray-900 ml-2">{clase.docente_nombre || `ID: ${clase.id_docente}`}</span>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium text-gray-700">Grupo:</span>
+                                    <span className="text-gray-900 ml-2">{clase.nombre_grupo || 'Sin asignar'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <div className="pt-4">
+                    <button type="submit" disabled={submitting || loadingMaterias || !codigoMateriaSeleccionada}
+                      className="w-full bg-teal-600 text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
+                    >
+                      {submitting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d={spinnerPath}></path>
+                          </svg>
+                          Creando clase...
+                        </span>
+                      ) : 'Crear Clase'}
                     </button>
                   </div>
                 </form>
@@ -261,24 +456,18 @@ export default function CreateGroup() {
             </div>
             <form onSubmit={handleSaveEdit} className="p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Código del Grupo (ID único)</label>
-                <input type="text" value={editingCodigoGrupo || ''} disabled
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
-                  placeholder="Generado automáticamente por Firebase"
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nombre del Grupo <span className="text-red-500">*</span></label>
+                <input type="text" value={codigoGrupo} onChange={(e) => setCodigoGrupo(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  placeholder="Ej: 101, 102, 203"
+                  required
                 />
-                <p className="mt-1 text-xs text-gray-500">Este código se genera automáticamente y no puede modificarse</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Asignar Profesor <span className="text-red-500">*</span>
-                </label>
-                <SelectProfesores value={idDocente} onChange={(e) => setIdDocente(e.target.value)} profesores={profesores} loadingProfesores={loadingProfesores} />
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={handleCancelEdit}
                   className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
                 >Cancelar</button>
-                <button type="submit" disabled={submitting || loadingProfesores}
+                <button type="submit" disabled={submitting}
                   className="px-6 py-2.5 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition disabled:bg-teal-400 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
@@ -289,7 +478,7 @@ export default function CreateGroup() {
                       </svg>
                       Guardando...
                     </span>
-                  ) : loadingProfesores ? 'Cargando datos...' : '💾 Guardar Cambios'}
+                  ) : '💾 Guardar Cambios'}
                 </button>
               </div>
             </form>

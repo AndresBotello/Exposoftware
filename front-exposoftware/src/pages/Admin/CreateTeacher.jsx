@@ -5,7 +5,6 @@ import AdminSidebar from "../../components/Layout/AdminSidebar";
 import { useAdminAuth } from "../../hooks/useAdminAuth";
 import { AdminHeader, TabNavigation } from "../../components/Admin/AdminComponents";
 import countryList from "react-select-country-list";
-import colombia from "../../assets/colombia-json-master/colombia.json";
 import {
   useTeacherManagement,
   TIPOS_DOCUMENTO,
@@ -22,6 +21,7 @@ import {
   hasErrors
 } from "../../utils/teacherValidations";
 import { API_ENDPOINTS } from "../../utils/constants";
+import * as AuthService from "../../Services/AuthService";
 
 export default function CreateTeacher() {
   const navigate = useNavigate();
@@ -33,6 +33,52 @@ export default function CreateTeacher() {
   // Estado para programas académicos
   const [programas, setProgramas] = useState([]);
   const [loadingProgramas, setLoadingProgramas] = useState(false);
+
+  // Cargar programas al montar el componente
+  useEffect(() => {
+    const loadProgramas = async () => {
+      setLoadingProgramas(true);
+      try {
+        // Intentar cargar todos los programas
+        const response = await fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
+          headers: AuthService.getAuthHeaders()
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const facultades = Array.isArray(data) ? data : (data.data || data.facultades || []);
+
+          // Extraer todos los programas de todas las facultades
+          let allPrograms = [];
+          for (const faculty of facultades) {
+            if (faculty.id_facultad || faculty.codigo_facultad) {
+              const facultyId = faculty.id_facultad || faculty.codigo_facultad;
+              try {
+                const progRes = await fetch(
+                  API_ENDPOINTS.ADMIN_PROGRAMAS_BY_FACULTAD(facultyId),
+                  { headers: AuthService.getAuthHeaders() }
+                );
+                if (progRes.ok) {
+                  const progData = await progRes.json();
+                  const progs = Array.isArray(progData) ? progData : (progData.data || progData.programas || []);
+                  allPrograms = [...allPrograms, ...progs];
+                }
+              } catch (err) {
+                console.warn('Error loading programs for faculty:', err);
+              }
+            }
+          }
+          setProgramas(allPrograms);
+        }
+      } catch (err) {
+        console.error('Error loading programas:', err);
+      } finally {
+        setLoadingProgramas(false);
+      }
+    };
+
+    loadProgramas();
+  }, []);
 
   // Opciones de países usando react-select-country-list (igual que Register)
   const options = useMemo(() => countryList().getData(), []);
@@ -79,6 +125,16 @@ export default function CreateTeacher() {
     setCiudadResidencia,
     direccionResidencia,
     setDireccionResidencia,
+    tipoVia,
+    setTipoVia,
+    numeroVia,
+    setNumeroVia,
+    numeroCruce,
+    setNumeroCruce,
+    numeroPlaca,
+    setNumeroPlaca,
+    complemento,
+    setComplemento,
     telefono,
     setTelefono,
     correo,
@@ -99,6 +155,10 @@ export default function CreateTeacher() {
     profesoresFiltrados,
     // Estados para municipios dinámicos
     municipios,
+    // Catálogos
+    paises: paisesCatalogo,
+    departamentos: departamentosCatalogo,
+    municipiosApi,
     // Opciones de países/nacionalidades
     opcionesPaises,
     // Estados de edición
@@ -118,112 +178,14 @@ export default function CreateTeacher() {
   // Efecto para actualizar municipios cuando cambia el departamento
   // DEBE estar DESPUÉS de useTeacherManagement para acceder a departamento y municipio
   useEffect(() => {
-    if (departamento) {
-      // Buscar el departamento en el array de Colombia
-      const deptoEncontrado = colombia.find((d) => d.departamento === departamento);
-      
-      if (deptoEncontrado && Array.isArray(deptoEncontrado.ciudades)) {
-        setMunicipiosDisponibles(deptoEncontrado.ciudades);
-        
-        // Si el municipio actual no está en la lista, limpiarlo
-        if (municipio && !deptoEncontrado.ciudades.includes(municipio)) {
-          setMunicipio("");
-        }
-      } else {
-        setMunicipiosDisponibles([]);
-        setMunicipio("");
-      }
-    } else {
-      setMunicipiosDisponibles([]);
-      setMunicipio("");
+    if (departamento && municipiosApi.length > 0) {
+      const municipiosDelDepto = municipiosApi.filter(m =>
+        m.codigo_departamento === departamento ||
+        m.departamento === departamento
+      );
+      console.log('📍 Municipios para departamento', departamento, ':', municipiosDelDepto);
     }
-  }, [departamento, municipio, setMunicipio]);
-
-  // Cargar programas académicos al montar el componente
-  useEffect(() => {
-    const cargarProgramas = async () => {
-      setLoadingProgramas(true);
-      try {
-        // Primero cargar las facultades
-        const facultadesResponse = await fetch(API_ENDPOINTS.FACULTADES, {
-          method: 'GET',
-          headers: AuthService.getAuthHeaders(),
-        });
-
-        if (!facultadesResponse.ok) {
-          throw new Error(`Error ${facultadesResponse.status}: ${facultadesResponse.statusText}`);
-        }
-
-        const facultadesData = await facultadesResponse.json();
-        console.log('✅ Facultades cargadas:', facultadesData);
-        console.log('📊 Tipo de datos:', typeof facultadesData);
-        console.log('📊 Es array:', Array.isArray(facultadesData));
-        
-        // Manejar diferentes estructuras de respuesta
-        let facultades = [];
-        if (Array.isArray(facultadesData)) {
-          facultades = facultadesData;
-        } else if (facultadesData && typeof facultadesData === 'object') {
-          // Si es un objeto, buscar la propiedad que contenga el array
-          facultades = facultadesData.facultades || facultadesData.data || facultadesData.results || [];
-        }
-
-        console.log('📚 Total de facultades:', facultades.length);
-        console.log('🔍 Primera facultad:', facultades[0]);
-
-        // Cargar programas de cada facultad
-        const todasLosProgramas = [];
-        
-        for (const facultad of facultades) {
-          const facultadId = facultad.id_facultad || facultad.id;
-          console.log(`🔄 Cargando programas de facultad: ${facultad.nombre_facultad} (${facultadId})`);
-          
-          try {
-            const url = API_ENDPOINTS.PROGRAMAS_BY_FACULTAD(facultadId);
-            console.log(`📡 URL: ${url}`);
-            
-            const programasResponse = await fetch(url, {
-              method: 'GET',
-              headers: AuthService.getAuthHeaders(),
-            });
-
-            console.log(`📊 Status programas facultad ${facultadId}:`, programasResponse.status);
-
-            if (programasResponse.ok) {
-              const programasData = await programasResponse.json();
-              console.log(`📦 Datos programas facultad ${facultadId}:`, programasData);
-              
-              // Manejar diferentes estructuras de respuesta para programas
-              let programasFacultad = [];
-              if (Array.isArray(programasData)) {
-                programasFacultad = programasData;
-              } else if (programasData && typeof programasData === 'object') {
-                programasFacultad = programasData.programas || programasData.data || programasData.results || [];
-              }
-              
-              if (programasFacultad.length > 0) {
-                console.log(`✅ Facultad ${facultad.nombre_facultad}: ${programasFacultad.length} programas`);
-                todasLosProgramas.push(...programasFacultad);
-              }
-            }
-          } catch (error) {
-            console.warn(`⚠️ Error cargando programas de facultad ${facultadId}:`, error);
-          }
-        }
-
-        console.log('✅ Total de programas cargados:', todasLosProgramas.length);
-        console.log('🔍 Primer programa:', todasLosProgramas[0]);
-        setProgramas(todasLosProgramas);
-      } catch (error) {
-        console.error("❌ Error al cargar programas:", error);
-        setProgramas([]);
-      } finally {
-        setLoadingProgramas(false);
-      }
-    };
-
-    cargarProgramas();
-  }, []);
+  }, [departamento, municipiosApi]);
   
 
   // Función para manejar cambios con validación
@@ -393,9 +355,19 @@ export default function CreateTeacher() {
                 setDepartamento={setDepartamento}
                 municipio={municipio}
                 setMunicipio={setMunicipio}
-                municipiosDisponibles={municipiosDisponibles}
+                municipiosDisponibles={municipiosApi}
                 ciudadResidencia={ciudadResidencia}
                 setCiudadResidencia={setCiudadResidencia}
+                tipoVia={tipoVia}
+                setTipoVia={setTipoVia}
+                numeroVia={numeroVia}
+                setNumeroVia={setNumeroVia}
+                numeroCruce={numeroCruce}
+                setNumeroCruce={setNumeroCruce}
+                numeroPlaca={numeroPlaca}
+                setNumeroPlaca={setNumeroPlaca}
+                complemento={complemento}
+                setComplemento={setComplemento}
                 direccionResidencia={direccionResidencia}
                 setDireccionResidencia={setDireccionResidencia}
                 telefono={telefono}
@@ -413,10 +385,11 @@ export default function CreateTeacher() {
                 errors={errors}
                 loading={loading}
                 isEditing={isEditing}
-                handleFormSubmit={handleFormSubmit}
-                handleCancel={handleCancel}
+                onSubmit={handleFormSubmit}
+                onCancel={handleCancel}
                 handleInputChange={handleInputChange}
                 options={options}
+                departamentos={departamentosCatalogo}
                 programas={programas}
                 loadingProgramas={loadingProgramas}
               />
@@ -444,6 +417,7 @@ export default function CreateTeacher() {
         // Listas dinámicas
         municipios={municipios}
         opcionesPaises={opcionesPaises}
+        departamentos={departamentosCatalogo}
         programas={programas}
         loadingProgramas={loadingProgramas}
         // Estados del formulario - Usuario
@@ -476,6 +450,16 @@ export default function CreateTeacher() {
         setMunicipio={setMunicipio}
         ciudadResidencia={ciudadResidencia}
         setCiudadResidencia={setCiudadResidencia}
+        tipoVia={tipoVia}
+        setTipoVia={setTipoVia}
+        numeroVia={numeroVia}
+        setNumeroVia={setNumeroVia}
+        numeroCruce={numeroCruce}
+        setNumeroCruce={setNumeroCruce}
+        numeroPlaca={numeroPlaca}
+        setNumeroPlaca={setNumeroPlaca}
+        complemento={complemento}
+        setComplemento={setComplemento}
         direccionResidencia={direccionResidencia}
         setDireccionResidencia={setDireccionResidencia}
         telefono={telefono}

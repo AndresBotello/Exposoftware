@@ -2,8 +2,12 @@ import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
 
 /**
- * Servicio para la gestión de grupos
+ * Servicio para la gestión de grupos y clases (asignaciones)
  * Contiene todas las funciones de lógica de negocio y comunicación con el backend
+ *
+ * Estructura:
+ * - Grupo: código único del grupo
+ * - Clase: combinación de (Docente + Materia + Grupo)
  */
 
 // ==================== FUNCIONES DE API ====================
@@ -19,6 +23,7 @@ export const obtenerGrupos = async () => {
     console.log('🔑 Headers de autenticación:', headers);
     
     const response = await fetch(API_ENDPOINTS.GRUPOS, {
+      credentials: 'include',
       method: 'GET',
       headers: headers
     });
@@ -63,6 +68,7 @@ export const obtenerProfesores = async () => {
     console.log('🔑 Headers de autenticación:', headers);
     
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'GET',
       headers: headers
     });
@@ -103,6 +109,7 @@ export const obtenerProfesores = async () => {
             if (profesor.id_usuario) {
               // Intentar obtener información del usuario
               const userResponse = await fetch(`${API_ENDPOINTS.USUARIOS}/${profesor.id_usuario}`, {
+                credentials: 'include',
                 method: 'GET',
                 headers: headers
               });
@@ -138,20 +145,18 @@ export const obtenerProfesores = async () => {
 /**
  * Crear un nuevo grupo en el backend
  * @param {number} codigoGrupo - Código/número del grupo
- * @param {string} idDocente - ID del docente asignado
  * @returns {Promise<Object>} Datos del grupo creado
  */
-export const crearGrupo = async (codigoGrupo, idDocente) => {
+export const crearGrupo = async (codigoGrupo) => {
   // Validaciones
-  if (!codigoGrupo || !idDocente) {
-    throw new Error("Por favor complete todos los campos obligatorios");
+  if (!codigoGrupo) {
+    throw new Error("Por favor ingrese un código de grupo");
   }
 
   // Estructura exacta que espera el backend
   // IMPORTANTE: codigo_grupo debe ser STRING con solo números
   const payload = {
-    codigo_grupo: String(codigoGrupo),  // Convertir a string
-    id_docente: idDocente
+    nombre_grupo: String(codigoGrupo)  // El servidor espera nombre_grupo, no codigo_grupo
   };
 
   console.log('📤 Creando grupo en backend:', JSON.stringify(payload, null, 2));
@@ -162,6 +167,7 @@ export const crearGrupo = async (codigoGrupo, idDocente) => {
 
   try {
     const response = await fetch(API_ENDPOINTS.GRUPOS, {
+      credentials: 'include',
       method: 'POST',
       headers: headers,
       body: JSON.stringify(payload)
@@ -233,26 +239,22 @@ export const crearGrupo = async (codigoGrupo, idDocente) => {
  * @param {string} idDocente - Nuevo ID del docente asignado
  * @returns {Promise<Object>} Datos del grupo actualizado
  */
-export const actualizarGrupo = async (codigoGrupo, nombreGrupo, idDocente) => {
+export const actualizarGrupo = async (idGrupo, nombreGrupo) => {
   // Validaciones
-  if (!nombreGrupo || !idDocente) {
+  if (!nombreGrupo) {
     throw new Error("Por favor complete todos los campos obligatorios");
   }
 
-  if (nombreGrupo.length > 10) {
-    throw new Error("El nombre del grupo no puede exceder 10 caracteres");
-  }
-
   const payload = {
-    nombre_grupo: nombreGrupo,
-    id_docente: idDocente
+    nombre_grupo: nombreGrupo
   };
 
-  console.log('📤 Actualizando en backend (codigo_grupo: ' + codigoGrupo + '):', JSON.stringify(payload, null, 2));
+  console.log('📤 Actualizando grupo en backend (id_grupo: ' + idGrupo + '):', JSON.stringify(payload, null, 2));
 
   try {
-    const response = await fetch(API_ENDPOINTS.GRUPO_BY_ID(codigoGrupo), {
-      method: 'PUT',
+    const response = await fetch(API_ENDPOINTS.ADMIN_GRUPO_BY_ID(idGrupo), {
+      credentials: 'include',
+      method: 'PATCH',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(payload)
     });
@@ -304,7 +306,8 @@ export const eliminarGrupo = async (codigoGrupo) => {
   console.log('🗑️ Eliminando del backend - codigo_grupo:', codigoGrupo);
 
   try {
-    const response = await fetch(API_ENDPOINTS.GRUPO_BY_ID(codigoGrupo), { 
+    const response = await fetch(API_ENDPOINTS.ADMIN_GRUPO_BY_ID(codigoGrupo), { 
+      credentials: 'include',
       method: 'DELETE',
       headers: AuthService.getAuthHeaders()
     });
@@ -364,22 +367,270 @@ export const filtrarGrupos = (grupos, searchTerm, profesores) => {
     console.warn('⚠️ filtrarGrupos: grupos no es un array:', grupos);
     return [];
   }
-  
+
   if (!searchTerm || searchTerm.trim() === '') {
     return grupos;
   }
-  
+
   const termino = searchTerm.toLowerCase();
-  
+
   return grupos.filter(grupo => {
     try {
       const nombreGrupo = grupo?.nombre_grupo?.toLowerCase() || '';
       const nombreProfesor = obtenerNombreProfesor(grupo?.id_docente, profesores).toLowerCase();
-      
+
       return nombreGrupo.includes(termino) || nombreProfesor.includes(termino);
     } catch (error) {
       console.error('Error filtrando grupo:', error, grupo);
       return false;
     }
   });
+};
+
+// ==================== MATERIAS ====================
+
+/**
+ * Obtener todas las materias
+ * @returns {Promise<Array>} Lista de materias
+ */
+export const obtenerMaterias = async () => {
+  try {
+    console.log('📥 Cargando materias desde:', API_ENDPOINTS.ADMIN_MATERIAS);
+    const headers = AuthService.getAuthHeaders();
+
+    const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS, {
+      credentials: 'include',
+      method: 'GET',
+      headers: headers
+    });
+
+    console.log('📡 Respuesta del servidor - Status:', response.status);
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('✅ Materias obtenidas:', result);
+
+      const materias = result.data || result;
+      return Array.isArray(materias) ? materias : [];
+    } else {
+      const errorText = await response.text();
+      console.error('❌ Error al cargar materias:', response.status, errorText);
+      throw new Error(`Error al cargar materias: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('❌ Error de conexión al cargar materias:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener una materia por código
+ * @param {string} codigoMateria - Código de la materia
+ * @returns {Promise<Object>} Datos de la materia
+ */
+export const obtenerMateriaPorCodigo = async (codigoMateria) => {
+  try {
+    console.log('📥 Cargando materia:', codigoMateria);
+    const headers = AuthService.getAuthHeaders();
+
+    const response = await fetch(API_ENDPOINTS.ADMIN_MATERIA_BY_CODE(codigoMateria), {
+      credentials: 'include',
+      method: 'GET',
+      headers: headers
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('✅ Materia obtenida:', result);
+      return result.data || result;
+    } else {
+      throw new Error(`Error al cargar materia: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('❌ Error al cargar materia:', error);
+    throw error;
+  }
+};
+
+// ==================== ASIGNACIONES (CLASES) ====================
+
+/**
+ * Crear una asignación (Clase = Docente + Materia + Grupo)
+ * @param {string} idDocente - ID del docente
+ * @param {string} codigoMateria - Código de la materia
+ * @param {string} idGrupo - ID del grupo (UUID)
+ * @returns {Promise<Object>} Datos de la asignación creada
+ */
+export const crearAsignacion = async (idDocente, codigoMateria, idGrupo) => {
+  if (!idDocente || !codigoMateria || !idGrupo) {
+    throw new Error("Por favor complete todos los campos obligatorios");
+  }
+
+  const payload = {
+    id_docente: idDocente,
+    codigo_materia: codigoMateria,
+    id_grupo: idGrupo
+  };
+
+  console.log('📤 Creando asignación (clase) en backend:', JSON.stringify(payload, null, 2));
+  console.log('🔗 Endpoint:', API_ENDPOINTS.ADMIN_MATERIAS_ASIGNACIONES);
+
+  const headers = AuthService.getAuthHeaders();
+
+  try {
+    const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS_ASIGNACIONES, {
+      credentials: 'include',
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload)
+    });
+
+    console.log('📡 Respuesta del servidor - Status:', response.status);
+
+    if (response.status === 201 || response.ok) {
+      const data = await response.json();
+      console.log('✅ Asignación creada exitosamente:', data);
+      return { success: true, data };
+    } else if (response.status === 400) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Solicitud incorrecta:', errorData);
+      throw new Error(`Solicitud incorrecta: ${errorData.message || errorData.detail || 'Verifique los datos ingresados'}`);
+    } else if (response.status === 409) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Conflicto:', errorData);
+      throw new Error(`Esta clase ya existe: ${errorData.message || errorData.detail || 'La combinación de docente, materia y grupo ya existe'}`);
+    } else if (response.status === 422) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Error de validación:', errorData);
+      throw new Error(`Error de validación: ${errorData.message || errorData.detail || 'Los datos no son válidos'}`);
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Error del servidor:', errorData);
+      throw new Error(`Error al crear la asignación (${response.status}): ${errorData.message || errorData.detail || 'Error desconocido'}`);
+    }
+  } catch (error) {
+    if (error.message) {
+      throw error;
+    }
+    console.error('❌ Error al crear asignación:', error);
+    throw new Error("Error de conexión al crear la asignación. Verifique su conexión a internet.");
+  }
+};
+
+/**
+ * Obtener todas las clases de una materia
+ * @param {string} codigoMateria - Código de la materia
+ * @param {Array} profesores - Lista de profesores para buscar nombres
+ * @param {Array} grupos - Lista de grupos para buscar información
+ * @returns {Promise<Array>} Lista de clases/asignaciones
+ */
+export const obtenerClasesMateria = async (codigoMateria, profesores = [], grupos = []) => {
+  try {
+    console.log('📥 Cargando clases de materia:', codigoMateria);
+    const headers = AuthService.getAuthHeaders();
+
+    const response = await fetch(API_ENDPOINTS.ADMIN_MATERIA_ASIGNACIONES(codigoMateria), {
+      credentials: 'include',
+      method: 'GET',
+      headers: headers
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('✅ Clases obtenidas con asignaciones:', result);
+      console.log('🔍 Estructura de result.data:', result.data);
+      console.log('🔍 Claves de result.data:', Object.keys(result.data || {}));
+
+      // El endpoint devuelve la materia con sus asignaciones anidadas
+      const asignaciones = result.data?.asignaciones || result.asignaciones || [];
+
+      console.log('📋 Asignaciones encontradas:', asignaciones);
+      console.log('📊 Cantidad de asignaciones:', asignaciones.length);
+
+      if (asignaciones.length > 0) {
+        console.log('🔍 Estructura primera asignación:', asignaciones[0]);
+        console.log('🔍 JSON COMPLETO asignación:', JSON.stringify(asignaciones[0], null, 2));
+        console.log('🔍 Claves de asignación:', Object.keys(asignaciones[0]));
+      }
+
+      // Transformar asignaciones a formato compatible con la UI
+      return asignaciones.map(asignacion => {
+        const idDocente = asignacion.docente?.id_docente || asignacion.id_docente;
+        const idGrupo = asignacion.grupo?.id || asignacion.id_grupo;
+
+        // Buscar el profesor en la lista para obtener el nombre completo
+        const profesorInfo = profesores.find(p => {
+          const docente = p?.docente || p;
+          const usuario = p?.usuario || {};
+          return docente?.id_docente === idDocente || usuario?.id_usuario === idDocente;
+        });
+
+        // Construir el nombre completo del docente
+        let docente_nombre = '';
+        if (profesorInfo?.usuario) {
+          const { p_nombre, p_apellido } = profesorInfo.usuario;
+          docente_nombre = `${p_nombre || ''} ${p_apellido || ''}`.trim();
+        } else if (asignacion.docente?.usuario) {
+          const { p_nombre, p_apellido } = asignacion.docente.usuario;
+          docente_nombre = `${p_nombre || ''} ${p_apellido || ''}`.trim();
+        }
+
+        if (!docente_nombre) {
+          docente_nombre = asignacion.docente_nombre || 'Sin nombre';
+        }
+
+        console.log(`🧑 Docente encontrado para ${idDocente}:`, docente_nombre);
+
+        // Buscar el grupo en la lista para obtener su información
+        const grupoInfo = grupos.find(g => g?.id_grupo === idGrupo);
+        const nombre_grupo = grupoInfo?.nombre_grupo || asignacion.grupo?.nombre_grupo || '';
+
+        console.log(`📚 Grupo encontrado para ${idGrupo}:`, grupoInfo);
+        console.log(`📚 Nombre del grupo: ${nombre_grupo}`);
+
+        return {
+          id_asignacion: asignacion.id_docente_materia || asignacion.id,
+          id_docente: idDocente,
+          docente_nombre: docente_nombre,
+          id_grupo: idGrupo,
+          nombre_grupo: nombre_grupo
+        };
+      });
+    } else {
+      throw new Error(`Error al cargar clases: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('❌ Error al cargar clases:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener todas las clases de un docente
+ * @param {string} idDocente - ID del docente
+ * @returns {Promise<Array>} Lista de clases/asignaciones
+ */
+export const obtenerClasesDocente = async (idDocente) => {
+  try {
+    console.log('📥 Cargando clases del docente:', idDocente);
+    const headers = AuthService.getAuthHeaders();
+
+    const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES_ASIGNACIONES(idDocente), {
+      credentials: 'include',
+      method: 'GET',
+      headers: headers
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('✅ Clases del docente obtenidas:', result);
+      const clases = result.data || result;
+      return Array.isArray(clases) ? clases : [];
+    } else {
+      throw new Error(`Error al cargar clases: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('❌ Error al cargar clases del docente:', error);
+    throw error;
+  }
 };

@@ -11,13 +11,13 @@ function InformacionInvitado({
 }) {
   return (
     <>
-      <div className="col-span-2 border-l-4 border-green-600 pl-2 mt-4 mb-2">
+      <div className="lg:col-span-2 border-l-4 border-green-600 pl-2 mt-4 mb-2">
         <h2 className="text-lg font-semibold text-gray-700">Información del Invitado</h2>
         <p className="text-sm text-gray-500 mt-1">Completa los datos de acceso y organización</p>
       </div>
 
       {/* Correo Personal - Campo Destacado */}
-      <div className="col-span-2 bg-green-50 p-4 rounded-lg border-2 border-green-200">
+      <div className="lg:col-span-2 bg-green-50 p-4 rounded-lg border-2 border-green-200">
         <label className="block font-semibold text-gray-900 mb-2 flex items-center gap-2">
           <span className="text-green-600">✉️</span>
           Correo Personal (será tu usuario de acceso) *

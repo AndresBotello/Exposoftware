@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../utils/constants";
+import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
 
 /**
@@ -7,10 +7,11 @@ import * as AuthService from "./AuthService";
  */
 export const obtenerFacultades = async () => {
   try {
-    console.log('📥 Cargando facultades desde:', `${API_BASE_URL}/api/v1/admin/academico/facultades`);
+    console.log('📥 Cargando facultades desde:', API_ENDPOINTS.ADMIN_FACULTADES);
     const headers = AuthService.getAuthHeaders();
     
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/academico/facultades`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
+      credentials: 'include',
       method: 'GET',
       headers: headers
     });
@@ -49,10 +50,11 @@ export const obtenerFacultadPorId = async (facultadId) => {
     const headers = AuthService.getAuthHeaders();
     
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/admin/academico/facultades/${facultadId}`,
+      API_ENDPOINTS.ADMIN_FACULTAD_BY_ID(facultadId),
       {
         method: 'GET',
-        headers: headers
+        headers: headers,
+        credentials: 'include'
       }
     );
     
@@ -89,10 +91,11 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
     const headers = AuthService.getAuthHeaders();
     
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/admin/academico/facultades/${facultadId}/programas`,
+      API_ENDPOINTS.ADMIN_PROGRAMAS_BY_FACULTAD(facultadId),
       {
         method: 'GET',
-        headers: headers
+        headers: headers,
+        credentials: 'include'
       }
     );
     
@@ -150,10 +153,11 @@ export const crearPrograma = async (datosPrograma) => {
     // La URL incluye el id_facultad en la ruta
     const facultadId = payload.id_facultad;
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/admin/academico/facultades/${facultadId}/programas`,
+      API_ENDPOINTS.ADMIN_PROGRAMAS_BY_FACULTAD(facultadId),
       {
         method: 'POST',
         headers: AuthService.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(payload)
       }
     );
@@ -225,10 +229,11 @@ export const actualizarPrograma = async (facultadId, codigoPrograma, datosProgra
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/admin/academico/facultades/${facultadId}/programas/${codigoPrograma}`,
+      API_ENDPOINTS.ADMIN_PROGRAMA_BY_CODE(facultadId, codigoPrograma),
       {
         method: 'PUT',
         headers: AuthService.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(payload)
       }
     );
@@ -278,10 +283,11 @@ export const eliminarPrograma = async (facultadId, codigoPrograma) => {
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/admin/academico/facultades/${facultadId}/programas/${codigoPrograma}`,
+      API_ENDPOINTS.ADMIN_PROGRAMA_BY_CODE(facultadId, codigoPrograma),
       {
         method: 'DELETE',
-        headers: AuthService.getAuthHeaders()
+        headers: AuthService.getAuthHeaders(),
+        credentials: 'include'
       }
     );
 

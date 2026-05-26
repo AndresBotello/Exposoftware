@@ -11,12 +11,13 @@ import * as AuthService from "./AuthService";
  */
 export const obtenerMiPerfil = async () => {
   console.log('👤 Obteniendo perfil del estudiante...');
-  console.log('🔗 Endpoint:', API_ENDPOINTS.MI_PERFIL_ESTUDIANTE);
+  console.log('🔗 Endpoint:', API_ENDPOINTS.ESTUDIANTE_MI_PERFIL);
 
   try {
-    const response = await fetch(API_ENDPOINTS.MI_PERFIL_ESTUDIANTE, {
+    const response = await fetch(API_ENDPOINTS.ESTUDIANTE_MI_PERFIL, {
       method: 'GET',
-      headers: AuthService.getAuthHeaders()
+      headers: AuthService.getAuthHeaders(),
+      credentials: 'include'
     });
 
     console.log('📡 Respuesta - Status:', response.status, response.statusText);
@@ -65,91 +66,33 @@ export const obtenerMiPerfil = async () => {
 /**
  * Actualizar perfil del estudiante actual
  * @param {Object} datosActualizados - Datos a actualizar
- * @param {string} datosActualizados.codigo_programa - Código del programa (opcional)
  * @returns {Promise<Object>} Datos actualizados del estudiante
  */
 export const actualizarMiPerfil = async (datosActualizados) => {
   console.log('✏️ Actualizando perfil del estudiante...');
-  console.log('📦 Datos a actualizar (originales):', datosActualizados);
-  console.log('🔗 Endpoint:', API_ENDPOINTS.MI_PERFIL_ESTUDIANTE);
+  console.log('📦 Datos a actualizar:', datosActualizados);
+  console.log('🔗 Endpoint:', API_ENDPOINTS.ESTUDIANTE_MI_PERFIL);
 
   try {
-    // Separar los datos según el formato esperado por el backend
-    const datosEstudiante = {};
-    const datosUsuario = {};
-
-    // Datos del estudiante
-    if (datosActualizados.semestre !== undefined) {
-      datosEstudiante.semestre = parseInt(datosActualizados.semestre) || 0;
-    }
-
-    // Datos del usuario
-    if (datosActualizados.primer_nombre !== undefined) {
-      datosUsuario.primer_nombre = datosActualizados.primer_nombre || '';
-    }
-    if (datosActualizados.segundo_nombre !== undefined) {
-      datosUsuario.segundo_nombre = datosActualizados.segundo_nombre || '';
-    }
-    if (datosActualizados.primer_apellido !== undefined) {
-      datosUsuario.primer_apellido = datosActualizados.primer_apellido || '';
-    }
-    if (datosActualizados.segundo_apellido !== undefined) {
-      datosUsuario.segundo_apellido = datosActualizados.segundo_apellido || '';
-    }
-    if (datosActualizados.sexo !== undefined) {
-      datosUsuario.sexo = datosActualizados.sexo || '';
-    }
-    if (datosActualizados.identidad_sexual !== undefined) {
-      datosUsuario.identidad_sexual = datosActualizados.identidad_sexual || '';
-    }
-    if (datosActualizados.fecha_nacimiento !== undefined) {
-      // Convertir fecha a formato ISO si es necesario
-      let fechaNacimiento = datosActualizados.fecha_nacimiento;
-      if (fechaNacimiento && !fechaNacimiento.includes('T')) {
-        fechaNacimiento = new Date(fechaNacimiento).toISOString();
-      }
-      datosUsuario.fecha_nacimiento = fechaNacimiento || '';
-    }
-    if (datosActualizados.telefono !== undefined) {
-      datosUsuario.telefono = datosActualizados.telefono || '';
-    }
-    if (datosActualizados.nacionalidad !== undefined) {
-      datosUsuario.nacionalidad = datosActualizados.nacionalidad || '';
-    }
-    if (datosActualizados.pais_residencia !== undefined) {
-      datosUsuario.pais_residencia = datosActualizados.pais_residencia || '';
-    }
-    if (datosActualizados.departamento !== undefined) {
-      datosUsuario.departamento = datosActualizados.departamento || '';
-    }
-    if (datosActualizados.municipio !== undefined) {
-      datosUsuario.municipio = datosActualizados.municipio || '';
-    }
-    if (datosActualizados.ciudad_residencia !== undefined) {
-      datosUsuario.ciudad_residencia = datosActualizados.ciudad_residencia || '';
-    }
-    if (datosActualizados.direccion_residencia !== undefined) {
-      datosUsuario.direccion_residencia = datosActualizados.direccion_residencia || '';
-    }
-
-    // Construir el payload final
     const payload = {};
 
-    // Solo incluir datos_estudiante si tiene propiedades
-    if (Object.keys(datosEstudiante).length > 0) {
-      payload.datos_estudiante = datosEstudiante;
+    // Solo incluir datos que pueden actualizarse
+    if (datosActualizados.p_nombre !== undefined) {
+      payload.p_nombre = datosActualizados.p_nombre || '';
     }
-
-    // Solo incluir datos_usuario si tiene propiedades
-    if (Object.keys(datosUsuario).length > 0) {
-      payload.datos_usuario = datosUsuario;
+    if (datosActualizados.p_apellido !== undefined) {
+      payload.p_apellido = datosActualizados.p_apellido || '';
+    }
+    if (datosActualizados.telefono !== undefined) {
+      payload.telefono = datosActualizados.telefono || '';
     }
 
     console.log('📦 Payload final a enviar:', JSON.stringify(payload, null, 2));
 
-    const response = await fetch(API_ENDPOINTS.MI_PERFIL_ESTUDIANTE, {
+    const response = await fetch(API_ENDPOINTS.ESTUDIANTE_MI_PERFIL, {
       method: 'PUT',
       headers: AuthService.getAuthHeaders(),
+      credentials: 'include',
       body: JSON.stringify(payload)
     });
 
@@ -210,7 +153,7 @@ export const actualizarMiPerfil = async (datosActualizados) => {
 
 /**
  * Extraer información del perfil para mostrar en el dashboard
- * @param {Object} perfil - Datos completos del perfil (puede venir anidado)
+ * @param {Object} perfil - Datos completos del perfil con estructura { estudiante: {...}, usuario: {...} }
  * @returns {Object} Información procesada del perfil
  */
 export const procesarDatosPerfil = (perfil) => {
@@ -218,94 +161,39 @@ export const procesarDatosPerfil = (perfil) => {
 
   console.log('🔄 Procesando datos del perfil:', perfil);
 
-  // El perfil viene con estructura: { id, codigo_programa, semestre, usuario: {...} }
-  // Extraer datos del usuario (vienen en perfil.usuario)
-  const usuario = perfil.usuario || perfil;
-  
-  console.log('👤 Datos del usuario extraídos:', usuario);
-  console.log('🔍 Sexo encontrado:', usuario.sexo);
-  console.log('🔍 Identidad sexual encontrada:', usuario.identidad_sexual);
-  
-  // Los datos del estudiante están en el nivel raíz del perfil
-  const estudiante = perfil.estudiante || perfil;
-  
-  // 🔥 IMPORTANTE: Si el backend devuelve nombre_completo pero NO los campos separados,
-  // dividirlo automáticamente
-  let primer_nombre = usuario.primer_nombre || '';
-  let segundo_nombre = usuario.segundo_nombre || '';
-  let primer_apellido = usuario.primer_apellido || '';
-  let segundo_apellido = usuario.segundo_apellido || '';
-  
-  // Si no hay campos separados pero sí hay nombre_completo, dividirlo
-  if (!primer_nombre && !primer_apellido && usuario.nombre_completo) {
-    console.log('⚠️ El backend devolvió nombre_completo pero no campos separados. Dividiendo automáticamente...');
-    const nombreCompleto = usuario.nombre_completo.trim();
-    const partes = nombreCompleto.split(/\s+/); // Dividir por espacios
-    
-    if (partes.length >= 4) {
-      // Caso: "Andres Camilo Botello Nunez" -> 4 partes
-      primer_nombre = partes[0];
-      segundo_nombre = partes[1];
-      primer_apellido = partes[2];
-      segundo_apellido = partes[3];
-    } else if (partes.length === 3) {
-      // Caso: "Juan Carlos Pérez" -> 3 partes (asumimos 2 nombres, 1 apellido)
-      primer_nombre = partes[0];
-      segundo_nombre = partes[1];
-      primer_apellido = partes[2];
-    } else if (partes.length === 2) {
-      // Caso: "Juan Pérez" -> 2 partes (1 nombre, 1 apellido)
-      primer_nombre = partes[0];
-      primer_apellido = partes[1];
-    } else if (partes.length === 1) {
-      // Solo un nombre
-      primer_nombre = partes[0];
-    }
-    
-    console.log('✂️ Nombre dividido:', { primer_nombre, segundo_nombre, primer_apellido, segundo_apellido });
-  }
-  
+  const usuario = perfil.usuario || {};
+  const estudiante = perfil.estudiante || {};
+
+  const primer_nombre = usuario.p_nombre || '';
+  const primer_apellido = usuario.p_apellido || '';
+
   const datosProcessados = {
-    // Datos de usuario (desde perfil.usuario)
-    id_usuario: usuario.id || usuario.id_usuario,
+    // Datos de usuario
+    id_usuario: usuario.id_usuario || '',
     identificacion: usuario.identificacion || '',
     primer_nombre: primer_nombre,
-    segundo_nombre: segundo_nombre,
     primer_apellido: primer_apellido,
-    segundo_apellido: segundo_apellido,
-    nombre_completo: usuario.nombre_completo || `${primer_nombre} ${segundo_nombre} ${primer_apellido} ${segundo_apellido}`.trim().replace(/\s+/g, ' '),
+    nombre_completo: `${primer_nombre} ${primer_apellido}`.trim(),
     correo: usuario.correo || '',
     telefono: usuario.telefono || '',
     rol: usuario.rol || 'Estudiante',
-    
-    // Datos personales (desde perfil.usuario)
-    tipo_documento: usuario.tipo_documento || '',
-    sexo: usuario.sexo || '',
-    identidad_sexual: usuario.identidad_sexual || '',
-    fecha_nacimiento: usuario.fecha_nacimiento || '',
-    nacionalidad: usuario.nacionalidad || '',
-    pais_residencia: usuario.pais_residencia || '',
-    departamento: usuario.departamento || '',
-    municipio: usuario.municipio || '',
-    ciudad_residencia: usuario.ciudad_residencia || '',
-    direccion_residencia: usuario.direccion_residencia || '',
-    
-    // Datos de estudiante (desde nivel raíz del perfil)
-    id_estudiante: estudiante.id || estudiante.id_estudiante,
+    activo: usuario.activo !== undefined ? usuario.activo : true,
+
+    // Datos de estudiante
+    id_estudiante: estudiante.id_estudiante || '',
     codigo_programa: estudiante.codigo_programa || '',
     semestre: estudiante.semestre || null,
     anio_ingreso: estudiante.anio_ingreso || null,
     periodo: estudiante.periodo || null,
-    activo: usuario.activo !== undefined ? usuario.activo : true,
-    
+
     // Metadata
-    fecha_creacion: usuario.fecha_creacion || estudiante.created_at || estudiante.fecha_creacion || null,
-    fecha_actualizacion: usuario.fecha_actualizacion || estudiante.updated_at || estudiante.fecha_actualizacion || null,
-    
+    fecha_creacion: estudiante.created_at || null,
+    fecha_actualizacion: estudiante.updated_at || null,
+
     // Iniciales para avatar
     iniciales: getIniciales(primer_nombre, primer_apellido)
   };
-  
+
   console.log('✅ Datos procesados:', datosProcessados);
   return datosProcessados;
 };

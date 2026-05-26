@@ -13,13 +13,15 @@ const PersonalInfoSection = ({
   handleDepartamentoChange,
   getInputClassName,
   cargando,
-  options,
-  ciudades,
-  colombia,
+  paises,
+  departamentos,
+  municipios,
 }) => {
+  const esResidenteColombia = formData.nacionalidad === "COL";
+
   return (
     <>
-      <div className="col-span-2 border-l-4 border-green-600 pl-2 mb-2">
+      <div className="lg:col-span-2 border-l-4 border-green-600 pl-2 mb-2">
         <h2 className="text-lg font-semibold text-gray-700">
           Información Personal
         </h2>
@@ -176,7 +178,7 @@ const PersonalInfoSection = ({
           <option value="">Selecciona Género</option>
           <option value="Hombre">Hombre</option>
           <option value="Mujer">Mujer</option>
-          <option value="Hermafrodita">Hermafrodita</option>
+          <option value="Otro">Otro</option>
         </select>
         {errors.genero && (
           <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
@@ -193,25 +195,19 @@ const PersonalInfoSection = ({
         <Select
           name="orientacionSexual"
           options={[
-            { value: "", label: "Selecciona Orientación" },
-            { value: "heterosexual", label: "Heterosexual" },
-            { value: "homosexual", label: "Homosexual" },
-            { value: "bisexual", label: "Bisexual" },
-            { value: "pansexual", label: "Pansexual" },
-            { value: "asexual", label: "Asexual" },
+            { value: "Heterosexual", label: "Heterosexual" },
+            { value: "Homosexual", label: "Homosexual" },
+            { value: "Bisexual", label: "Bisexual" },
+            { value: "Pansexual", label: "Pansexual" },
+            { value: "Asexual", label: "Asexual" },
             { value: "Transexual", label: "Transexual" },
-            { value: "No-Binario", label: "No-Binario" },
+            { value: "No Binario", label: "No Binario" },
             { value: "Otro", label: "Otro" },
           ]}
           placeholder="Selecciona Orientación Sexual"
           value={
             formData.orientacionSexual
-              ? {
-                  value: formData.orientacionSexual,
-                  label:
-                    formData.orientacionSexual.charAt(0).toUpperCase() +
-                    formData.orientacionSexual.slice(1),
-                }
+              ? { value: formData.orientacionSexual, label: formData.orientacionSexual }
               : null
           }
           onChange={(option) => handleSelectChange("orientacionSexual", option)}
@@ -261,22 +257,20 @@ const PersonalInfoSection = ({
         )}
       </div>
 
-      <div className="col-span-2">
+      {/* País de Nacimiento */}
+      <div className="lg:col-span-2">
         <label className="block font-medium text-gray-700 mb-1">
-          Nacionalidad *
+          País de Nacimiento *
         </label>
         <Select
           name="paisNacimiento"
-          options={options}
-          placeholder="Selecciona Nacionalidad"
-          value={
-            formData.paisNacimiento
-              ? options.find((option) => option.value === formData.paisNacimiento)
-              : null
-          }
+          options={paises}
+          placeholder={paises.length === 0 ? "Cargando países..." : "Selecciona País de Nacimiento"}
+          value={paises.find((p) => p.value === formData.paisNacimiento) || null}
           onChange={(option) => handleSelectChange("paisNacimiento", option)}
-          isDisabled={cargando}
+          isDisabled={cargando || paises.length === 0}
           classNamePrefix="react-select"
+          isSearchable
           styles={{
             control: (base) => ({
               ...base,
@@ -300,22 +294,20 @@ const PersonalInfoSection = ({
         )}
       </div>
 
-      <div className="col-span-2">
+      {/* País de Residencia (Nacionalidad) */}
+      <div className="lg:col-span-2">
         <label className="block font-medium text-gray-700 mb-1">
           País de Residencia *
         </label>
         <Select
           name="nacionalidad"
-          options={options}
-          placeholder="Selecciona País de Residencia"
-          value={
-            formData.nacionalidad
-              ? options.find((option) => option.value === formData.nacionalidad)
-              : null
-          }
+          options={paises}
+          placeholder={paises.length === 0 ? "Cargando países..." : "Selecciona País de Residencia"}
+          value={paises.find((p) => p.value === formData.nacionalidad) || null}
           onChange={(option) => handleSelectChange("nacionalidad", option)}
-          isDisabled={cargando}
+          isDisabled={cargando || paises.length === 0}
           classNamePrefix="react-select"
+          isSearchable
           styles={{
             control: (base) => ({
               ...base,
@@ -339,22 +331,24 @@ const PersonalInfoSection = ({
         )}
       </div>
 
+      {/* Departamento de Residencia (solo Colombia) */}
       <div>
         <label className="block font-medium text-gray-700 mb-1">
-          Departamento de Residencia{" "}
-          {formData.nacionalidad === "CO" && "*"}
+          Departamento de Residencia{esResidenteColombia ? " *" : ""}
         </label>
         <select
           name="departamentoResidencia"
           value={formData.departamentoResidencia}
           onChange={handleDepartamentoChange}
-          disabled={formData.nacionalidad !== "CO" || cargando}
+          disabled={!esResidenteColombia || cargando}
           className={getInputClassName("departamentoResidencia")}
         >
-          <option value="">Selecciona Departamento</option>
-          {colombia.map((d) => (
-            <option key={d.departamento} value={d.departamento}>
-              {d.departamento}
+          <option value="">
+            {!esResidenteColombia ? "Solo para residentes en Colombia" : "Selecciona Departamento"}
+          </option>
+          {departamentos.map((d) => (
+            <option key={d.codigo} value={d.codigo}>
+              {d.nombre}
             </option>
           ))}
         </select>
@@ -366,25 +360,24 @@ const PersonalInfoSection = ({
         )}
       </div>
 
+      {/* Municipio de Residencia (solo Colombia) */}
       <div>
         <label className="block font-medium text-gray-700 mb-1">
-          Ciudad de Residencia {formData.nacionalidad === "CO" && "*"}
+          Municipio de Residencia{esResidenteColombia ? " *" : ""}
         </label>
         <select
           name="ciudadResidencia"
           value={formData.ciudadResidencia}
           onChange={handleChange}
-          disabled={
-            !formData.departamentoResidencia ||
-            formData.nacionalidad !== "CO" ||
-            cargando
-          }
+          disabled={!formData.departamentoResidencia || !esResidenteColombia || cargando}
           className={getInputClassName("ciudadResidencia")}
         >
-          <option value="">Selecciona Municipio</option>
-          {ciudades.map((m) => (
-            <option key={m} value={m}>
-              {m}
+          <option value="">
+            {!formData.departamentoResidencia ? "Selecciona un departamento primero" : "Selecciona Municipio"}
+          </option>
+          {municipios.map((m) => (
+            <option key={m.codigo} value={m.codigo}>
+              {m.nombre}
             </option>
           ))}
         </select>
@@ -396,7 +389,7 @@ const PersonalInfoSection = ({
         )}
       </div>
 
-      <div className="col-span-2">
+      <div className="lg:col-span-2">
         <label className="block font-medium text-gray-700 mb-1">
           Dirección de Residencia *
         </label>

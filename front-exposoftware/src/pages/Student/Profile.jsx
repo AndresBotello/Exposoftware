@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useStudentProfile } from "../../hooks/Student/useStudentProfile";
-import countryList from 'react-select-country-list';
-import colombiaData from "../../data/colombia.json";
 import StudentHeader from "../../components/Student/StudentHeader";
 import StudentSidebar from "../../components/Student/StudentSidebar";
 import StudentLayout from "../../components/Student/StudentLayout";
@@ -22,28 +20,6 @@ export default function Profile() {
 
   const { profileData, setProfileData, loading, handleInputChange, handleSave } = useStudentProfile(user, updateUser);
 
-  const [opcionesPaises] = useState(countryList().getData());
-  const [ciudadesResidencia, setCiudadesResidencia] = useState([]);
-  const [municipios, setMunicipios] = useState([]);
-
-  React.useEffect(() => {
-    if (profileData.departamentoResidencia) {
-      const deptData = colombiaData.find(d => d.departamento === profileData.departamentoResidencia);
-      setCiudadesResidencia(deptData ? deptData.ciudades : []);
-    } else {
-      setCiudadesResidencia([]);
-    }
-  }, [profileData.departamentoResidencia]);
-
-  React.useEffect(() => {
-    if (profileData.departamento) {
-      const deptData = colombiaData.find(d => d.departamento === profileData.departamento);
-      setMunicipios(deptData ? deptData.ciudades : []);
-    } else {
-      setMunicipios([]);
-    }
-  }, [profileData.departamento]);
-
   const handleLogout = async () => {
     try {
       console.log("🚪 Cerrando sesión del estudiante...");
@@ -56,28 +32,16 @@ export default function Profile() {
   };
 
   const handleSaveProfile = async () => {
-    if (!profileData.primer_nombre || !profileData.primer_apellido || !profileData.telefono) {
-      alert("Por favor completa los campos obligatorios");
+    if (!profileData.p_nombre || !profileData.p_apellido || !profileData.telefono) {
+      alert("Por favor completa los campos obligatorios: Nombre, Apellido y Teléfono");
       return;
     }
 
     try {
       const datosActualizar = {
-        semestre: parseInt(profileData.semestre) || 0,
-        primer_nombre: profileData.primer_nombre,
-        segundo_nombre: profileData.segundo_nombre || '',
-        primer_apellido: profileData.primer_apellido,
-        segundo_apellido: profileData.segundo_apellido || '',
-        sexo: profileData.sexo,
-        identidad_sexual: profileData.identidad_sexual || '',
-        fecha_nacimiento: profileData.fechaNacimiento ? new Date(profileData.fechaNacimiento).toISOString() : '',
-        telefono: profileData.telefono,
-        nacionalidad: profileData.nacionalidad,
-        pais_residencia: profileData.pais,
-        departamento: profileData.departamento,
-        municipio: profileData.municipio,
-        ciudad_residencia: profileData.ciudad,
-        direccion_residencia: profileData.direccionResidencia
+        p_nombre: profileData.p_nombre,
+        p_apellido: profileData.p_apellido,
+        telefono: profileData.telefono
       };
 
       await handleSave(datosActualizar);
@@ -140,7 +104,7 @@ export default function Profile() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando perfil...</p>
         </div>
       </div>
@@ -155,7 +119,7 @@ export default function Profile() {
         <StudentSidebar user={user} getInitials={getInitials} getFullName={getFullName} />
 
         <main className="lg:col-span-3">
-          {(!profileData.primer_nombre || !profileData.primer_apellido) && (
+          {(!profileData.p_nombre || !profileData.p_apellido) && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
               <div className="flex items-start gap-3">
                 <i className="pi pi-exclamation-triangle text-yellow-600 text-xl mt-0.5 flex-shrink-0"></i>
@@ -171,7 +135,7 @@ export default function Profile() {
 
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Configuración de Perfil</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Mi Perfil</h2>
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
@@ -187,10 +151,6 @@ export default function Profile() {
             <StudentProfileForm
               profileData={profileData}
               isEditing={isEditing}
-              opcionesPaises={opcionesPaises}
-              ciudadesResidencia={ciudadesResidencia}
-              municipios={municipios}
-              colombiaData={colombiaData}
               handleInputChange={handleInputChange}
               loading={loading}
             />

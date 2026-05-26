@@ -6,6 +6,8 @@ export default function EventModals({
   fechaInicio, setFechaInicio,
   fechaFin, setFechaFin,
   lugarEvento, setLugarEvento,
+  fechaAperturaInscripciones, setFechaAperturaInscripciones,
+  fechaCierreInscripciones, setFechaCierreInscripciones,
   cupoMaximo, setCupoMaximo,
   estado, setEstado,
   guardandoEvento,
@@ -56,19 +58,29 @@ export default function EventModals({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cupo Máximo <span className="text-red-500">*</span></label>
-                  <input type="number" value={cupoMaximo} onChange={(e) => setCupoMaximo(e.target.value)} min="1"
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Apertura Inscripciones <span className="text-red-500">*</span></label>
+                  <input type="datetime-local" value={fechaAperturaInscripciones} onChange={(e) => setFechaAperturaInscripciones(e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Estado <span className="text-red-500">*</span></label>
-                  <select value={estado} onChange={(e) => setEstado(e.target.value)}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Cierre Inscripciones <span className="text-red-500">*</span></label>
+                  <input type="datetime-local" value={fechaCierreInscripciones} onChange={(e) => setFechaCierreInscripciones(e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Estado del Evento <span className="text-red-500">*</span></label>
+                  <select value={estado} onChange={(e) => setEstado(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" required
                   >
-                    <option value="ACTIVO">ACTIVO</option>
-                    <option value="INACTIVO">INACTIVO</option>
-                    <option value="CANCELADO">CANCELADO</option>
+                    <option value={estado} disabled>Estado actual: {estado}</option>
+                    {estado === "borrador" && <option value="inscripciones_abiertas">→ Inscripciones Abiertas</option>}
+                    {estado === "inscripciones_abiertas" && <option value="inscripciones_cerradas">→ Inscripciones Cerradas</option>}
+                    {estado === "inscripciones_cerradas" && <option value="en_curso">→ En Curso</option>}
+                    {estado === "en_curso" && <option value="finalizado">→ Finalizado</option>}
+                    {estado === "finalizado" && <option disabled>Sin cambios disponibles</option>}
+                    {estado && estado !== "cancelado" && <option value="cancelado">⚠️ Cancelar Evento</option>}
                   </select>
                 </div>
                 <div className="md:col-span-2">

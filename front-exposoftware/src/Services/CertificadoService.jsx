@@ -3,15 +3,13 @@
  * Servicio para manejar la generación y descarga de certificados de participación
  */
 
-import { API_BASE_URL } from '../utils/constants';
-
-const API_URL = API_BASE_URL;
+import { API_ENDPOINTS } from '../utils/constants';
 
 /**
  * Obtener headers con autenticación
  */
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('auth_token');
   return {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` })
@@ -47,7 +45,7 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
     console.log('📦 Payload enviado:', JSON.stringify(payload, null, 2));
 
     const response = await fetch(
-      `${API_URL}/api/v1/admin/reportes/certificados/generar-individual`,
+      API_ENDPOINTS.ADMIN_CERTIFICADOS_INDIVIDUAL,
       {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -79,8 +77,10 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
           
           // Hacer una segunda petición GET para descargar el archivo
           const downloadResponse = await fetch(responseData.data.url_descarga, {
+            credentials: 'include',
             method: 'GET',
             headers: {
+              credentials: 'include',
               'Authorization': getAuthHeaders().Authorization
             }
           });
@@ -205,7 +205,7 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
     console.log('📦 Payload enviado:', JSON.stringify(payload, null, 2));
 
     const response = await fetch(
-      `${API_URL}/api/v1/admin/reportes/certificados/generar-por-proyecto`,
+      API_ENDPOINTS.ADMIN_CERTIFICADOS_POR_PROYECTO,
       {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -237,8 +237,10 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
           
           // Hacer una segunda petición GET para descargar el archivo
           const downloadResponse = await fetch(responseData.data.url_descarga, {
+            credentials: 'include',
             method: 'GET',
             headers: {
+              credentials: 'include',
               'Authorization': getAuthHeaders().Authorization
             }
           });

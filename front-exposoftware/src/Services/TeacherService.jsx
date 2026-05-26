@@ -1,5 +1,6 @@
-import { API_BASE_URL } from "../utils/constants";
+import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
+import CacheService from "./CacheService";
 
 /**
  * Obtener información del docente autenticado desde /api/v1/docentes/mi-perfil
@@ -10,18 +11,13 @@ import * as AuthService from "./AuthService";
 export const getTeacherProfile = async () => {
   try {
     console.log('📋 Cargando perfil del docente autenticado...');
-    const headers = AuthService.getAuthHeaders();
-    
-    if (!headers.Authorization) {
-      throw new Error("No hay sesión activa - token no encontrado");
-    }
 
-    const url = `${API_BASE_URL}/api/v1/docentes/mi-perfil`;
+    const url = API_ENDPOINTS.DOCENTE_MI_PERFIL;
     console.log('🌐 URL:', url);
-    
+
     const response = await fetch(url, {
       method: 'GET',
-      headers: headers
+      credentials: 'include'
     });
 
     console.log('📡 Respuesta - Status:', response.status);
@@ -29,10 +25,10 @@ export const getTeacherProfile = async () => {
     if (response.ok) {
       const result = await response.json();
       const docente = result.data || result;
-      
+
       console.log('✅ Información del docente obtenida:', docente);
       console.log('📦 Estructura completa:', JSON.stringify(docente, null, 2));
-      
+
       return docente;
     } else if (response.status === 404) {
       throw new Error("Perfil de docente no encontrado");
@@ -49,6 +45,140 @@ export const getTeacherProfile = async () => {
 };
 
 /**
+ * Obtener la carga del docente autenticado (clases que dicta)
+ * GET /api/v1/docentes/mi-carga
+ * Lista las clases (materia + grupo) que dicta el docente autenticado
+ * @returns {Promise<Array>} Lista de clases del docente
+ */
+export const getMyTeachingLoad = async () => {
+  return CacheService.withCache(
+    'teaching_load',
+    async () => {
+      try {
+        console.log('📚 Obteniendo mi carga docente...');
+        const headers = AuthService.getAuthHeaders();
+
+        const url = API_ENDPOINTS.DOCENTE_MI_CARGA;
+        console.log('🌐 URL:', url);
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: headers,
+          credentials: 'include'
+        });
+
+        console.log('📡 Respuesta - Status:', response.status);
+
+        if (response.ok) {
+          const result = await response.json();
+          const carga = result.data || result;
+          const clases = Array.isArray(carga) ? carga : (carga?.clases || []);
+          console.log(`✅ Carga docente obtenida: ${clases.length} clases`);
+          return clases;
+        } else if (response.status === 404) {
+          console.warn('⚠️ No se encontró información de carga');
+          return [];
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || errorData.message || 'Error al obtener mi carga');
+        }
+      } catch (error) {
+        console.error('❌ Error al obtener mi carga:', error);
+        throw error;
+      }
+    },
+    10 * 60 * 1000 // 10 minutos de caché
+  );
+};
+
+/**
+ * Obtener las asignaciones del docente autenticado
+ * GET /api/v1/docentes/mis-materias
+ * Devuelve las asignaciones (docente↔materia↔grupo) activas del docente autenticado
+ * @returns {Promise<Array>} Lista de asignaciones del docente
+ */
+export const getMySubjectAssignments = async () => {
+  try {
+    console.log('📚 Obteniendo mis asignaciones de materias...');
+    const headers = AuthService.getAuthHeaders();
+
+    const url = API_ENDPOINTS.DOCENTE_MIS_MATERIAS;
+    console.log('🌐 URL:', url);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: headers,
+      credentials: 'include'
+    });
+
+    console.log('📡 Respuesta - Status:', response.status);
+
+    if (response.ok) {
+      const result = await response.json();
+      const asignaciones = result.data || result;
+      console.log(`✅ Asignaciones obtenidas: ${Array.isArray(asignaciones) ? asignaciones.length : 0}`);
+      return Array.isArray(asignaciones) ? asignaciones : [];
+    } else if (response.status === 404) {
+      console.warn('⚠️ No se encontraron asignaciones');
+      return [];
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || 'Error al obtener mis asignaciones');
+    }
+  } catch (error) {
+    console.error('❌ Error al obtener mis asignaciones:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener los grupos del docente autenticado
+ * GET /api/v1/docentes/mis-grupos
+ * Devuelve los grupos distintos donde el docente autenticado tiene asignación.
+ * Derivado de sus DocenteMateria, deduplicado por id_grupo.
+ * @returns {Promise<Array>} Lista de grupos del docente
+ */
+export const getMyGroups = async () => {
+  return CacheService.withCache(
+    'my_groups',
+    async () => {
+      try {
+        console.log('👥 Obteniendo mis grupos...');
+        const headers = AuthService.getAuthHeaders();
+
+        const url = API_ENDPOINTS.DOCENTE_MIS_GRUPOS;
+        console.log('🌐 URL:', url);
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: headers,
+          credentials: 'include'
+        });
+
+        console.log('📡 Respuesta - Status:', response.status);
+
+        if (response.ok) {
+          const result = await response.json();
+          const grupos = result.data || result;
+          console.log(`✅ Grupos obtenidos: ${Array.isArray(grupos) ? grupos.length : 0}`);
+          return Array.isArray(grupos) ? grupos : [];
+        } else if (response.status === 404) {
+          console.warn('⚠️ No se encontraron grupos');
+          return [];
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || errorData.message || 'Error al obtener mis grupos');
+        }
+      } catch (error) {
+        console.error('❌ Error al obtener mis grupos:', error);
+        throw error;
+      }
+    },
+    10 * 60 * 1000 // 10 minutos de caché
+  );
+};
+
+/**
  * Obtener informacion detallada del docente por id_docente
  * GET /api/v1/teachers/{teacher_id}/profile
  * @param {string} teacherId - ID del docente
@@ -59,7 +189,7 @@ export const getTeacherProfileById = async (teacherId) => {
     console.log('Obteniendo perfil del docente:', teacherId);
     const headers = AuthService.getAuthHeaders();
     
-    const url = `${API_BASE_URL}/api/v1/teachers/${teacherId}/profile`;
+    const url = API_ENDPOINTS.TEACHER_PROFILE_BY_ID(teacherId);
     console.log('URL:', url);
     
     const response = await fetch(url, {
@@ -95,7 +225,7 @@ export const getTeacherProfileByAdmin = async (teacherId) => {
     console.log('📚 Obteniendo perfil completo del docente desde admin:', teacherId);
     const headers = AuthService.getAuthHeaders();
     
-    const url = `${API_BASE_URL}/api/v1/admin/profesores/${teacherId}`;
+    const url = API_ENDPOINTS.ADMIN_DOCENTE_BY_ID(teacherId);
     console.log('🔗 URL:', url);
     
     const response = await fetch(url, {
@@ -145,7 +275,7 @@ export const getTeacherSubjects = async (teacherId, proyectos = null) => {
     
     // ESTRATEGIA 1: Intentar obtener grupos del docente
     console.log('🔄 Estrategia 1: Intentando obtener grupos del docente...');
-    let url = `${API_BASE_URL}/api/v1/grupos/profesor/${teacherId}?limit=100`;
+    let url = API_ENDPOINTS.GRUPOS_BY_TEACHER(teacherId);
     console.log('🌐 URL (intento público):', url);
     
     let response = await fetch(url, {
@@ -156,7 +286,7 @@ export const getTeacherSubjects = async (teacherId, proyectos = null) => {
     // Si falla con 403, intentar endpoint admin
     if (response.status === 403) {
       console.log('⚠️ Endpoint público falló, intentando endpoint admin...');
-      url = `${API_BASE_URL}/api/v1/admin/grupos/profesor/${teacherId}?limit=100`;
+      url = API_ENDPOINTS.ADMIN_GRUPOS_BY_TEACHER(teacherId);
       console.log('🌐 URL (admin):', url);
       
       response = await fetch(url, {
@@ -258,7 +388,7 @@ export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos 
     
     // ESTRATEGIA 1: Intentar obtener grupos del endpoint
     console.log('🔄 Estrategia 1: Intentando obtener grupos del docente...');
-    let url = `${API_BASE_URL}/api/v1/grupos/profesor/${teacherId}?limit=100`;
+    let url = API_ENDPOINTS.GRUPOS_BY_TEACHER(teacherId);
     console.log('🌐 URL (intento público):', url);
     
     let response = await fetch(url, {
@@ -269,7 +399,7 @@ export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos 
     // Si falla con 403, intentar endpoint admin
     if (response.status === 403) {
       console.log('⚠️ Endpoint público falló, intentando endpoint admin...');
-      url = `${API_BASE_URL}/api/v1/admin/grupos/profesor/${teacherId}?limit=100`;
+      url = API_ENDPOINTS.ADMIN_GRUPOS_BY_TEACHER(teacherId);
       console.log('🌐 URL (admin):', url);
       
       response = await fetch(url, {
@@ -378,7 +508,7 @@ export const getTeacherProjects = async (teacherId) => {
     console.log('📚 Obteniendo proyectos del docente:', teacherId);
     const headers = AuthService.getAuthHeaders();
     
-    const url = `${API_BASE_URL}/api/v1/docentes/${teacherId}/proyectos`;
+    const url = API_ENDPOINTS.TEACHER_PROYECTOS(teacherId);
     console.log('🌐 URL:', url);
     
     const response = await fetch(url, {
@@ -407,36 +537,113 @@ export const getTeacherProjects = async (teacherId) => {
 };
 
 /**
- * Calificar un proyecto
- * PUT /api/v1/proyectos/{proyect_id}/calificacion
- * @param {string} proyectId - ID del proyecto
- * @param {number} calificacion - Calificación del proyecto (número)
- * @returns {Promise<Object>} Proyecto actualizado con la calificación
- * 
- * Nota: 
- * - Si calificacion >= 3 → estado_calificacion = 'aprobado'
- * - Si calificacion < 3 → estado_calificacion = 'reprobado'
- * - Si calificacion es null → estado_calificacion = 'pendiente'
+ * Obtener mis proyectos (del docente autenticado)
+ * GET /api/v1/proyectos/mis-proyectos
+ * @returns {Promise<Array>} Lista de proyectos asignados al docente
  */
-export const calificarProyecto = async (proyectId, calificacion) => {
+export const getMyProjects = async () => {
+  return CacheService.withCache(
+    'my_projects',
+    async () => {
+      try {
+        console.log('📚 Obteniendo mis proyectos...');
+        const headers = AuthService.getAuthHeaders();
+
+        const url = API_ENDPOINTS.MIS_PROYECTOS;
+        console.log('🌐 URL:', url);
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: headers,
+          credentials: 'include'
+        });
+
+        console.log('📡 Respuesta - Status:', response.status);
+
+        if (response.ok) {
+          const result = await response.json();
+          const proyectos = result.data || result;
+          console.log(`✅ Mis proyectos obtenidos: ${Array.isArray(proyectos) ? proyectos.length : 0}`);
+          return Array.isArray(proyectos) ? proyectos : [];
+        } else if (response.status === 404) {
+          console.warn('⚠️ No se encontraron proyectos asignados');
+          return [];
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || errorData.message || 'Error al obtener mis proyectos');
+        }
+      } catch (error) {
+        console.error('❌ Error al obtener mis proyectos:', error);
+        throw error;
+      }
+    },
+    10 * 60 * 1000 // 10 minutos de caché
+  );
+};
+
+/**
+ * Obtener proyectos de un evento específico
+ * GET /api/v1/proyectos/evento/{id_evento}
+ * @param {string} eventoId - ID del evento
+ * @returns {Promise<Array>} Lista de proyectos del evento
+ */
+export const getProyectosByEvento = async (eventoId) => {
   try {
-    console.log(`📝 Calificando proyecto ${proyectId} con nota: ${calificacion}`);
+    console.log(`📚 Obteniendo proyectos del evento ${eventoId}...`);
     const headers = AuthService.getAuthHeaders();
-    
-    const url = `${API_BASE_URL}/api/v1/proyectos/${proyectId}/calificacion`;
+
+    const url = API_ENDPOINTS.PROYECTOS_BY_EVENTO(eventoId);
     console.log('🌐 URL:', url);
-    
-    // Crear FormData con la calificación
-    const formData = new URLSearchParams();
-    formData.append('calificacion', calificacion);
-    
+
     const response = await fetch(url, {
-      method: 'PUT',
+      method: 'GET',
+      headers: headers,
+      credentials: 'include'
+    });
+
+    console.log('📡 Respuesta - Status:', response.status);
+
+    if (response.ok) {
+      const result = await response.json();
+      const proyectos = result.data || result;
+      console.log(`✅ Proyectos del evento obtenidos: ${Array.isArray(proyectos) ? proyectos.length : 0}`);
+      return Array.isArray(proyectos) ? proyectos : [];
+    } else if (response.status === 404) {
+      console.warn(`⚠️ No se encontraron proyectos para el evento ${eventoId}`);
+      return [];
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || 'Error al obtener proyectos del evento');
+    }
+  } catch (error) {
+    console.error('❌ Error al obtener proyectos del evento:', error);
+    throw error;
+  }
+};
+
+/**
+ * Actualizar estado de un proyecto (aprobar/rechazar)
+ * PATCH /api/v1/proyectos/{id_proyecto}
+ * @param {string} proyectId - ID del proyecto
+ * @param {Object} datosActualizacion - Datos a actualizar (ej: { estado: 'aprobado' })
+ * @returns {Promise<Object>} Proyecto actualizado
+ */
+export const updateProyectoStatus = async (proyectId, datosActualizacion) => {
+  try {
+    console.log(`📝 Actualizando estado del proyecto ${proyectId}...`, datosActualizacion);
+    const headers = AuthService.getAuthHeaders();
+
+    const url = `${API_ENDPOINTS.PROYECTO_BY_ID(proyectId)}/estado`;
+    console.log('🌐 URL:', url);
+
+    const response = await fetch(url, {
+      method: 'PATCH',
       headers: {
         ...headers,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json'
       },
-      body: formData.toString()
+      body: JSON.stringify(datosActualizacion),
+      credentials: 'include'
     });
 
     console.log('📡 Respuesta - Status:', response.status);
@@ -444,8 +651,60 @@ export const calificarProyecto = async (proyectId, calificacion) => {
     if (response.ok) {
       const result = await response.json();
       const proyecto = result.data || result;
-      console.log('✅ Proyecto calificado exitosamente:', proyecto);
+      console.log('✅ Proyecto actualizado exitosamente:', proyecto);
       return proyecto;
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || 'Error al actualizar proyecto');
+    }
+  } catch (error) {
+    console.error('❌ Error al actualizar proyecto:', error);
+    throw error;
+  }
+};
+
+/**
+ * Calificar un proyecto como asistente (voto popular)
+ * POST /api/v1/proyectos/{id_proyecto}/calificar_asistente
+ * @param {string} proyectId - ID del proyecto
+ * @param {number} calificacion - Calificación del proyecto (rango 0.0 - 5.0)
+ * @param {string} comentario - Comentario opcional sobre el proyecto
+ * @returns {Promise<Object>} Respuesta del servidor
+ *
+ * Nota:
+ * - Solo usuarios autenticados que asistieron al evento
+ * - Los integrantes del proyecto NO pueden auto-calificarse
+ * - Un usuario califica una vez por proyecto (actualiza si vuelve a llamar)
+ * - Pesos: Administrativo/Docente: 3.0 | Egresado: 1.5 | Estudiante/Invitado: 1.0
+ */
+export const calificarProyecto = async (proyectId, calificacion, comentario = '') => {
+  try {
+    console.log(`📝 Calificando proyecto ${proyectId} como asistente con nota: ${calificacion}`);
+    const headers = AuthService.getAuthHeaders();
+
+    const url = `${API_ENDPOINTS.PROYECTO_BY_ID(proyectId)}/calificar_asistente`;
+    console.log('🌐 URL:', url);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        calificacion: parseFloat(calificacion),
+        comentario: comentario || ''
+      }),
+      credentials: 'include'
+    });
+
+    console.log('📡 Respuesta - Status:', response.status);
+
+    if (response.ok) {
+      const result = await response.json();
+      const data = result.data || result;
+      console.log('✅ Proyecto calificado exitosamente:', data);
+      return data;
     } else {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || errorData.message || 'Error al calificar proyecto');
@@ -468,7 +727,7 @@ export const getTeacherProjectDetail = async (teacherId, projectId) => {
     console.log(`Obteniendo detalle del proyecto ${projectId} para docente ${teacherId}`);
     const headers = AuthService.getAuthHeaders();
     
-    const url = `${API_BASE_URL}/api/v1/teachers/${teacherId}/projects/${projectId}`;
+    const url = API_ENDPOINTS.TEACHER_PROYECTO_BY_ID(teacherId, projectId);
     console.log('URL:', url);
     
     const response = await fetch(url, {
@@ -503,7 +762,7 @@ export const getAllProjects = async () => {
     console.log('Obteniendo todos los proyectos...');
     const headers = AuthService.getAuthHeaders();
     
-    const url = `${API_BASE_URL}/api/v1/teachers/projects`;
+    const url = API_ENDPOINTS.TEACHER_PROYECTOS;
     console.log('URL:', url);
     
     const response = await fetch(url, {
@@ -649,7 +908,7 @@ export const updateTeacherProfile = async (identificacion, datosActualizados) =>
     console.log('Payload:', payload);
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/teachers/${identificacion}/profile`,
+      API_ENDPOINTS.TEACHER_PROFILE_BY_IDENTIFICATION(identificacion),
       {
         method: 'PUT',
         headers: headers,
@@ -667,6 +926,118 @@ export const updateTeacherProfile = async (identificacion, datosActualizados) =>
     }
   } catch (error) {
     console.error('Error al actualizar perfil:', error);
+    throw error;
+  }
+};
+
+// Cache para información de usuarios (estudiantes)
+const userInfoCache = new Map();
+
+/**
+ * Obtener información de un usuario por ID
+ * Busca en el endpoint de búsqueda de usuarios
+ * @param {string} userId - ID del usuario
+ * @returns {Promise<Object>} Información del usuario con p_nombre, p_apellido, etc.
+ */
+export const getUserInfo = async (userId) => {
+  if (!userId) return null;
+
+  // Retornar del cache si existe
+  if (userInfoCache.has(userId)) {
+    return userInfoCache.get(userId);
+  }
+
+  try {
+    console.log(`👤 Obteniendo información del usuario: ${userId}`);
+
+    const response = await fetch(`/api/v1/usuarios/buscar?q=${userId}`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+
+    let usuarios = [];
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`📡 Respuesta búsqueda de usuario - Status: ${response.status}`);
+      console.log(`   Respuesta completa:`, JSON.stringify(result, null, 2));
+      usuarios = result.data || result.results || (Array.isArray(result) ? result : []);
+      console.log(`   Usuarios extraídos:`, usuarios.length, usuarios);
+
+      // Buscar el usuario exacto por ID
+      const usuario = usuarios.find(u => u.id === userId || u.id_usuario === userId);
+
+      if (usuario) {
+        userInfoCache.set(userId, usuario);
+        console.log(`✅ Usuario encontrado:`, usuario);
+        console.log(`   Campos disponibles:`, Object.keys(usuario));
+        console.log(`   p_nombre: ${usuario.p_nombre}, p_apellido: ${usuario.p_apellido}`);
+        console.log(`   nombre: ${usuario.nombre}, nombre_completo: ${usuario.nombre_completo}`);
+        return usuario;
+      } else {
+        console.warn(`⚠️ Usuario ${userId} no encontrado en resultados. IDs encontrados:`, usuarios.map(u => u.id || u.id_usuario));
+      }
+    } else {
+      console.warn(`⚠️ Búsqueda retornó status ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.warn(`   Error:`, errorData);
+    }
+
+    return null;
+  } catch (error) {
+    console.error(`❌ Error obteniendo usuario ${userId}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Obtener múltiples usuarios en paralelo con caché
+ * @param {string[]} userIds - Array de IDs de usuarios
+ * @returns {Promise<Object[]>} Array de información de usuarios
+ */
+export const getUsersInfo = async (userIds) => {
+  const promises = userIds.map(userId => getUserInfo(userId));
+  return Promise.all(promises);
+};
+
+/**
+ * Obtener calificación popular de un proyecto
+ * GET /api/v1/proyectos/{id}/calificacion_popular
+ * Devuelve promedio ponderado, total de votos y desglose por rol
+ * @param {string} projectId - ID del proyecto
+ * @returns {Promise<Object>} Datos de calificación popular
+ */
+export const obtenerCalificacionPopular = async (projectId) => {
+  try {
+    if (!projectId) {
+      throw new Error("El ID del proyecto es obligatorio");
+    }
+
+    console.log(`📊 Obteniendo calificación popular del proyecto ${projectId}...`);
+
+    const response = await fetch(`${API_ENDPOINTS.API_BASE_URL || 'https://exposoftware.duckdns.org'}/api/v1/proyectos/${projectId}/calificacion_popular`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: AuthService.getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const calificacionPopular = data.data || data;
+      console.log(`✅ Calificación popular obtenida:`, calificacionPopular);
+      return calificacionPopular;
+    } else if (response.status === 404) {
+      console.warn(`⚠️ Proyecto ${projectId} no tiene calificación popular aún`);
+      return {
+        promedio_ponderado: 0,
+        total_votos: 0,
+        desglose_por_rol: {}
+      };
+    } else {
+      throw new Error(`Error al obtener calificación popular: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error(`❌ Error obteniendo calificación popular:`, error);
     throw error;
   }
 };

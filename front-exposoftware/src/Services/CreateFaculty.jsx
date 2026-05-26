@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../utils/constants";
+import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
 
 /**
@@ -7,11 +7,12 @@ import * as AuthService from "./AuthService";
  */
 export const obtenerFacultades = async () => {
   try {
-    console.log('📥 Cargando facultades desde:', `${API_BASE_URL}/api/v1/admin/academico/facultades`);
+    console.log('📥 Cargando facultades desde:', API_ENDPOINTS.ADMIN_FACULTADES);
     const headers = AuthService.getAuthHeaders();
     console.log('🔑 Headers de autenticación:', headers);
     
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/academico/facultades`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
+      credentials: 'include',
       method: 'GET',
       headers: headers
     });
@@ -66,7 +67,8 @@ export const crearFacultad = async (datosFacultad) => {
   console.log('📤 Enviando facultad al backend:', JSON.stringify(payload, null, 2));
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/academico/facultades`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
+      credentials: 'include',
       method: 'POST',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -130,7 +132,8 @@ export const actualizarFacultad = async (idFacultad, datosFacultad) => {
   console.log('📤 Actualizando facultad (ID: ' + idFacultad + '):', JSON.stringify(payload, null, 2));
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/academico/facultades/${idFacultad}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_FACULTAD_BY_ID(idFacultad), {
+      credentials: 'include',
       method: 'PUT',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -175,7 +178,8 @@ export const eliminarFacultad = async (idFacultad) => {
   console.log('🗑️ Eliminando facultad - ID:', idFacultad);
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/academico/facultades/${idFacultad}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_FACULTAD_BY_ID(idFacultad), {
+      credentials: 'include',
       method: 'DELETE',
       headers: AuthService.getAuthHeaders()
     });

@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, API_BASE_URL } from "../utils/constants";
+import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
 
 
@@ -82,6 +82,7 @@ export const obtenerMaterias = async () => {
     console.log('🔑 Headers de autenticación:', headers);
     
     const response = await fetch(API_ENDPOINTS.MATERIAS, {
+      credentials: 'include',
       method: 'GET',
       headers: headers
     });
@@ -112,6 +113,7 @@ export const obtenerMaterias = async () => {
 export const obtenerGrupos = async () => {
   try {
     const response = await fetch(API_ENDPOINTS.GRUPOS, {
+      credentials: 'include',
       method: 'GET',
       headers: AuthService.getAuthHeaders()
     });
@@ -131,7 +133,8 @@ export const obtenerGrupos = async () => {
  */
 export const obtenerDocentes = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/profesores`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
+      credentials: 'include',
       method: 'GET',
       headers: AuthService.getAuthHeaders()
     });
@@ -211,6 +214,7 @@ export const crearMateria = async (materiaData) => {
 
   try {
     const response = await fetch(API_ENDPOINTS.MATERIAS, {
+      credentials: 'include',
       method: 'POST',
       headers: headers,
       body: JSON.stringify(payload)
@@ -274,6 +278,7 @@ export const crearAsignacionDocente = async (asignacionData) => {
 
   try {
     const response = await fetch(API_ENDPOINTS.ASIGNACIONES_DOCENTE, {
+      credentials: 'include',
       method: 'POST',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -290,28 +295,25 @@ export const crearAsignacionDocente = async (asignacionData) => {
 
 
 /**
- * Actualizar una materia existente (incluyendo grupos)
- * @param {string} id - ID de la materia
+ * Actualizar una materia existente
+ * @param {string} id - Código de la materia
  * @param {Object} materiaData - Datos de la materia
- * @param {string} materiaData.codigo_materia - Código de la materia
  * @param {string} materiaData.nombre_materia - Nombre de la materia
- * @param {string} materiaData.ciclo_semestral - Ciclo semestral
- * @param {Array} materiaData.grupos_con_docentes - Array de grupos asignados
+ * @param {number} materiaData.id_ciclo - ID del ciclo semestral
  * @returns {Promise<Object>} Materia actualizada
  */
 export const actualizarMateria = async (id, materiaData) => {
   const payload = {
-    codigo_materia: materiaData.codigo_materia.toUpperCase(),
     nombre_materia: materiaData.nombre_materia,
-    ciclo_semestral: materiaData.ciclo_semestral,
-    grupos_con_docentes: materiaData.grupos_con_docentes || []
+    id_ciclo: materiaData.id_ciclo
   };
 
-  console.log('📤 Actualizando materia en backend (ID: ' + id + '):', JSON.stringify(payload, null, 2));
+  console.log('📤 Actualizando materia en backend (código: ' + id + '):', JSON.stringify(payload, null, 2));
 
   try {
-    const response = await fetch(API_ENDPOINTS.MATERIA_BY_ID(id), {
-      method: 'PUT',
+    const response = await fetch(API_ENDPOINTS.ADMIN_MATERIA_BY_CODE(id), {
+      credentials: 'include',
+      method: 'PATCH',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(payload)
     });
@@ -336,6 +338,7 @@ export const eliminarMateria = async (id) => {
 
   try {
     const response = await fetch(API_ENDPOINTS.MATERIA_BY_ID(id), { 
+      credentials: 'include',
       method: 'DELETE',
       headers: AuthService.getAuthHeaders()
     });
@@ -358,13 +361,14 @@ export const eliminarMateria = async (id) => {
  * @returns {Promise<Object>} Resultado de la operación
  */
 export const agregarGrupoAMateria = async (codigoMateria, codigoGrupo) => {
-  const url = `${API_BASE_URL}/api/v1/admin/materias/${codigoMateria}/grupos/${codigoGrupo}`;
+  const url = API_ENDPOINTS.ADMIN_GRUPO_BY_CODE(codigoMateria, codigoGrupo);
   
   console.log(`📤 Agregando grupo ${codigoGrupo} a materia ${codigoMateria}`);
   console.log(`🔗 URL: ${url}`);
 
   try {
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'POST',
       headers: AuthService.getAuthHeaders()
     });
@@ -387,13 +391,14 @@ export const agregarGrupoAMateria = async (codigoMateria, codigoGrupo) => {
  * @returns {Promise<Object>} Resultado de la operación
  */
 export const eliminarGrupoDeMateria = async (codigoMateria, codigoGrupo) => {
-  const url = `${API_BASE_URL}/api/v1/admin/materias/${codigoMateria}/grupos/${codigoGrupo}`;
+  const url = API_ENDPOINTS.ADMIN_GRUPO_BY_CODE(codigoMateria, codigoGrupo);
   
   console.log(`🗑️ Eliminando grupo ${codigoGrupo} de materia ${codigoMateria}`);
   console.log(`🔗 URL: ${url}`);
 
   try {
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'DELETE',
       headers: AuthService.getAuthHeaders()
     });
@@ -436,6 +441,43 @@ export const filtrarMaterias = (materias, searchTerm) => {
 export const validarGruposUnicos = (grupos) => {
   const codigosUnicos = new Set(grupos.map(g => g.codigo_grupo));
   return codigosUnicos.size === grupos.length;
+};
+
+
+/**
+ * Obtener las asignaciones (grupos y docentes) de una materia
+ * Usa el endpoint: GET /api/v1/admin/materias/{codigo_materia}/asignaciones_docentes
+ * Retorna todas las clases (docente+grupo) asociadas a una materia de forma optimizada
+ * @param {string} codigoMateria - Código de la materia
+ * @returns {Promise<Array>} Lista de asignaciones con grupos y docentes
+ */
+export const obtenerAsignacionesMateria = async (codigoMateria) => {
+  try {
+    console.log(`📥 Cargando clases (docente+grupo) de materia: ${codigoMateria}`);
+    // Usar el endpoint optimizado que devuelve todas las clases
+    const url = `${API_ENDPOINTS.ADMIN_MATERIAS}/${codigoMateria}/asignaciones_docentes`;
+    console.log(`🔗 URL: ${url}`);
+
+    const response = await fetch(url, {
+      credentials: 'include',
+      method: 'GET',
+      headers: AuthService.getAuthHeaders()
+    });
+
+    console.log('📡 Respuesta del servidor - Status:', response.status, response.statusText);
+    const resultado = await procesarRespuesta(response);
+    console.log('✅ Clases cargadas:', resultado.data?.length || 0);
+
+    if (resultado.data && resultado.data.length > 0) {
+      console.log('🔍 Estructura de la primera clase:', resultado.data[0]);
+      console.log('🔍 Claves disponibles:', Object.keys(resultado.data[0]));
+    }
+
+    return resultado.data || [];
+  } catch (error) {
+    console.error(`❌ Error al cargar clases de materia ${codigoMateria}:`, error.message);
+    throw error;
+  }
 };
 
 

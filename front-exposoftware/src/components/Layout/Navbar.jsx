@@ -1,14 +1,24 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { FiLogIn, FiMenu, FiX, FiLogOut } from "react-icons/fi";
+import { useAuth } from "../../contexts/AuthContext";
 import logo from "../../assets/Logo-unicesar.png";
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
+
+  const isGuest = user?.rol === 'invitado' && isAuthenticated();
   const hideLoginButton =
     location.pathname === "/login" || location.pathname === "/register";
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+    closeMenu();
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -36,27 +46,50 @@ export default function Navbar() {
 
       {/* Menú para desktop */}
       <ul className="hidden md:flex items-center gap-6 lg:gap-8 text-base font-medium">
-        <li>
-          <Link to="/" className="hover:text-green-700 transition duration-300">Inicio</Link>
-        </li>
-        <li>
-          <Link to="/projects" className="hover:text-green-700 transition duration-300">Proyectos</Link>
-        </li>
-        <li>
-          <Link to="/about" className="hover:text-green-700 transition duration-300">Acerca de</Link>
-        </li>
+        {/* Si es invitado, solo mostrar "Inicio" y "Proyectos" */}
+        {isGuest ? (
+          <>
+            <li>
+              <Link to="/" className="hover:text-green-700 transition duration-300">Inicio</Link>
+            </li>
+            <li>
+              <Link to="/projects" className="hover:text-green-700 transition duration-300">Proyectos</Link>
+            </li>
+            <li>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-red-700 transition duration-300"
+              >
+                <FiLogOut size={18} />
+                Salir
+              </button>
+            </li>
+          </>
+        ) : (
+          <>
+            <li>
+              <Link to="/" className="hover:text-green-700 transition duration-300">Inicio</Link>
+            </li>
+            <li>
+              <Link to="/projects" className="hover:text-green-700 transition duration-300">Proyectos</Link>
+            </li>
+            <li>
+              <Link to="/about" className="hover:text-green-700 transition duration-300">Acerca de</Link>
+            </li>
 
-        {/* Ocultar este botón en login/register */}
-        {!hideLoginButton && (
-          <li>
-            <Link
-              to="/login"
-              className="bg-green-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-green-700 transition duration-300"
-            >
-              <FiLogIn size={18} />
-              Iniciar Sesión
-            </Link>
-          </li>
+            {/* Ocultar este botón en login/register */}
+            {!hideLoginButton && (
+              <li>
+                <Link
+                  to="/login"
+                  className="bg-green-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-green-700 transition duration-300"
+                >
+                  <FiLogIn size={18} />
+                  Iniciar Sesión
+                </Link>
+              </li>
+            )}
+          </>
         )}
       </ul>
 
@@ -77,46 +110,81 @@ export default function Navbar() {
       `}>
         <div className="container mx-auto px-4 py-6">
           <ul className="flex flex-col gap-4">
-            <li>
-              <Link 
-                to="/" 
-                className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
-                onClick={closeMenu}
-              >
-                Inicio
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/projects" 
-                className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
-                onClick={closeMenu}
-              >
-                Proyectos
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/about" 
-                className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
-                onClick={closeMenu}
-              >
-                Acerca de
-              </Link>
-            </li>
+            {/* Si es invitado, solo mostrar Inicio, Proyectos y Salir */}
+            {isGuest ? (
+              <>
+                <li>
+                  <Link
+                    to="/"
+                    className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
+                    onClick={closeMenu}
+                  >
+                    Inicio
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/projects"
+                    className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
+                    onClick={closeMenu}
+                  >
+                    Proyectos
+                  </Link>
+                </li>
+                <li className="mt-4 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full bg-red-600 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition duration-300 font-medium"
+                  >
+                    <FiLogOut size={20} />
+                    Salir
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <Link
+                    to="/"
+                    className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
+                    onClick={closeMenu}
+                  >
+                    Inicio
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/projects"
+                    className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
+                    onClick={closeMenu}
+                  >
+                    Proyectos
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/about"
+                    className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
+                    onClick={closeMenu}
+                  >
+                    Acerca de
+                  </Link>
+                </li>
 
-            {/* Ocultar este botón en login/register */}
-            {!hideLoginButton && (
-              <li className="mt-4 pt-4 border-t border-gray-200">
-                <Link
-                  to="/login"
-                  className="bg-green-600 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-green-700 transition duration-300 font-medium"
-                  onClick={closeMenu}
-                >
-                  <FiLogIn size={20} />
-                  Iniciar Sesión
-                </Link>
-              </li>
+                {/* Ocultar este botón en login/register */}
+                {!hideLoginButton && (
+                  <li className="mt-4 pt-4 border-t border-gray-200">
+                    <Link
+                      to="/login"
+                      className="bg-green-600 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-green-700 transition duration-300 font-medium"
+                      onClick={closeMenu}
+                    >
+                      <FiLogIn size={20} />
+                      Iniciar Sesión
+                    </Link>
+                  </li>
+                )}
+              </>
             )}
           </ul>
         </div>

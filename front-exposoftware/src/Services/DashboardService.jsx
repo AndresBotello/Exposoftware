@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as AuthService from './AuthService';
-import { API_BASE_URL } from '../utils/constants';
+import { API_ENDPOINTS } from '../utils/constants';
 
 /**
  * Servicio para obtener estadísticas del dashboard
@@ -19,7 +19,8 @@ class DashboardService {
   static getAuthConfig() {
     const headers = AuthService.getAuthHeaders();
     return {
-      headers: headers
+      headers: headers,
+      withCredentials: true // Enviar cookies para mantener sesión
     };
   }
 
@@ -31,7 +32,7 @@ class DashboardService {
   static async getTotalProyectos() {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/api/v1/proyectos`,
+        API_ENDPOINTS.PROYECTOS,
         this.getAuthConfig()
       );
       
@@ -57,7 +58,7 @@ class DashboardService {
   static async getTotalEstudiantes() {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/api/v1/admin/estudiantes`,
+        `${API_ENDPOINTS.ADMIN_ESTUDIANTES}`,
         this.getAuthConfig()
       );
       
@@ -94,7 +95,7 @@ class DashboardService {
   static async getTotalProfesores() {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/api/v1/admin/profesores`,
+        `${API_ENDPOINTS.ADMIN_DOCENTES}`,
         this.getAuthConfig()
       );
       
@@ -130,7 +131,7 @@ class DashboardService {
   static async getProyectosPorTipo() {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/api/v1/proyectos`,
+        API_ENDPOINTS.PROYECTOS,
         this.getAuthConfig()
       );
       

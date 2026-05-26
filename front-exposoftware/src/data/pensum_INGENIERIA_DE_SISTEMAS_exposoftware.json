@@ -1,0 +1,368 @@
+{
+  "programa": "INGENIERIA DE SISTEMAS",
+  "codigo_descripcion": "V-0402-IS-D-07",
+  "modalidad": "PRESENCIAL UNIVERSITARIA",
+  "jornada": "JORNADA UNICA",
+  "total_periodos": 10,
+  "fecha_inicio": "2025-2",
+  "estado": "EN OFERTA",
+  "fuente_pdf": "Plan de estudio Nuevo V-0402-IS-D-07.pdf",
+  "fecha_extraccion": "2026-05-19T06:47:07.423644+00:00",
+  "total_materias": 23,
+  "filtro_aplicado": "ExpoSoftware",
+  "reglas_filtro": {
+    "incluir_prefijos": [
+      "SS",
+      "ING"
+    ],
+    "incluir_codigos_extras": [],
+    "excluir_codigos_explicitos": [
+      "SS705",
+      "SS810",
+      "SS811",
+      "SS812",
+      "SS909",
+      "SS105",
+      "SS303",
+      "SS807",
+      "SS808",
+      "SS906",
+      "SS907",
+      "SS908",
+      "SS708"
+    ]
+  },
+  "total_originales": 62,
+  "materias": [
+    {
+      "codigo_materia": "SS407",
+      "nombre_materia": "ALGORITMOS Y FUNDAMENTOS DE PROGRAMACION",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 1,
+      "requisitos": []
+    },
+    {
+      "codigo_materia": "SS200",
+      "nombre_materia": "PROGRAMACION DE COMPUTADORES I",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 2,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS407"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS300",
+      "nombre_materia": "PROGRAMACION DE COMPUTADORES II",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 3,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS200"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS301",
+      "nombre_materia": "ESTRUCTURA DE DATOS",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 3,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS200"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "ING301",
+      "nombre_materia": "METODOLOGIA DE LA INVESTIGACION",
+      "ht": 2,
+      "hp": null,
+      "htp": null,
+      "creditos": 2,
+      "periodo": 4,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS303"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS462",
+      "nombre_materia": "PROGRAMACION DE COMPUTADORES III",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 4,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS300"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS463",
+      "nombre_materia": "BASE DE DATOS",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 4,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS301"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "ING302",
+      "nombre_materia": "SEMINARIO DE INVESTIGACION",
+      "ht": 2,
+      "hp": null,
+      "htp": null,
+      "creditos": 2,
+      "periodo": 5,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "ING301"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS500",
+      "nombre_materia": "ARQUITECTURA DE COMPUTADORES",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 5,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "FS329"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS501",
+      "nombre_materia": "PROGRAMACION WEB",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 5,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS462"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS502",
+      "nombre_materia": "INGENIERIA DE SOFTWARE I",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 5,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS463"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS802",
+      "nombre_materia": "BASE DE DATOS AVANZADAS",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 5,
+      "requisitos": []
+    },
+    {
+      "codigo_materia": "SS600",
+      "nombre_materia": "SISTEMAS OPERATIVOS",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 6,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS500"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS601",
+      "nombre_materia": "MODELOS Y SIMULACION",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 6,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "MT309B"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS602",
+      "nombre_materia": "INGENIERIA DE SOFTWARE II",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 6,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS502"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS603",
+      "nombre_materia": "PROGRAMACION MOVIL",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 6,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS501"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS604",
+      "nombre_materia": "INNOVACION Y EMPRENDIMIENTO TECNOLOGICO",
+      "ht": 2,
+      "hp": null,
+      "htp": null,
+      "creditos": 2,
+      "periodo": 6,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "ING302"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS701",
+      "nombre_materia": "REDES Y COMUNICACIONES",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 7,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS600"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS702",
+      "nombre_materia": "INTELIGENCIA ARTIFICIAL",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 7,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS601"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS706",
+      "nombre_materia": "INGENIERIA DE SOFTWARE III",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 7,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS602"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS707",
+      "nombre_materia": "TECNOLOGIAS INMERSIVAS",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 7,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS603"
+        }
+      ]
+    },
+    {
+      "codigo_materia": "SS806",
+      "nombre_materia": "SEGURIDAD DE LA INFORMACION",
+      "ht": 2,
+      "hp": 2,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 8,
+      "requisitos": []
+    },
+    {
+      "codigo_materia": "SS809",
+      "nombre_materia": "GESTION DE PROYECTOS TI",
+      "ht": 4,
+      "hp": null,
+      "htp": null,
+      "creditos": 3,
+      "periodo": 8,
+      "requisitos": [
+        {
+          "tipo": "R",
+          "codigo": "SS706"
+        }
+      ]
+    }
+  ]
+}

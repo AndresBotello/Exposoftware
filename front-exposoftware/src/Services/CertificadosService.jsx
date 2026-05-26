@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL } from '../utils/constants';
+import { API_ENDPOINTS } from '../utils/constants';
 
 /**
  * Servicio para gestionar certificados
@@ -9,12 +9,13 @@ class CertificadosService {
    * Obtener la configuración de autenticación
    */
   getAuthConfig() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     return {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      withCredentials: true // Enviar cookies para mantener sesión
     };
   }
 
@@ -26,7 +27,7 @@ class CertificadosService {
     try {
       console.log('🔍 Obteniendo lotes de certificados...');
       const response = await axios.get(
-        `${API_BASE_URL}/api/v1/admin/reportes/certificados/lotes`,
+        API_ENDPOINTS.ADMIN_CERTIFICADOS_LOTES,
         this.getAuthConfig()
       );
       
@@ -56,7 +57,7 @@ class CertificadosService {
       };
 
       const response = await axios.post(
-        `${API_BASE_URL}/api/v1/admin/reportes/certificados/enviar-por-correo`,
+        API_ENDPOINTS.ADMIN_CERTIFICADOS_ENVIAR_CORREO,
         payload,
         this.getAuthConfig()
       );
@@ -103,9 +104,9 @@ class CertificadosService {
     try {
       console.log('📥 Descargando lote de certificados...', id_lote);
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await axios.get(
-        `${API_BASE_URL}/api/v1/admin/reportes/certificados/descargar/${id_lote}`,
+        API_ENDPOINTS.ADMIN_CERTIFICADOS_DESCARGAR(id_lote),
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -187,7 +188,7 @@ class CertificadosService {
       console.log('📄 Generando certificados por proyecto...', { id_proyecto, formato_salida });
       
       const response = await axios.post(
-        `${API_BASE_URL}/api/v1/admin/reportes/certificados/generar-por-proyecto`,
+        API_ENDPOINTS.ADMIN_CERTIFICADOS_POR_PROYECTO,
         { id_proyecto, formato_salida },
         this.getAuthConfig()
       );
@@ -212,7 +213,7 @@ class CertificadosService {
       console.log('📄 Generando certificado individual...', { id_estudiante, id_proyecto, formato_salida });
       
       const response = await axios.post(
-        `${API_BASE_URL}/api/v1/admin/reportes/certificados/generar-individual`,
+        API_ENDPOINTS.ADMIN_CERTIFICADOS_INDIVIDUAL,
         { id_estudiante, id_proyecto, formato_salida },
         this.getAuthConfig()
       );

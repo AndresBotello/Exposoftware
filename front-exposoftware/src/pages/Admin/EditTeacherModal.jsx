@@ -3,7 +3,7 @@ import EditTeacherFormSections from "./EditTeacherFormSections";
 
 export default function EditTeacherModal({
   show, onSave, onCancel,
-  municipios, opcionesPaises, programas = [], loadingProgramas = false,
+  municipios, opcionesPaises, departamentos = [], programas = [], loadingProgramas = false,
   tipoDocumento, setTipoDocumento,
   identificacion, setIdentificacion,
   primerNombre, setPrimerNombre,
@@ -18,6 +18,11 @@ export default function EditTeacherModal({
   departamento, setDepartamento,
   municipio, setMunicipio,
   ciudadResidencia, setCiudadResidencia,
+  tipoVia, setTipoVia,
+  numeroVia, setNumeroVia,
+  numeroCruce, setNumeroCruce,
+  numeroPlaca, setNumeroPlaca,
+  complemento, setComplemento,
   direccionResidencia, setDireccionResidencia,
   telefono, setTelefono,
   correo, setCorreo,
@@ -131,6 +136,7 @@ export default function EditTeacherModal({
 
           <EditTeacherFormSections
             municipios={municipios} opcionesPaises={opcionesPaises}
+            departamentos={departamentos}
             programas={programas} loadingProgramas={loadingProgramas}
             pais={pais} setPais={setPais}
             nacionalidad={nacionalidad} setNacionalidad={setNacionalidad}

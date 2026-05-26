@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, API_BASE_URL } from "../utils/constants";
+import { API_ENDPOINTS } from "../utils/constants";
 
 /**
  * Servicio para gestión académica (Facultades y Programas)
@@ -45,7 +45,7 @@ const createHeaders = (requireAuth = false) => {
  */
 export const obtenerFacultades = async () => {
   try {
-    const endpoint = `${API_ENDPOINTS.FACULTADES_PUBLICO}`;
+    const endpoint = `${API_ENDPOINTS.PUBLIC_FACULTADES}`;
     
     console.log('🏛️ Obteniendo facultades desde:', endpoint);
     
@@ -61,6 +61,7 @@ export const obtenerFacultades = async () => {
     }
     
     const response = await fetch(endpoint, {
+      credentials: 'include',
       method: 'GET',
       headers
     });
@@ -104,8 +105,8 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
       return [];
     }
 
-    const endpoint = `${API_ENDPOINTS.FACULTADES_PUBLICO}/${facultadId}`;
-      
+    const endpoint = `${API_ENDPOINTS.PUBLIC_PROGRAMAS_BY_FACULTAD(facultadId)}`;
+
     console.log('📚 Obteniendo programas de facultad', facultadId, 'desde:', endpoint);
     
     // Header opcional - si hay token lo incluye
@@ -120,6 +121,7 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
     }
     
     const response = await fetch(endpoint, {
+      credentials: 'include',
       method: 'GET',
       headers
     });
@@ -129,10 +131,10 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
     if (response.ok) {
       const data = await response.json();
       console.log('✅ Programas obtenidos del backend:', data);
-      
-      // El backend devuelve { status: "success", data: { facultad: {...}, programas: [...] } }
-      const facultadData = data.data || {};
-      const programas = facultadData.programas || [];
+
+      // El backend devuelve { status: "success", data: [...] } o { status: "success", data: { programas: [...] } }
+      const programasData = Array.isArray(data.data) ? data.data : (data.data?.programas || []);
+      const programas = programasData;
       
       console.log('✅ Programas cargados:', programas.length);
       

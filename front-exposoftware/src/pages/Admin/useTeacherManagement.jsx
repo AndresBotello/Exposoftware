@@ -14,6 +14,7 @@ import {
   CATEGORIAS_DOCENTE,
   DEPARTAMENTOS_COLOMBIA
 } from "../../Services/CreateTeacher";
+import { API_ENDPOINTS } from "../../utils/constants";
 
 // Re-exportar constantes para mantener compatibilidad
 export { TIPOS_DOCUMENTO, GENEROS, IDENTIDADES_SEXUALES, CATEGORIAS_DOCENTE, DEPARTAMENTOS_COLOMBIA };
@@ -56,8 +57,46 @@ export function useTeacherManagement() {
   const [codigoPrograma, setCodigoPrograma] = useState("");
   const [activo, setActivo] = useState(true);
 
+  // Estados para componentes de dirección (tipo_via, numero_via, etc.)
+  const [tipoVia, setTipoVia] = useState("");
+  const [numeroVia, setNumeroVia] = useState("");
+  const [numeroCruce, setNumeroCruce] = useState("");
+  const [numeroPlaca, setNumeroPlaca] = useState("");
+  const [complemento, setComplemento] = useState("");
+
   // Estados para manejar municipios dinámicos
   const [municipios, setMunicipios] = useState([]);
+
+  // Catálogos cargados desde la API
+  const [paises, setPaises] = useState([]);
+  const [departamentos, setDepartamentos] = useState([]);
+  const [municipiosApi, setMunicipiosApi] = useState([]);
+
+  // Cargar catálogos de países y departamentos al montar
+  useEffect(() => {
+    const loadCatalogs = async () => {
+      try {
+        const [paisesRes, deptoRes] = await Promise.all([
+          fetch(API_ENDPOINTS.CATALOGOS_PAISES),
+          fetch(API_ENDPOINTS.CATALOGOS_DEPARTAMENTOS),
+        ]);
+
+        if (paisesRes.ok) {
+          const data = await paisesRes.json();
+          const arr = Array.isArray(data) ? data : (data.data || data.paises || []);
+          setPaises(arr);
+        }
+
+        if (deptoRes.ok) {
+          const data = await deptoRes.json();
+          setDepartamentos(Array.isArray(data) ? data : (data.data || data.departamentos || []));
+        }
+      } catch (err) {
+        console.error("Error cargando catálogos:", err);
+      }
+    };
+    loadCatalogs();
+  }, []);
 
   // Limpiar código de programa cuando la categoría cambie a Invitado o Externo
   useEffect(() => {
@@ -69,13 +108,41 @@ export function useTeacherManagement() {
   // Actualizar municipios cuando cambie el departamento
   useEffect(() => {
     if (departamento) {
-      const depto = colombiaData.find((d) => d.departamento === departamento);
-      setMunicipios(depto && Array.isArray(depto.ciudades) ? depto.ciudades : []);
+      const deptoEncontrado = departamentos.find(d =>
+        d.nombre === departamento ||
+        d.nombre_departamento === departamento ||
+        d.departamento === departamento ||
+        d.codigo === departamento ||
+        d.codigo_departamento === departamento
+      );
+
+      const deptoCodigo = deptoEncontrado?.codigo || deptoEncontrado?.codigo_departamento || departamento;
+
+      console.log('📍 Buscando municipios para departamento:', departamento);
+      console.log('📍 Código encontrado:', deptoCodigo);
+      console.log('📍 URL:', API_ENDPOINTS.CATALOGOS_MUNICIPIOS(deptoCodigo));
+
+      fetch(API_ENDPOINTS.CATALOGOS_MUNICIPIOS(deptoCodigo))
+        .then((r) => {
+          if (!r.ok) {
+            throw new Error(`Error ${r.status}: ${r.statusText}`);
+          }
+          return r.json();
+        })
+        .then((data) => {
+          const municipiosList = Array.isArray(data) ? data : (data.data || data.municipios || []);
+          console.log('✅ Municipios cargados:', municipiosList);
+          setMunicipiosApi(municipiosList);
+        })
+        .catch((err) => {
+          console.error('❌ Error cargando municipios:', err);
+          setMunicipiosApi([]);
+        });
     } else {
-      setMunicipios([]);
+      setMunicipiosApi([]);
       setMunicipio("");
     }
-  }, [departamento]);
+  }, [departamento, departamentos]);
 
   // Estado para la lista de profesores
   const [profesores, setProfesores] = useState([]);
@@ -147,6 +214,11 @@ export function useTeacherManagement() {
     setMunicipio("");
     setCiudadResidencia("");
     setDireccionResidencia("");
+    setTipoVia("");
+    setNumeroVia("");
+    setNumeroCruce("");
+    setNumeroPlaca("");
+    setComplemento("");
     setTelefono("");
     setCorreo("");
     setContraseña("");
@@ -169,6 +241,12 @@ export function useTeacherManagement() {
       const nombresCompletos = `${primerNombre} ${segundoNombre}`.trim();
       const apellidosCompletos = `${primerApellido} ${segundoApellido}`.trim();
 
+      // Buscar códigos de municipios en los catálogos
+      const municipioSeleccionado = municipiosApi.find(m =>
+        m.nombre === municipio || m.nombre_municipio === municipio || m.municipio === municipio
+      );
+      const codigoMunicipioRes = municipioSeleccionado?.codigo || municipioSeleccionado?.codigo_municipio || "08001";
+
       const datosDocente = formatearDatosDocente({
         tipoDocumento,
         identificacion,
@@ -181,7 +259,14 @@ export function useTeacherManagement() {
         pais,
         departamento,
         municipio,
+        codigoMunicipioResidencia: codigoMunicipioRes,
+        codigoMunicipioNacimiento: codigoMunicipioRes,
         ciudadResidencia,
+        tipoVia,
+        numeroVia,
+        numeroCruce,
+        numeroPlaca,
+        complemento,
         direccionResidencia,
         telefono,
         correo,
@@ -256,6 +341,11 @@ export function useTeacherManagement() {
     setMunicipio(datosUsuario.municipio || "");
     setCiudadResidencia(datosUsuario.ciudad_residencia || "");
     setDireccionResidencia(datosUsuario.direccion_residencia || "");
+    setTipoVia(datosUsuario.tipo_via || datosUsuario.id_tipo_via || "");
+    setNumeroVia(datosUsuario.numero_via || "");
+    setNumeroCruce(datosUsuario.numero_cruce || "");
+    setNumeroPlaca(datosUsuario.numero_placa || "");
+    setComplemento(datosUsuario.complemento || "");
     setTelefono(datosUsuario.telefono || "");
     setCorreo(datosUsuario.correo || "");
     setCategoriaDocente(datosDocente.categoria_docente || "");
@@ -290,6 +380,11 @@ export function useTeacherManagement() {
         departamento,
         municipio,
         ciudadResidencia,
+        tipoVia,
+        numeroVia,
+        numeroCruce,
+        numeroPlaca,
+        complemento,
         direccionResidencia,
         telefono,
         correo,
@@ -399,6 +494,18 @@ export function useTeacherManagement() {
     activo,
     setActivo,
 
+    // Estados de componentes de dirección
+    tipoVia,
+    setTipoVia,
+    numeroVia,
+    setNumeroVia,
+    numeroCruce,
+    setNumeroCruce,
+    numeroPlaca,
+    setNumeroPlaca,
+    complemento,
+    setComplemento,
+
     // Estados de la lista y UI
     profesores,
     searchTerm,
@@ -407,6 +514,11 @@ export function useTeacherManagement() {
 
     // Estados para municipios dinámicos
     municipios,
+
+    // Catálogos
+    paises,
+    departamentos,
+    municipiosApi,
 
     // Opciones de países/nacionalidades
     opcionesPaises,
@@ -424,6 +536,8 @@ export function useTeacherManagement() {
     handleCancel,
     // UI states
     loading,
+    setLoading,
     serverError,
+    setServerError,
   };
 }

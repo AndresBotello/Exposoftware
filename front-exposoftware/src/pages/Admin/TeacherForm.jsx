@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import Select from 'react-select';
 import countryList from "react-select-country-list";
-import colombia from "../../assets/colombia-json-master/colombia.json";
 import { CATEGORIAS_DOCENTE } from "./useTeacherManagement";
 import { validateField, filterInput } from "../../utils/teacherValidations";
 import TeacherPersonalSection from "./TeacherPersonalSection";
@@ -36,6 +35,16 @@ export default function TeacherForm({
   setMunicipio,
   ciudadResidencia,
   setCiudadResidencia,
+  tipoVia,
+  setTipoVia,
+  numeroVia,
+  setNumeroVia,
+  numeroCruce,
+  setNumeroCruce,
+  numeroPlaca,
+  setNumeroPlaca,
+  complemento,
+  setComplemento,
   direccionResidencia,
   setDireccionResidencia,
   telefono,
@@ -52,9 +61,11 @@ export default function TeacherForm({
   activo,
   setActivo,
   // Datos de apoyo
+  departamentos,
   programas,
   loadingProgramas,
   municipios,
+  municipiosDisponibles,
   errors,
   loading,
   serverError,
@@ -65,25 +76,6 @@ export default function TeacherForm({
   onCancel,
 }) {
   const options = useMemo(() => countryList().getData(), []);
-  const [municipiosDisponibles, setMunicipiosDisponibles] = useState([]);
-
-  useEffect(() => {
-    if (departamento) {
-      const deptoEncontrado = colombia.find((d) => d.departamento === departamento);
-      if (deptoEncontrado && Array.isArray(deptoEncontrado.ciudades)) {
-        setMunicipiosDisponibles(deptoEncontrado.ciudades);
-        if (municipio && !deptoEncontrado.ciudades.includes(municipio)) {
-          setMunicipio("");
-        }
-      } else {
-        setMunicipiosDisponibles([]);
-        setMunicipio("");
-      }
-    } else {
-      setMunicipiosDisponibles([]);
-      setMunicipio("");
-    }
-  }, [departamento, municipio, setMunicipio]);
 
   const handleInputChange = (fieldName, value, setter) => {
     const filteredValue = filterInput(fieldName, value);
@@ -231,11 +223,14 @@ export default function TeacherForm({
                 required
               >
                 <option value="">Seleccionar departamento</option>
-                {colombia.map((d) => (
-                  <option key={d.id} value={d.departamento}>
-                    {d.departamento}
-                  </option>
-                ))}
+                {Array.isArray(departamentos) && departamentos.map((d, idx) => {
+                  const deptName = d.nombre || d.departamento || d.nombre_departamento;
+                  return (
+                    <option key={`dept-${idx}-${d.codigo || deptName}`} value={deptName}>
+                      {deptName}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -252,44 +247,97 @@ export default function TeacherForm({
                 required
               >
                 <option value="">Seleccionar municipio</option>
-                {Array.isArray(municipiosDisponibles) && municipiosDisponibles.map((mun) => (
-                  <option key={mun} value={mun}>{mun}</option>
-                ))}
+                {Array.isArray(municipiosDisponibles) && municipiosDisponibles.map((mun, idx) => {
+                  const municipioNombre = typeof mun === 'string' ? mun : (mun.nombre || mun.nombre_municipio || mun.municipio || '');
+                  return municipioNombre ? (
+                    <option key={`mun-${idx}-${municipioNombre}`} value={municipioNombre}>
+                      {municipioNombre}
+                    </option>
+                  ) : null;
+                })}
               </select>
               {!departamento && (
                 <p className="text-xs text-gray-500 mt-1">Primero selecciona un departamento</p>
               )}
             </div>
 
-            {/* Ciudad de Residencia */}
+            {/* Tipo de Vía */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ciudad de Residencia <span className="text-red-500">*</span>
+                Tipo de Vía <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={tipoVia}
+                onChange={(e) => setTipoVia(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                required
+              >
+                <option value="">Seleccionar tipo de vía</option>
+                <option value="Calle">Calle</option>
+                <option value="Carrera">Carrera</option>
+                <option value="Diagonal">Diagonal</option>
+                <option value="Transversal">Transversal</option>
+                <option value="Avenida">Avenida</option>
+              </select>
+            </div>
+
+            {/* Número de Vía */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Número de Vía <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                value={ciudadResidencia}
-                onChange={(e) => setCiudadResidencia(e.target.value)}
-                placeholder="Nombre de la ciudad"
-                maxLength={50}
+                value={numeroVia}
+                onChange={(e) => setNumeroVia(e.target.value)}
+                placeholder="Ej: 50"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
               />
             </div>
 
-            {/* Dirección de Residencia */}
-            <div className="md:col-span-2">
+            {/* Número de Cruce */}
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dirección de Residencia <span className="text-red-500">*</span>
+                Número de Cruce <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                value={direccionResidencia}
-                onChange={(e) => setDireccionResidencia(e.target.value)}
-                placeholder="Ej: Calle 50 #30-20"
-                maxLength={100}
+                value={numeroCruce}
+                onChange={(e) => setNumeroCruce(e.target.value)}
+                placeholder="Ej: 30"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
+              />
+            </div>
+
+            {/* Número de Placa */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Número de Placa <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={numeroPlaca}
+                onChange={(e) => setNumeroPlaca(e.target.value)}
+                placeholder="Ej: 20"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+            </div>
+
+            {/* Complemento */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Complemento (Apartamento, Torre, etc.)
+              </label>
+              <input
+                type="text"
+                value={complemento}
+                onChange={(e) => setComplemento(e.target.value)}
+                placeholder="Ej: Apto 502 Torre A"
+                maxLength={50}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
           </div>
@@ -380,7 +428,7 @@ export default function TeacherForm({
                     <option value="">Seleccionar programa</option>
                     {programas.map((programa) => (
                       <option key={programa.codigo_programa} value={programa.codigo_programa}>
-                        {programa.codigo_programa}
+                        {programa.nombre_programa || programa.nombre || programa.codigo_programa}
                       </option>
                     ))}
                   </select>

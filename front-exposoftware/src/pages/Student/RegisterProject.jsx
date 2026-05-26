@@ -1,7 +1,19 @@
 import { useState } from "react";
 import { useRegisterProject } from "../../hooks/Student/useRegisterProject";
 
+// Función auxiliar para agregar estudiante con su información
+const agregarEstudianteConInfo = (id, estudiante, setEstudiantesAgregados, addParticipant) => {
+  console.log("📝 agregarEstudianteConInfo llamada con:", { id, estudiante });
+  setEstudiantesAgregados(prev => ({
+    ...prev,
+    [id]: estudiante
+  }));
+  addParticipant(id);
+};
+
 export default function RegisterProject() {
+  const [estudiantesAgregados, setEstudiantesAgregados] = useState({});
+
   const {
     open,
     setOpen,
@@ -21,6 +33,7 @@ export default function RegisterProject() {
     error,
     addParticipant,
     removeParticipant,
+    buscarEstudiantes,
     submit,
   } = useRegisterProject();
 
@@ -73,7 +86,7 @@ export default function RegisterProject() {
           </button>
         </header>
 
-        <form onSubmit={submit} className="space-y-4 max-h-[70vh] overflow-auto pr-2">
+        <form onSubmit={(e) => submit(e, estudiantesAgregados)} className="space-y-4 max-h-[70vh] overflow-auto pr-2">
 
           {/* Tipo de Actividad */}
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -121,7 +134,7 @@ export default function RegisterProject() {
             <div className="border border-gray-200 rounded-lg p-3">
               <div className="flex gap-2 flex-wrap mb-2">
                 {form.id_estudiantes.map((idEst) => {
-                  const est = estudiantes.find((e) => e.id === idEst);
+                  const est = estudiantesAgregados[idEst] || estudiantes.find((e) => e.id === idEst);
                   return (
                     <span
                       key={idEst}
@@ -145,7 +158,8 @@ export default function RegisterProject() {
               <ParticipantCombo
                 students={estudiantes}
                 selectedIds={form.id_estudiantes}
-                onAdd={addParticipant}
+                onAdd={(id, estudiante) => agregarEstudianteConInfo(id, estudiante, setEstudiantesAgregados, addParticipant)}
+                buscarEstudiantes={buscarEstudiantes}
               />
             </div>
           </div>
@@ -204,60 +218,95 @@ export default function RegisterProject() {
             })()}
           </div>
 
-          {/* Materia */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Materia</label>
-            <select
-              value={form.codigo_materia}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, codigo_materia: e.target.value, id_grupo: "", id_docente: "" }))
-              }
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="">Seleccionar materia</option>
-              {materias.map((mat) => (
-                <option key={mat.codigo} value={mat.codigo}>
-                  {mat.codigo} - {mat.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Grupo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Grupo</label>
-            <select
-              value={form.id_grupo}
-              onChange={(e) => setForm((s) => ({ ...s, id_grupo: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-              disabled={!form.codigo_materia}
-            >
-              <option value="">Seleccionar grupo</option>
-              {grupos.map((grupo) => (
-                <option key={grupo.id} value={grupo.id}>
-                  {grupo.nombre}
-                </option>
-              ))}
-            </select>
-            {!form.codigo_materia && (
-              <p className="text-xs text-gray-500 mt-1">Primero selecciona una materia</p>
-            )}
-          </div>
-
-          {/* Docente (solo lectura, auto-asignado del grupo) */}
-          {docenteDelGrupo && (
+          {/* Materia y Grupo */}
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Docente asignado
+                Materia <span className="text-red-500">*</span>
               </label>
-              <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-gray-700">
-                👨‍🏫 {docenteDelGrupo.nombreDocente || docenteDelGrupo.idDocente}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                El docente se asigna automáticamente del grupo seleccionado
-              </p>
+              <select
+                value={form.codigo_materia}
+                onChange={(e) =>
+                  setForm((s) => ({ ...s, codigo_materia: e.target.value, id_grupo: "", id_docente: "" }))
+                }
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              >
+                <option value="">-- Selecciona una materia --</option>
+                {materias.map((mat) => (
+                  <option key={mat.codigo} value={mat.codigo}>
+                    {mat.codigo} - {mat.nombre}
+                  </option>
+                ))}
+              </select>
+              {materias.length === 0 && (
+                <p className="text-xs text-amber-600 mt-2">
+                  ⏳ Cargando materias... Si no cargan en unos momentos, contacta al administrador.
+                </p>
+              )}
             </div>
-          )}
+
+            {/* Selector de Grupo con Docentes */}
+            {form.codigo_materia && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Selecciona un Grupo <span className="text-red-500">*</span>
+                </label>
+
+                {grupos && grupos.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-3">
+                    {grupos.map((grupo) => (
+                      <button
+                        key={grupo.id}
+                        type="button"
+                        onClick={() => setForm((s) => ({ ...s, id_grupo: grupo.id }))}
+                        className={`p-4 rounded-lg border-2 transition-all text-left ${
+                          form.id_grupo === grupo.id
+                            ? "border-teal-600 bg-teal-50"
+                            : "border-gray-200 bg-white hover:border-teal-400"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900">
+                              Grupo: <span className="text-teal-600">{grupo.nombre}</span>
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              👨‍🏫 Docente: <span className="font-medium text-gray-900">{grupo.nombreDocente || "Sin asignar"}</span>
+                            </div>
+                          </div>
+                          {form.id_grupo === grupo.id && (
+                            <div className="text-teal-600 ml-4">
+                              <i className="pi pi-check-circle text-2xl"></i>
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-yellow-700 text-sm">No hay grupos disponibles para esta materia</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Docente (solo lectura, auto-asignado del grupo) */}
+            {docenteDelGrupo && form.id_grupo && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Docente asignado
+                </label>
+                <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-gray-700">
+                  👨‍🏫 {docenteDelGrupo.nombreDocente || docenteDelGrupo.idDocente}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  El docente se asigna automáticamente del grupo seleccionado
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Línea de Investigación */}
           <div>
@@ -404,30 +453,46 @@ export default function RegisterProject() {
   );
 }
 
-function ParticipantCombo({ students, selectedIds, onAdd }) {
+function ParticipantCombo({ students, selectedIds, onAdd, buscarEstudiantes }) {
   const [q, setQ] = useState("");
+  const [resultados, setResultados] = useState([]);
+  const [cargando, setCargando] = useState(false);
 
-  const filtered = students.filter((s) =>
-    `${s.nombreCompleto || ""} ${s.correo || ""}`.toLowerCase().includes(q.toLowerCase())
-  );
+  const handleBusqueda = async (valor) => {
+    setQ(valor);
+    if (valor.length >= 3) {
+      setCargando(true);
+      const res = await buscarEstudiantes(valor);
+      setResultados(res);
+      setCargando(false);
+    } else {
+      setResultados([]);
+    }
+  };
+
+  const filtered = q.length >= 3 ? resultados : students;
 
   return (
     <div>
       <input
         value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Buscar estudiante por nombre o correo..."
+        onChange={(e) => handleBusqueda(e.target.value)}
+        placeholder="Escribe al menos 3 caracteres para buscar..."
         className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-2 text-sm"
       />
       <div className="max-h-36 overflow-auto border-t pt-2">
-        {filtered.length > 0 ? (
+        {cargando ? (
+          <p className="text-sm text-gray-500 px-2">🔍 Buscando...</p>
+        ) : filtered.length > 0 ? (
           filtered.map((s) => (
             <button
               key={s.id}
               type="button"
               onClick={() => {
-                onAdd(s.id);
+                console.log("🔘 Botón presionado para estudiante:", s);
+                onAdd(s.id, s);
                 setQ("");
+                setResultados([]);
               }}
               className="w-full text-left py-2 px-2 text-sm hover:bg-gray-50 rounded flex justify-between items-center"
             >
@@ -443,7 +508,7 @@ function ParticipantCombo({ students, selectedIds, onAdd }) {
           ))
         ) : (
           <p className="text-sm text-gray-400 px-2">
-            {q ? "No se encontraron estudiantes" : "Escribe para buscar"}
+            {q.length >= 3 ? "No se encontraron estudiantes" : ""}
           </p>
         )}
       </div>

@@ -1,0 +1,29 @@
+{
+  "programa": "INGENIERIA DE SISTEMAS",
+  "codigo": "5095",
+  "materias": [
+    { "codigo_materia": "SS407", "nombre_materia": "ALGORITMOS Y FUNDAMENTOS DE PROGRAMACION", "creditos": 3, "periodo": 1 },
+    { "codigo_materia": "SS200", "nombre_materia": "PROGRAMACION DE COMPUTADORES I", "creditos": 3, "periodo": 2 },
+    { "codigo_materia": "SS300", "nombre_materia": "PROGRAMACION DE COMPUTADORES II", "creditos": 3, "periodo": 3 },
+    { "codigo_materia": "SS301", "nombre_materia": "ESTRUCTURA DE DATOS", "creditos": 3, "periodo": 3 },
+    { "codigo_materia": "ING301", "nombre_materia": "METODOLOGIA DE LA INVESTIGACION", "creditos": 2, "periodo": 4 },
+    { "codigo_materia": "SS462", "nombre_materia": "PROGRAMACION DE COMPUTADORES III", "creditos": 3, "periodo": 4 },
+    { "codigo_materia": "SS463", "nombre_materia": "BASE DE DATOS", "creditos": 3, "periodo": 4 },
+    { "codigo_materia": "ING302", "nombre_materia": "SEMINARIO DE INVESTIGACION", "creditos": 2, "periodo": 5 },
+    { "codigo_materia": "SS500", "nombre_materia": "ARQUITECTURA DE COMPUTADORES", "creditos": 3, "periodo": 5 },
+    { "codigo_materia": "SS501", "nombre_materia": "PROGRAMACION WEB", "creditos": 3, "periodo": 5 },
+    { "codigo_materia": "SS502", "nombre_materia": "INGENIERIA DE SOFTWARE I", "creditos": 3, "periodo": 5 },
+    { "codigo_materia": "SS802", "nombre_materia": "BASE DE DATOS AVANZADAS", "creditos": 3, "periodo": 5 },
+    { "codigo_materia": "SS600", "nombre_materia": "SISTEMAS OPERATIVOS", "creditos": 3, "periodo": 6 },
+    { "codigo_materia": "SS601", "nombre_materia": "MODELOS Y SIMULACION", "creditos": 3, "periodo": 6 },
+    { "codigo_materia": "SS602", "nombre_materia": "INGENIERIA DE SOFTWARE II", "creditos": 3, "periodo": 6 },
+    { "codigo_materia": "SS603", "nombre_materia": "PROGRAMACION MOVIL", "creditos": 3, "periodo": 6 },
+    { "codigo_materia": "SS604", "nombre_materia": "INNOVACION Y EMPRENDIMIENTO TECNOLOGICO", "creditos": 2, "periodo": 6 },
+    { "codigo_materia": "SS701", "nombre_materia": "REDES Y COMUNICACIONES", "creditos": 3, "periodo": 7 },
+    { "codigo_materia": "SS702", "nombre_materia": "INTELIGENCIA ARTIFICIAL", "creditos": 3, "periodo": 7 },
+    { "codigo_materia": "SS706", "nombre_materia": "INGENIERIA DE SOFTWARE III", "creditos": 3, "periodo": 7 },
+    { "codigo_materia": "SS707", "nombre_materia": "TECNOLOGIAS INMERSIVAS", "creditos": 3, "periodo": 7 },
+    { "codigo_materia": "SS806", "nombre_materia": "SEGURIDAD DE LA INFORMACION", "creditos": 3, "periodo": 8 },
+    { "codigo_materia": "SS809", "nombre_materia": "GESTION DE PROYECTOS TI", "creditos": 3, "periodo": 8 }
+  ]
+}

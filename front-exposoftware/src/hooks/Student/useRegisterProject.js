@@ -1,8 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { API_ENDPOINTS } from "../../utils/constants";
 import RegisterProjectService from "../../Services/RegisterProjectService";
 import EventosService from "../../Services/EventosService";
+import { obtenerMaterias } from "../../Services/CreateGroup";
+import { obtenerAsignacionesMateria } from "../../Services/CreateSubject";
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+};
 
 const TIPOS_ACTIVIDAD = [
   { id: 1, name: "Poster", descripcion: "Artículo en PDF", archivos: ["pdf"] },
@@ -37,6 +48,8 @@ export function useRegisterProject() {
   const [sublineasFiltradas, setSublineasFiltradas] = useState([]);
   const [areas, setAreas] = useState([]);
   const [eventos, setEventos] = useState([]);
+  const [todosLosGrupos, setTodosLosGrupos] = useState([]);
+  const [clasesDisponibles, setClasesDisponibles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState(null);
@@ -92,45 +105,93 @@ export function useRegisterProject() {
         // 2️⃣ Docentes
         const docentesData = await RegisterProjectService.obtenerDocentes();
 
-        // 3️⃣ Materias del programa del estudiante
-        let materiasData = [];
-        if (user?.codigo_programa) {
-          const facultyId = user.codigo_programa.split("_")[0];
-          materiasData = await RegisterProjectService.obtenerMateriasPorPrograma(
-            facultyId,
-            user.codigo_programa
-          );
+        // 2️⃣.5️⃣ Todos los grupos (para enriquecer asignaciones)
+        let todosLosGruposData = [];
+        try {
+          console.log('📥 Cargando todos los grupos...');
+          const response = await fetch(`${API_ENDPOINTS.API_BASE_URL || 'https://exposoftware.duckdns.org'}/api/v1/admin/grupos`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const result = await response.json();
+            todosLosGruposData = result.data || result || [];
+            console.log(`✅ Grupos cargados: ${todosLosGruposData.length}`);
+          }
+        } catch (err) {
+          console.warn('⚠️ Error cargando grupos:', err.message);
+          todosLosGruposData = [];
         }
 
-        // 4️⃣ Estudiantes
-        const todosLosEstudiantes = await RegisterProjectService.obtenerTodosLosEstudiantes();
+        // 3️⃣ Clases disponibles (materias + grupos + docentes)
+        // Usa el nuevo endpoint que devuelve todo combinado
+        let materiasData = [];
+        let clasesDisponibles = [];
+        try {
+          console.log('🔄 Cargando clases disponibles del estudiante...');
 
+          const response = await fetch(API_ENDPOINTS.ESTUDIANTE_MIS_CLASES, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            clasesDisponibles = result.data || result || [];
+
+            // Procesar clases para obtener materias únicas
+            const materiasUnicas = {};
+            clasesDisponibles.forEach(clase => {
+              const codigoMateria = clase.codigo_materia || clase.materia_codigo;
+              if (codigoMateria && !materiasUnicas[codigoMateria]) {
+                materiasUnicas[codigoMateria] = {
+                  codigo: codigoMateria,
+                  nombre: clase.nombre_materia || clase.materia_nombre || codigoMateria
+                };
+              }
+            });
+
+            materiasData = Object.values(materiasUnicas);
+            console.log(`✅ Clases disponibles cargadas: ${clasesDisponibles.length} | Materias únicas: ${materiasData.length}`);
+          } else {
+            console.warn('⚠️ Error cargando clases disponibles:', response.status);
+            materiasData = [];
+            clasesDisponibles = [];
+          }
+        } catch (err) {
+          console.warn('⚠️ Error cargando clases:', err.message);
+          materiasData = [];
+          clasesDisponibles = [];
+        }
+
+        // 4️⃣ Estudiante actual
         const estudianteActual = user
           ? {
-              id: user.id_estudiante || user.id_usuario,
+              id: user.id_usuario || user.id_estudiante,
               nombreCompleto:
                 user.nombre_completo ||
-                `${user.primer_nombre || ""} ${user.primer_apellido || ""}`.trim(),
+                `${user.p_nombre || user.primer_nombre || ""} ${user.p_apellido || user.primer_apellido || ""}`.trim(),
               correo: user.correo,
               codigoEstudiante: user.codigo_estudiante,
               programa: user.codigo_programa,
             }
           : null;
 
-        let listaEstudiantes = [...todosLosEstudiantes];
+        // Agregar el estudiante actual como participante por defecto
+        let listaEstudiantes = [];
         if (estudianteActual?.id) {
-          const yaExiste = listaEstudiantes.some((est) => est.id === estudianteActual.id);
-          if (!yaExiste) listaEstudiantes = [estudianteActual, ...listaEstudiantes];
+          listaEstudiantes = [estudianteActual];
         }
 
-        // 5️⃣ Eventos activos
+        // 5️⃣ Eventos con inscripciones abiertas
         const eventosData = await EventosService.obtenerEventos();
-        const eventosActivos = eventosData.filter(
+        const eventosInscritos = eventosData.filter(
           (e) =>
-            e.activo === true ||
-            (typeof e.estado === "string" && e.estado.toLowerCase() === "activo")
+            typeof e.estado === "string" && e.estado.toLowerCase() === "inscripciones_abiertas"
         );
-        console.log(`📅 Eventos totales: ${eventosData.length} | Activos: ${eventosActivos.length}`);
+        console.log(`📅 Eventos totales: ${eventosData.length} | Con inscripciones abiertas: ${eventosInscritos.length}`);
 
         setLineas(lineasData);
         setSublineas(sublineasData);
@@ -138,10 +199,12 @@ export function useRegisterProject() {
         setDocentes(docentesData);
         setMaterias(materiasData);
         setEstudiantes(listaEstudiantes);
-        setEventos(eventosActivos);
+        setEventos(eventosInscritos);
+        setTodosLosGrupos(todosLosGruposData);
+        setClasesDisponibles(clasesDisponibles);
 
         // Auto-agregar usuario actual como participante
-        const userId = user?.id_estudiante || user?.id_egresado || user?.id_usuario;
+        const userId = user?.id_usuario || user?.id_estudiante || user?.id_egresado;
         if (userId) {
           setForm((prev) => ({ ...prev, id_estudiantes: [userId] }));
         }
@@ -170,24 +233,33 @@ export function useRegisterProject() {
   }, [form.codigo_linea, sublineas]);
 
   // Cargar grupos cuando cambia la materia seleccionada
+  // Usa las clases disponibles cargadas en el endpoint /api/v1/estudiantes/mis_clases_disponibles
   useEffect(() => {
-    const cargarGrupos = async () => {
-      if (form.codigo_materia) {
-        try {
-          const gruposData = await RegisterProjectService.obtenerGruposPorMateria(
-            form.codigo_materia
-          );
-          setGrupos(gruposData);
-        } catch {
-          setGrupos([]);
-        }
-      } else {
-        setGrupos([]);
-        setForm((prev) => ({ ...prev, id_grupo: "", id_docente: "" }));
-      }
-    };
-    cargarGrupos();
-  }, [form.codigo_materia]);
+    if (form.codigo_materia && clasesDisponibles.length > 0) {
+      console.log(`📥 Filtrando clases de materia: ${form.codigo_materia}`);
+
+      // Filtrar clases disponibles por la materia seleccionada
+      const clasesDeMateria = clasesDisponibles.filter(
+        (clase) => clase.codigo_materia === form.codigo_materia
+      );
+
+      const gruposFormateados = clasesDeMateria.map((clase) => ({
+        id: clase.id_docente_materia,
+        nombre: `Grupo ${clase.nombre_grupo || ''}`,
+        codigo_grupo: clase.nombre_grupo,
+        idDocente: clase.id_docente,
+        nombreDocente: clase.nombre_docente || 'Sin asignar',
+        id_grupo: clase.id_grupo,
+        id_docente_materia: clase.id_docente_materia
+      }));
+
+      console.log(`✅ Clases cargadas: ${gruposFormateados.length}`, gruposFormateados);
+      setGrupos(gruposFormateados);
+    } else {
+      setGrupos([]);
+      setForm((prev) => ({ ...prev, id_grupo: "", id_docente: "" }));
+    }
+  }, [form.codigo_materia, clasesDisponibles]);
 
   // Auto-asignar docente del grupo seleccionado
   useEffect(() => {
@@ -217,6 +289,40 @@ export function useRegisterProject() {
 
   const docenteDelGrupo = form.id_grupo ? grupos.find((g) => g.id === form.id_grupo) : null;
 
+  // Búsqueda de estudiantes
+  const buscarEstudiantes = async (termino) => {
+    if (!termino || termino.length < 3) {
+      return [];
+    }
+
+    try {
+      const apiBase = API_ENDPOINTS.API_BASE_URL || 'https://exposoftware.duckdns.org';
+      const response = await fetch(`${apiBase}/api/v1/usuarios/buscar?q=${encodeURIComponent(termino)}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const usuarios = result.data || result || [];
+        // Mapear respuesta del backend al formato esperado
+        return usuarios.map(u => ({
+          id: u.id || u.id_usuario || u.id_estudiante || u.id_egresado || u._id,
+          nombreCompleto: u.nombre_completo || u.name || u.correo,
+          correo: u.correo || u.email,
+          rol: u.rol || u.role
+        }));
+      } else {
+        console.warn(`⚠️ Error buscando estudiantes: ${response.status}`);
+        return [];
+      }
+    } catch (err) {
+      console.error('❌ Error en búsqueda de estudiantes:', err);
+      return [];
+    }
+  };
+
   // Participantes
   const addParticipant = (idEstudiante) => {
     if (!idEstudiante) return;
@@ -236,7 +342,7 @@ export function useRegisterProject() {
   };
 
   // Envío del formulario
-  const submit = async (e) => {
+  const submit = async (e, estudiantesAgregadosExtra = {}) => {
     e.preventDefault();
 
     if (!user?.id_usuario) {
@@ -250,6 +356,18 @@ export function useRegisterProject() {
     if (!form.codigo_sublinea) { alert("Debe seleccionar una sublínea de investigación"); return; }
     if (!form.codigo_area) { alert("Debe seleccionar un área temática"); return; }
     if (!form.id_evento) { alert("Debe seleccionar un evento"); return; }
+
+    // Validar que el evento esté en estado de inscripciones abiertas
+    const eventoSeleccionado = eventos.find((e) => (e.id_evento || e.id || e._id) === form.id_evento);
+    if (!eventoSeleccionado) {
+      alert("El evento seleccionado no existe");
+      return;
+    }
+    if (eventoSeleccionado.estado?.toLowerCase() !== "inscripciones_abiertas") {
+      alert("⚠️ Las inscripciones para este evento no están abiertas. Selecciona un evento con inscripciones disponibles.");
+      return;
+    }
+
     if (!form.archivoPDF) { alert("Debe adjuntar el artículo en PDF"); return; }
 
     if (form.archivoPDF.size > 10 * 1024 * 1024) {
@@ -275,22 +393,20 @@ export function useRegisterProject() {
       const nombresParticipantes = [];
 
       form.id_estudiantes.forEach((idEst) => {
-        const estudiante = estudiantes.find((e) => e.id === idEst);
+        // Buscar en estudiantesAgregadosExtra (estudiantes buscados) primero, luego en estudiantes
+        const estudiante = estudiantesAgregadosExtra[idEst] || estudiantes.find((e) => e.id === idEst);
         if (estudiante) {
           nombresParticipantes.push(estudiante.nombreCompleto || estudiante.correo || "");
+        } else {
+          nombresParticipantes.push(""); // nombre vacío si no se encuentra
         }
       });
 
-      const idEstudianteActual = user?.id_estudiante;
-      if (idEstudianteActual && !participantes.includes(idEstudianteActual)) {
-        participantes.push(idEstudianteActual);
+      // Asegurar que el usuario actual esté como id_usuario (no id_estudiante)
+      const idUsuarioActual = user?.id_usuario;
+      if (idUsuarioActual && !participantes.includes(idUsuarioActual)) {
+        participantes.push(idUsuarioActual);
         nombresParticipantes.push(getFullName() || "Usuario actual");
-      } else if (!idEstudianteActual) {
-        const idUsuario = user?.id_usuario;
-        if (idUsuario && !participantes.includes(idUsuario)) {
-          participantes.push(idUsuario);
-          nombresParticipantes.push(getFullName() || "Usuario actual");
-        }
       }
 
       const docenteSeleccionado = docentes.find((d) => d.id === form.id_docente);
@@ -311,8 +427,18 @@ export function useRegisterProject() {
         tipo_actividad: form.tipo_actividad,
       };
 
+      // Limpiar participantes: eliminar duplicados e IDs inválidos
+      const participantesUnicos = [...new Set(participantes)];
+      const participantesValidos = participantesUnicos.filter(id => id && typeof id === 'string' && id.length > 0);
+
+      // Actualizar datos del proyecto con participantes limpios
+      proyectoData.id_estudiantes = participantesValidos;
+      proyectoData.nombres_estudiantes = participantesValidos.map((id, i) =>
+        nombresParticipantes[participantes.indexOf(id)] || ''
+      );
+
       console.log("📤 Enviando proyecto:", proyectoData);
-      await RegisterProjectService.crearProyecto(proyectoData, form.archivoPDF, form.archivoExtra);
+      await RegisterProjectService.crearProyecto(proyectoData, form.archivoPDF, form.archivoExtra, idUsuarioActual);
 
       alert("¡Proyecto registrado exitosamente!");
       setOpen(false);
@@ -350,6 +476,7 @@ export function useRegisterProject() {
     // Handlers
     addParticipant,
     removeParticipant,
+    buscarEstudiantes,
     submit,
   };
 }

@@ -1,6 +1,4 @@
-import { API_BASE_URL } from '../utils/constants';
-
-const API_URL = API_BASE_URL;
+import { API_ENDPOINTS } from '../utils/constants';
 
 // ==================== SISTEMA DE CACHÉ Y DEDUPLICACIÓN ====================
 
@@ -57,7 +55,8 @@ const obtenerArbolCompletoConDedup = async () => {
   arbolCompletoPromise = (async () => {
     try {
       console.log('🔍 Obteniendo árbol completo desde API...');
-      const response = await fetch(`${API_URL}/api/v1/public-investigacion/arbol-completo`, {
+      const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -118,9 +117,10 @@ const getAuthHeaders = () => {
  */
 export const obtenerLineas = async () => {
   try {
-    console.log('🔍 Obteniendo líneas desde:', `${API_URL}/api/v1/public-investigacion/arbol-completo`);
+    console.log('🔍 Obteniendo líneas desde:', API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION);
     
-    const response = await fetch(`${API_URL}/api/v1/public-investigacion/arbol-completo`, {
+    const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -179,9 +179,10 @@ export const obtenerLineas = async () => {
  */
 export const obtenerLineaPorId = async (lineaId) => {
   try {
-    console.log(`🔍 Obteniendo línea ${lineaId} desde:`, `${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}`);
+    console.log(`🔍 Obteniendo línea ${lineaId} desde:`, API_ENDPOINTS.ADMIN_LINEA_BY_CODE(lineaId));
     
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_LINEA_BY_CODE(lineaId), {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -233,7 +234,8 @@ export const crearLinea = async (lineaData) => {
     console.log('📤 Creando línea - Payload enviado:', JSON.stringify(payload, null, 2));
     console.log('📤 Headers:', getAuthHeaders());
 
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_LINEAS_INVESTIGACION, {
+      credentials: 'include',
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -297,7 +299,8 @@ export const actualizarLinea = async (lineaId, lineaData) => {
 
     console.log(`📤 Actualizando línea ${lineaId}:`, payload);
 
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_LINEA_BY_CODE(lineaId), {
+      credentials: 'include',
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -327,7 +330,8 @@ export const eliminarLinea = async (lineaId) => {
   try {
     console.log(`🗑️ Eliminando línea ${lineaId}`);
 
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_LINEA_BY_CODE(lineaId), {
+      credentials: 'include',
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -354,7 +358,8 @@ export const eliminarLinea = async (lineaId) => {
  */
 export const obtenerSublineas = async (lineaId) => {
   try {
-    const response = await fetch(`${API_URL}/api/v1/public-investigacion/lineas/${lineaId}/sublineas`, {
+    const response = await fetch(API_ENDPOINTS.PUBLIC_SUBLINEAS_BY_LINE(lineaId), {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -379,7 +384,8 @@ export const obtenerSublineas = async (lineaId) => {
  */
 export const obtenerSublineaPorId = async (lineaId, sublineaId) => {
   try {
-    const response = await fetch(`${API_URL}/api/v1/public-investigacion/lineas/${lineaId}/sublineas/${sublineaId}`, {
+    const response = await fetch(API_ENDPOINTS.PUBLIC_SUBLINEA_BY_CODE(lineaId, sublineaId), {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -459,7 +465,8 @@ export const crearSublinea = async (lineaId, sublineaData) => {
 
     console.log(`📤 Creando sublínea en línea ${lineaId}:`, payload);
 
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}/sublineas`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEAS_BY_LINE(lineaId), {
+      credentials: 'include',
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -497,7 +504,8 @@ export const actualizarSublinea = async (lineaId, sublineaId, sublineaData) => {
 
     console.log(`📤 Actualizando sublínea ${sublineaId}:`, payload);
 
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}/sublineas/${sublineaId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEA_BY_CODE(lineaId, sublineaId), {
+      credentials: 'include',
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -527,7 +535,8 @@ export const eliminarSublinea = async (lineaId, sublineaId) => {
   try {
     console.log(`🗑️ Eliminando sublínea ${sublineaId}`);
 
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}/sublineas/${sublineaId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEA_BY_CODE(lineaId, sublineaId), {
+      credentials: 'include',
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -554,7 +563,8 @@ export const eliminarSublinea = async (lineaId, sublineaId) => {
  */
 export const obtenerAreas = async (lineaId, sublineaId) => {
   try {
-    const response = await fetch(`${API_URL}/api/v1/public-investigacion/lineas/${lineaId}/sublineas/${sublineaId}/areas-tematicas`, {
+    const response = await fetch(API_ENDPOINTS.PUBLIC_AREAS_BY_SUBLINEA(lineaId, sublineaId), {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -579,7 +589,8 @@ export const obtenerAreas = async (lineaId, sublineaId) => {
  */
 export const obtenerAreaPorId = async (lineaId, sublineaId, areaId) => {
   try {
-    const response = await fetch(`${API_URL}/api/v1/public-investigacion/lineas/${lineaId}/sublineas/${sublineaId}/areas-tematicas/${areaId}`, {
+    const response = await fetch(API_ENDPOINTS.PUBLIC_AREA_BY_CODE(lineaId, sublineaId, areaId), {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -655,7 +666,8 @@ export const crearArea = async (lineaId, sublineaId, areaData) => {
 
     console.log(`📤 Creando área en sublínea ${sublineaId}:`, payload);
 
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}/sublineas/${sublineaId}/areas-tematicas`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_AREAS_BY_SUBLINEA(lineaId, sublineaId), {
+      credentials: 'include',
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -693,7 +705,8 @@ export const actualizarArea = async (lineaId, sublineaId, areaId, areaData) => {
 
     console.log(`📤 Actualizando área ${areaId}:`, payload);
 
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}/sublineas/${sublineaId}/areas-tematicas/${areaId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_AREA_BY_CODE(lineaId, sublineaId, areaId), {
+      credentials: 'include',
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload)
@@ -723,7 +736,8 @@ export const eliminarArea = async (lineaId, sublineaId, areaId) => {
   try {
     console.log(`🗑️ Eliminando área ${areaId}`);
 
-    const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${lineaId}/sublineas/${sublineaId}/areas-tematicas/${areaId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_AREA_BY_CODE(lineaId, sublineaId, areaId), {
+      credentials: 'include',
       method: 'DELETE',
       headers: getAuthHeaders()
     });

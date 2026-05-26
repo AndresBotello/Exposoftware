@@ -6,6 +6,7 @@ import { useSubjectManagement, CICLOS_SEMESTRALES } from "./useSubjectManagement
 import * as AuthService from "../../Services/AuthService";
 import SubjectListTab from "./SubjectListTab";
 import SubjectEditModal from "./SubjectEditModal";
+import MateriaAsignacionesModal from "./MateriaAsignacionesModal";
 
 export default function CreateSubject() {
   const navigate = useNavigate();
@@ -34,12 +35,14 @@ export default function CreateSubject() {
     nombreMateria, setNombreMateria,
     cicloSemestral, setCicloSemestral,
     gruposDisponibles, gruposSeleccionados,
-    materiasFiltradas, materias,
+    materiasFiltradas, materias, profesores,
     showEditModal,
+    showAsignacionesModal, materiaSeleccionada,
     searchTerm, setSearchTerm,
     getDocenteNombre,
     agregarGrupoSeleccionado, eliminarGrupoSeleccionado,
     handleSubmit, handleEdit, handleSaveEdit, handleCancelEdit, handleDelete, handleCancel,
+    handleAbrirAsignaciones, handleCerrarAsignaciones,
     cargarMaterias, cargarGrupos, cargarProfesores,
   } = useSubjectManagement();
 
@@ -172,6 +175,7 @@ export default function CreateSubject() {
                 getDocenteNombre={getDocenteNombre}
                 handleEdit={handleEdit}
                 handleDelete={handleDelete}
+                handleAbrirAsignaciones={handleAbrirAsignaciones}
               />
             )}
           </main>
@@ -180,16 +184,23 @@ export default function CreateSubject() {
 
       <SubjectEditModal
         showEditModal={showEditModal}
-        codigoMateria={codigoMateria} setCodigoMateria={setCodigoMateria}
-        nombreMateria={nombreMateria} setNombreMateria={setNombreMateria}
+        codigoMateria={codigoMateria}
+        nombreMateria={nombreMateria}
         cicloSemestral={cicloSemestral} setCicloSemestral={setCicloSemestral}
-        gruposDisponibles={gruposDisponibles}
-        gruposSeleccionados={gruposSeleccionados}
-        agregarGrupoSeleccionado={agregarGrupoSeleccionado}
-        eliminarGrupoSeleccionado={eliminarGrupoSeleccionado}
-        getDocenteNombre={getDocenteNombre}
         handleSaveEdit={handleSaveEdit}
         handleCancelEdit={handleCancelEdit}
+      />
+
+      <MateriaAsignacionesModal
+        isOpen={showAsignacionesModal}
+        codigoMateria={materiaSeleccionada?.codigo_materia}
+        nombreMateria={materiaSeleccionada?.nombre_materia}
+        profesores={profesores}
+        onClose={handleCerrarAsignaciones}
+        onAsignacionCreada={() => {
+          cargarMaterias();
+          cargarGrupos();
+        }}
       />
     </div>
   );

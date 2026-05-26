@@ -33,11 +33,13 @@ export default function AttendanceAdmin() {
       if (cargado) return;
       cargado = true;
       try {
-        const response = await EventosService.obtenerEventos();
-        const eventosActivos = (response || []).filter(evento => evento.estado === 'ACTIVO');
-        setEventos(eventosActivos);
+        const response = await EventosService.obtenerEventosAdmin();
+        const eventosEnCurso = (response || []).filter(evento => evento.estado === 'en_curso');
+        setEventos(eventosEnCurso);
+        console.log('✅ Eventos en curso cargados:', eventosEnCurso);
       } catch (error) {
         console.error("❌ Error al obtener eventos:", error);
+        setEventos([]);
       }
     };
     cargarEventos();

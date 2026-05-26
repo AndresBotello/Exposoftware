@@ -2,7 +2,14 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getTeacherProjects } from "../../Services/ProjectsService.jsx";
+import {
+  getMyProjects,
+  getMyTeachingLoad,
+  getMySubjectAssignments,
+  getMyGroups
+} from "../../Services/TeacherService.jsx";
 import ResearchLinesService from "../../Services/ResearchLinesService.jsx";
+import { getAllEventos } from "../../Services/EventosPublicService.jsx";
 import ReportGenerator from "../../components/ReportGenerator";
 import {
   resolveDocenteId,
@@ -25,6 +32,7 @@ export function useTeacherDashboard() {
     aprobados: 0,
     pendientes: 0,
     reprobados: 0,
+    asignados: 0,
   });
   const [cargandoProyectos, setCargandoProyectos] = useState(false);
   const [error, setError] = useState(null);
@@ -33,6 +41,8 @@ export function useTeacherDashboard() {
   const [areasMap, setAreasMap] = useState(new Map());
   const [eventosMap, setEventosMap] = useState(new Map());
   const [mapasCargados, setMapasCargados] = useState(false);
+  const [teachingLoad, setTeachingLoad] = useState([]);
+  const [myGroups, setMyGroups] = useState([]);
 
   // Datos para la gráfica de estado de proyectos
   const pieChartData = useMemo(() => {
@@ -76,41 +86,115 @@ export function useTeacherDashboard() {
 
         if (!user) return;
 
-        const docenteId = await resolveDocenteId(user);
-        if (!docenteId) {
-          setError(
-            "No se pudo identificar al docente. Por favor, cierre sesión e inicie sesión nuevamente."
-          );
-          return;
+        // Cargar proyectos asignados usando endpoint /api/v1/proyectos/mis-proyectos
+        let asignadosCount = 0;
+        let myProjectsData = [];
+        try {
+          myProjectsData = await getMyProjects();
+          asignadosCount = Array.isArray(myProjectsData) ? myProjectsData.length : 0;
+          console.log(`📊 Mis proyectos asignados: ${asignadosCount}`);
+        } catch (err) {
+          console.warn("⚠️ Error cargando proyectos asignados:", err.message || err);
+          asignadosCount = 0;
+          myProjectsData = [];
         }
 
-        const data = await getTeacherProjects(docenteId);
-        setProyectos(data);
+        // Cargar carga docente (clases que dicta)
+        try {
+          const load = await getMyTeachingLoad();
+          setTeachingLoad(Array.isArray(load) ? load : []);
+          console.log(`📚 Carga docente: ${Array.isArray(load) ? load.length : 0} clases`);
+        } catch (err) {
+          console.warn("⚠️ Error cargando carga docente:", err.message || err);
+          setTeachingLoad([]);
+        }
 
-        const total = data.length;
+        // Cargar grupos del docente
+        try {
+          const grupos = await getMyGroups();
+          setMyGroups(Array.isArray(grupos) ? grupos : []);
+          console.log(`👥 Grupos: ${Array.isArray(grupos) ? grupos.length : 0}`);
+        } catch (err) {
+          console.warn("⚠️ Error cargando mis grupos:", err.message || err);
+          setMyGroups([]);
+        }
 
-        const aprobados = data.filter((p) => {
+        // Usar directamente myProjectsData para los proyectos asignados
+        // Intentar cargar todos los proyectos, pero si falla, usar myProjectsData como fallback
+        let allProjects = [];
+        try {
+          const docenteId = await resolveDocenteId(user);
+          if (docenteId) {
+            const data = await getTeacherProjects(docenteId);
+            allProjects = Array.isArray(data) ? data : [];
+            console.log(`📊 Proyectos obtenidos de getTeacherProjects: ${allProjects.length}`);
+          } else {
+            console.warn("⚠️ No se pudo resolver docente ID, usando myProjectsData como fallback");
+            allProjects = myProjectsData;
+          }
+        } catch (err) {
+          console.warn("⚠️ Error obteniendo proyectos del docente:", err.message || err);
+          // Usar myProjectsData como fallback
+          allProjects = myProjectsData;
+        }
+
+        // Filtrar solo proyectos que pertenecen a eventos activos
+        let eventosActivosSet = null;
+        try {
+          const eventos = await getAllEventos();
+          eventosActivosSet = new Set(
+            eventos
+              .filter(
+                (e) =>
+                  e.activo === true ||
+                  (typeof e.estado === "string" && e.estado.toLowerCase() === "activo")
+              )
+              .map((e) => e.id || e.id_evento || e.evento_id)
+              .filter(Boolean)
+          );
+        } catch {
+          // Si falla la carga de eventos, mostrar todos los proyectos del docente
+        }
+
+        const proyectosActivos =
+          eventosActivosSet !== null
+            ? allProjects.filter((p) => p.id_evento && eventosActivosSet.has(p.id_evento))
+            : allProjects;
+
+        setProyectos(proyectosActivos);
+
+        // Calcular métricas basadas en proyectos asignados (myProjectsData)
+        // para asegurar que se muestren correctamente incluso si el filtro de eventos no funciona
+        const metricsSource = proyectosActivos.length > 0 ? proyectosActivos : myProjectsData;
+
+        const total = metricsSource.length;
+
+        const aprobados = metricsSource.filter((p) => {
           if (p.estado_calificacion) return p.estado_calificacion === "aprobado";
+          if (p.estado === "aprobado") return true;
           if (p.calificacion !== null && p.calificacion !== undefined)
             return p.calificacion >= 3.0;
           return false;
         }).length;
 
-        const pendientes = data.filter((p) => {
+        const pendientes = metricsSource.filter((p) => {
           if (p.estado_calificacion) return p.estado_calificacion === "pendiente";
+          if (p.estado === "aprobado" || p.estado === "rechazado") return false;
           return !p.calificacion && !p.estado_calificacion;
         }).length;
 
-        const reprobados = data.filter((p) => {
+        const reprobados = metricsSource.filter((p) => {
           if (p.estado_calificacion) return p.estado_calificacion === "reprobado";
+          if (p.estado === "rechazado") return true;
           if (p.calificacion !== null && p.calificacion !== undefined)
             return p.calificacion < 3.0;
           return false;
         }).length;
 
-        setMetricasProyectos({ total, aprobados, pendientes, reprobados });
+        console.log(`📊 Actualizando métricas: total=${total}, aprobados=${aprobados}, pendientes=${pendientes}, reprobados=${reprobados}, asignados=${asignadosCount}`);
+        setMetricasProyectos({ total, aprobados, pendientes, reprobados, asignados: asignadosCount });
 
-        if (data.length > 0) {
+        if (proyectosActivos.length > 0) {
           ResearchLinesService.obtenerMapasInvestigacion()
             .then((mapas) => {
               setLineasMap(mapas.lineasMap);
@@ -124,7 +208,7 @@ export function useTeacherDashboard() {
               const areasUnicas = new Map();
               const eventosUnicos = new Map();
 
-              data.forEach((proyecto) => {
+              proyectosActivos.forEach((proyecto) => {
                 if (proyecto.codigo_linea && !lineasUnicas.has(proyecto.codigo_linea))
                   lineasUnicas.set(proyecto.codigo_linea, `Línea ${proyecto.codigo_linea}`);
                 if (proyecto.codigo_sublinea && !sublineasUnicas.has(proyecto.codigo_sublinea))
@@ -145,7 +229,7 @@ export function useTeacherDashboard() {
       } catch (err) {
         console.error("❌ Error al cargar proyectos:", err);
         setError(err.message);
-        setMetricasProyectos({ total: 0, aprobados: 0, pendientes: 0, reprobados: 0 });
+        setMetricasProyectos({ total: 0, aprobados: 0, pendientes: 0, reprobados: 0, asignados: 0 });
       } finally {
         setCargandoProyectos(false);
       }
@@ -209,6 +293,8 @@ export function useTeacherDashboard() {
     mapasCargados,
     pieChartData,
     lineasChartData,
+    teachingLoad,
+    myGroups,
     handleLogout,
     exportarGraficaComoImagen,
     exportarGraficaComoPDF,

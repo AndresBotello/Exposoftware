@@ -51,6 +51,7 @@ const procesarRespuesta = async (response) => {
     };
   }
 
+  // Manejo mejorado de errores
   let errorMessage = responseData.message || `Error del servidor (${response.status})`;
   
   if (responseData.errors && Array.isArray(responseData.errors)) {
@@ -58,6 +59,23 @@ const procesarRespuesta = async (response) => {
       `${err.field}: ${err.message}`
     ).join('\n');
     errorMessage = errorMessages || errorMessage;
+  }
+
+  // Para 401, mostrar detalles específicos
+  if (response.status === 401) {
+    console.error('🔒 Respuesta 401 completa del servidor:', JSON.stringify(responseData, null, 2));
+    const backendMsg = responseData.message || '';
+    const backendCode = responseData.code || '';
+    // Detectar cuenta no verificada
+    if (
+      backendCode === 'ACCOUNT_NOT_VERIFIED' ||
+      backendMsg.toLowerCase().includes('verif') ||
+      backendMsg.toLowerCase().includes('confirm')
+    ) {
+      errorMessage = 'CUENTA_NO_VERIFICADA: ' + (backendMsg || 'Tu cuenta no ha sido verificada. Revisa tu correo.');
+    } else {
+      errorMessage = backendMsg || 'Credenciales inválidas. Verifica tu correo y contraseña.';
+    }
   }
 
   throw new Error(errorMessage);
@@ -82,6 +100,50 @@ const extraerInfoJWT = (token) => {
 };
 
 /**
+ * Obtener datos del usuario autenticado desde el endpoint /auth/me
+ * @param {string} token - Token de autenticación (si está disponible)
+ * @returns {Promise<Object>} Datos del usuario
+ */
+const fetchUserData = async (token) => {
+  console.log('👤 Obteniendo datos del usuario desde /auth/me...');
+  
+  try {
+    const headers = {
+      'Accept': 'application/json'
+    };
+    
+    // Si tenemos token, agregarlo al header
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      console.log('🔐 Usando token en Authorization header');
+    }
+    
+    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+      method: 'GET',
+      headers: headers,
+      credentials: 'include' // Incluir cookies si el servidor las usa
+    });
+
+    console.log('📥 Respuesta de /auth/me:', {
+      status: response.status,
+      statusText: response.statusText
+    });
+
+    const resultado = await procesarRespuesta(response);
+    
+    if (resultado.success) {
+      console.log('✅ Datos del usuario obtenidos:', resultado.data);
+      return resultado.data;
+    }
+    
+    throw new Error('No se pudieron obtener los datos del usuario');
+  } catch (error) {
+    console.error('❌ Error al obtener datos del usuario:', error.message);
+    throw error;
+  }
+};
+
+/**
  * Login Universal para todos los roles
  * El backend detecta automáticamente el rol del usuario según el correo y contraseña
  * @param {Object} credentials - Credenciales de acceso
@@ -91,35 +153,102 @@ const extraerInfoJWT = (token) => {
  */
 export const login = async (credentials) => {
   console.log('🔐 Intentando login universal...');
-  console.log('📧 Correo:', credentials.correo);
-  
+
+  // Limpiar localStorage primero para remover token de invitado anterior
+  localStorage.removeItem(STORAGE_KEYS.TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+  localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
+  localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
+  console.log('🧹 localStorage limpiado antes de nuevo login');
+
   const payload = {
     correo: credentials.correo,
     password: credentials.password
   };
 
+  console.log('🔗 Endpoint:', API_ENDPOINTS.LOGIN);
+
   try {
-    const response = await fetch(API_ENDPOINTS.LOGIN, {
+    // PASO 1: Enviar credenciales
+    const loginResponse = await fetch(API_ENDPOINTS.LOGIN, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
+      credentials: 'include', // Incluir cookies si el servidor las usa
       body: JSON.stringify(payload)
     });
 
-    const resultado = await procesarRespuesta(response);
+    console.log('📥 Respuesta del login:', {
+      status: loginResponse.status,
+      statusText: loginResponse.statusText,
+      contentType: loginResponse.headers.get('Content-Type')
+    });
+
+    // Verificar si el login fue exitoso
+    if (!loginResponse.ok) {
+      const errorData = await loginResponse.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `Error en login (${loginResponse.status})`
+      );
+    }
+
+    console.log('✅ Login exitoso');
+
+    // PASO 2: Obtener el token de la respuesta
+    let token = null;
+
+    // Primero intentar leer el body JSON (FastAPI devuelve { access_token, token_type })
+    let loginResponseBody = null;
+    try {
+      loginResponseBody = await loginResponse.clone().json();
+      console.log('📦 Body de login:', loginResponseBody);
+    } catch (e) {
+      console.warn('No se pudo parsear el body del login:', e.message);
+    }
+
+    if (loginResponseBody) {
+      token = loginResponseBody.access_token
+        || loginResponseBody.token
+        || loginResponseBody.data?.access_token
+        || loginResponseBody.data?.token
+        || null;
+      if (token) console.log('🔐 Token obtenido del body de la respuesta');
+    }
+
+    // Fallback: buscar en Authorization header
+    if (!token) {
+      const authHeader = loginResponse.headers.get('Authorization');
+      if (authHeader) {
+        token = authHeader.replace('Bearer ', '');
+        console.log('🔐 Token obtenido del header Authorization');
+      }
+    }
+
+    if (!token) {
+      console.log('ℹ️  No se encontró token en body ni headers, continuando sin token...');
+    }
+
+    // PASO 3: Obtener datos del usuario
+    let userData;
+    try {
+      userData = await fetchUserData(token);
+    } catch (error) {
+      console.error('⚠️  Error obteniendo datos del usuario:', error.message);
+      // Si no podemos obtener datos, usar un objeto mínimo
+      userData = {
+        correo: credentials.correo,
+        rol: credentials.correo.includes('admin') ? 'admin' : 'user'
+      };
+      console.log('⚠️  Usando datos mínimos del usuario');
+    }
     
     // Guardar datos en localStorage
-    if (resultado.success && resultado.data) {
-      const userData = resultado.data;
+    if (userData) {
       
-      console.log('📦 Datos completos recibidos del backend:', userData);
+      console.log('📦 Datos del usuario recibidos:', userData);
       console.log('📦 Keys del userData:', Object.keys(userData));
-      console.log('📦 userData.rol:', userData.rol);
-      console.log('📦 userData.role:', userData.role);
-      console.log('📦 userData.usuario:', userData.usuario);
-      console.log('📦 userData.user:', userData.user);
 
       // Extraer el rol - puede estar en varios lugares
       let rol = userData.rol || 
@@ -138,26 +267,22 @@ export const login = async (credentials) => {
                   
       console.log('👤 Rol detectado del backend:', rol);
       console.log('📋 Tipo del rol:', typeof rol);
-      console.log('� Longitud del rol:', rol.length);
-      console.log('�📝 Rol en minúsculas:', rol.toLowerCase());
-      console.log('🔍 Caracteres del rol:', Array.from(rol).map((c, i) => `[${i}]='${c}' (${c.charCodeAt(0)})`).join(' '));
       
       // Si no se detecta el rol pero el correo contiene "admin", asignar rol admin
       let rolFinal = rol;
-      if (rol === 'user' && credentials.correo.toLowerCase().includes('admin')) {
+      if ((rol === 'user' || rol === 'User') && credentials.correo.toLowerCase().includes('admin')) {
         rolFinal = 'Administrador';
         console.log('🔍 Rol detectado por patrón de correo: Administrador');
       }
       
       console.log('🎯 Rol final antes de normalizar:', rolFinal);
       
-      // Guardar token (puede venir en data.token o data.access_token)
-      const token = userData.token || userData.access_token || userData.id;
+      // Guardar token si se obtuvo
       if (token) {
         localStorage.setItem(STORAGE_KEYS.TOKEN, token);
         console.log('✅ Token guardado:', token.substring(0, 20) + '...');
         
-        // Intentar extraer el nombre del JWT de Firebase
+        // Intentar extraer el nombre del JWT
         const jwtInfo = extraerInfoJWT(token);
         if (jwtInfo && jwtInfo.name) {
           console.log('👤 Nombre extraído del JWT:', jwtInfo.name);
@@ -183,12 +308,17 @@ export const login = async (credentials) => {
       const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
       localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
       
-      console.log('✅ Login exitoso');
+      console.log('✅ Login completamente exitoso');
       console.log('👤 Rol normalizado final:', rolNormalizado);
       console.log('📦 Usuario guardado:', userData);
     }
     
-    return resultado;
+    return {
+      success: true,
+      data: userData,
+      message: 'Login exitoso',
+      code: 'SUCCESS'
+    };
   } catch (error) {
     console.error('❌ Error en login:', error.message);
     
@@ -231,15 +361,17 @@ export const loginAsGuest = async () => {
     
     // Token simple para invitado (puede ser enhebrado con datos del usuario)
     const token = `guest_${guestId}_token`;
-    
-    // Guardar en localStorage
-    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(guestData));
-    localStorage.setItem(STORAGE_KEYS.USER_ROLE, 'invitado');
-    
+
+    // Guardar en sessionStorage en lugar de localStorage para no interferir con autenticación real
+    sessionStorage.setItem(STORAGE_KEYS.TOKEN, token);
+    sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(guestData));
+    sessionStorage.setItem(STORAGE_KEYS.USER_ROLE, 'invitado');
+
     // Guardar tiempo de expiración (24 horas)
     const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-    localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
+    sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
+
+    // IMPORTANTE: No guardar en localStorage para no interferir con login real
     
     console.log('✅ Login como invitado exitoso');
     console.log('👥 ID del invitado:', guestId);
@@ -292,8 +424,8 @@ const normalizarRol = (rol) => {
   }
   
   // Estudiante (la palabra "estudiante" en español)
-  if (rolLower.includes('Estudiante') || 
-      rolLower.includes('alumno') || 
+  if (rolLower.includes('estudiante') ||
+      rolLower.includes('alumno') ||
       rolLower.includes('student')) {
     console.log('✅ Rol normalizado a: estudiante');
     return 'estudiante';
@@ -350,31 +482,38 @@ export const loginDocente = async (credentials) => {
  */
 export const logout = async () => {
   console.log('🚪 Cerrando sesión...');
-  
+
   const token = getToken();
-  
-  // Intentar cerrar sesión en el backend si hay token
-  if (token) {
-    try {
-      const response = await fetch(API_ENDPOINTS.AUTH_LOGOUT, {
-        method: 'POST',
-        headers: getAuthHeaders()
-      });
-      
-      if (response.ok) {
-        console.log('✅ Sesión cerrada en el backend');
-      }
-    } catch (error) {
-      console.warn('⚠️ No se pudo cerrar sesión en el backend:', error.message);
+
+  // Intentar cerrar sesión en el backend siempre (con o sin token)
+  // Para eliminar las cookies de sesión
+  try {
+    const response = await fetch(API_ENDPOINTS.AUTH_LOGOUT, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include' // Incluir cookies para que el backend las pueda eliminar
+    });
+
+    if (response.ok) {
+      console.log('✅ Sesión cerrada en el backend');
+    } else {
+      console.warn('⚠️ El backend respondió con status:', response.status);
     }
+  } catch (error) {
+    console.warn('⚠️ No se pudo cerrar sesión en el backend:', error.message);
+    // Continuar con la limpieza incluso si hay error
   }
-  
+
   // Limpiar localStorage siempre
   localStorage.removeItem(STORAGE_KEYS.TOKEN);
   localStorage.removeItem(STORAGE_KEYS.USER_DATA);
   localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
   localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
-  console.log('✅ Sesión cerrada - localStorage limpio');
+
+  // También limpiar sessionStorage por si acaso
+  sessionStorage.clear();
+
+  console.log('✅ Sesión cerrada - localStorage y sessionStorage limpios');
 };
 
 /**
@@ -448,21 +587,33 @@ export const refreshToken = async () => {
  * @returns {boolean}
  */
 export const isAuthenticated = () => {
-  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-  const expiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
-  
-  if (!token || !expiresAt) {
+  // Primero buscar en localStorage (autenticación real)
+  let expiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+
+  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  if (!expiresAt) {
+    expiresAt = sessionStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+  }
+
+  if (!expiresAt) {
     return false;
   }
-  
-  // Verificar si el token ha expirado
+
   if (Date.now() > parseInt(expiresAt)) {
-    console.log('⏰ Token expirado - limpiando sesión');
+    console.log('⏰ Sesión expirada - limpiando sesión');
     logout();
     return false;
   }
-  
-  return true;
+
+  // Verificar que hay datos de usuario (sesión válida, con o sin token JWT local)
+  let userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+
+  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  if (!userData) {
+    userData = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+  }
+
+  return !!userData;
 };
 
 /**
@@ -470,7 +621,15 @@ export const isAuthenticated = () => {
  * @returns {string|null}
  */
 export const getToken = () => {
-  return localStorage.getItem(STORAGE_KEYS.TOKEN);
+  // Primero buscar en localStorage (autenticación real)
+  let token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+
+  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  if (!token) {
+    token = sessionStorage.getItem(STORAGE_KEYS.TOKEN);
+  }
+
+  return token;
 };
 
 /**
@@ -478,9 +637,16 @@ export const getToken = () => {
  * @returns {Object|null}
  */
 export const getUserData = () => {
-  const userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+  // Primero buscar en localStorage (autenticación real)
+  let userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+
+  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  if (!userData) {
+    userData = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+  }
+
   if (!userData) return null;
-  
+
   try {
     return JSON.parse(userData);
   } catch (error) {
@@ -491,10 +657,18 @@ export const getUserData = () => {
 
 /**
  * Obtener rol del usuario actual
- * @returns {string|null} 'admin' | 'estudiante' | 'docente'
+ * @returns {string|null} 'admin' | 'estudiante' | 'docente' | 'invitado'
  */
 export const getUserRole = () => {
-  return localStorage.getItem(STORAGE_KEYS.USER_ROLE);
+  // Primero buscar en localStorage (autenticación real)
+  let role = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
+
+  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  if (!role) {
+    role = sessionStorage.getItem(STORAGE_KEYS.USER_ROLE);
+  }
+
+  return role;
 };
 
 /**

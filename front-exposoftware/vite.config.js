@@ -7,12 +7,10 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://mtfr4g8e3k.execute-api.us-east-2.amazonaws.com',
+        target: 'https://exposoftware.duckdns.org',
         changeOrigin: true,
         secure: false,
-        autoRewrite: true,
-        protocolRewrite: 'http',
-        followRedirects: true,
+        cookieDomainRewrite: { '*': 'localhost' },
       },
     },
   },

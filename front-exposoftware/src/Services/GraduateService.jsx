@@ -1,6 +1,4 @@
-import { API_BASE_URL } from '../utils/constants';
-
-const API_URL = API_BASE_URL;
+import { API_ENDPOINTS } from '../utils/constants';
 
 /**
  * Obtener token de autenticación
@@ -37,7 +35,8 @@ export const obtenerMiPerfilEgresado = async () => {
     console.log('🔑 Token encontrado, validando con el backend...');
 
     // Obtener TODA la información del usuario autenticado usando su token
-    const response = await fetch(`${API_URL}/api/v1/auth/me`, {
+    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -95,7 +94,8 @@ export const obtenerPerfilEgresadoPorId = async (graduateId) => {
   try {
     console.log('👨‍🎓 Obteniendo perfil del egresado:', graduateId);
     
-    const response = await fetch(`${API_URL}/api/v1/egresados/${graduateId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_EGRESADO_BY_ID(graduateId), {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -132,7 +132,8 @@ export const actualizarPerfilEgresado = async (graduateId, datosActualizados) =>
     console.log('🔄 Actualizando perfil del egresado:', graduateId);
     console.log('📝 Datos a actualizar:', datosActualizados);
     
-    const response = await fetch(`${API_URL}/api/v1/egresados/${graduateId}`, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_EGRESADO_BY_ID(graduateId), {
+      credentials: 'include',
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(datosActualizados)

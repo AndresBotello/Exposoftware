@@ -1,17 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ProjectParticipantsForm({
   form,
   setForm,
   docentes,
   estudiantes,
-  grupos
+  grupos,
+  buscarEstudiantes
 }) {
   const [searchStudent, setSearchStudent] = useState("");
+  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
+  const [cargandoBusqueda, setCargandoBusqueda] = useState(false);
 
-  const filteredStudents = estudiantes.filter(s =>
-    `${s.nombreCompleto || ""} ${s.correo || ""}`.toLowerCase().includes(searchStudent.toLowerCase())
-  );
+  // Búsqueda con debounce
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchStudent.length >= 3) {
+        setCargandoBusqueda(true);
+        const resultados = await buscarEstudiantes(searchStudent);
+        setResultadosBusqueda(resultados);
+        setCargandoBusqueda(false);
+      } else {
+        setResultadosBusqueda([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchStudent, buscarEstudiantes]);
+
+  const filteredStudents = searchStudent.length >= 3 ? resultadosBusqueda : estudiantes;
 
   const selectedStudents = form.id_estudiantes.map(id =>
     estudiantes.find(e => e.id === id)
@@ -102,7 +119,9 @@ export default function ProjectParticipantsForm({
           className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-2 text-sm"
         />
         <div className="max-h-36 overflow-auto border rounded-lg p-2">
-          {filteredStudents.length > 0 ? (
+          {cargandoBusqueda ? (
+            <p className="text-sm text-gray-500 px-2">🔍 Buscando estudiantes...</p>
+          ) : filteredStudents.length > 0 ? (
             filteredStudents.map((s) => (
               <button
                 key={s.id}
@@ -138,7 +157,7 @@ export default function ProjectParticipantsForm({
             ))
           ) : (
             <p className="text-sm text-gray-400 px-2">
-              {searchStudent ? "No se encontraron estudiantes" : "Escribe para buscar"}
+              {searchStudent.length >= 3 ? "No se encontraron estudiantes" : "Escribe al menos 3 caracteres para buscar"}
             </p>
           )}
         </div>

@@ -5,7 +5,7 @@ export const extractDocenteData = (item) => ({
 
 export const extractProfessorInfo = (item) => {
   const { docente, usuario } = extractDocenteData(item);
-  const nombreCompleto = usuario?.nombre_completo || '';
+  const nombreCompleto = usuario?.nombre_completo || `${usuario?.p_nombre || ''} ${usuario?.p_apellido || ''}`.trim() || '';
   const correo = usuario?.correo || '';
   const nombre = nombreCompleto || correo?.split('@')[0] || `Profesor ${docente?.id_docente}`;
   const categoria = docente?.categoria_docente || '';
@@ -59,7 +59,7 @@ function DocenteInfo({ grupo, profesores }) {
 
   if (profesorInfo) {
     const { usuario } = extractDocenteData(profesorInfo);
-    const nombreCompleto = usuario?.nombre_completo || grupo?.nombre_docente || 'Docente asignado';
+    const nombreCompleto = usuario?.nombre_completo || `${usuario?.p_nombre || ''} ${usuario?.p_apellido || ''}`.trim() || grupo?.nombre_docente || 'Docente asignado';
     return (
       <div className="text-xs text-gray-500 mt-1">
         <span className="inline-flex items-center gap-1">
@@ -107,26 +107,26 @@ export function TablaGrupos({ gruposFiltrados, loadingGrupos, profesores, onEdit
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {["Grupo", "Materia", "Fecha Creación", "Última Actualización", "Acciones"].map((col, i) => (
-                <th key={col} className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${i === 4 ? "text-center" : "text-left"}`}>{col}</th>
+              {["Grupo", "Fecha Creación", "Última Actualización", "Acciones"].map((col, i) => (
+                <th key={col} className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${i === 3 ? "text-center" : "text-left"}`}>{col}</th>
               ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {gruposFiltrados.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
                   <i className="pi pi-inbox text-4xl mb-3 block"></i>
                   <p className="text-sm">No se encontraron grupos</p>
                 </td>
               </tr>
             ) : (
               gruposFiltrados.map((grupo) => (
-                <tr key={grupo?.codigo_grupo || Math.random()} className="hover:bg-gray-50 transition">
+                <tr key={grupo?.nombre_grupo || Math.random()} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-teal-100 text-teal-800 w-fit">
-                        Grupo {grupo?.codigo_grupo || 'N/A'}
+                        Grupo {grupo?.nombre_grupo || 'N/A'}
                       </span>
                       {grupo?.codigo_materia && (
                         <span className="text-xs text-gray-400 mt-1" title={`Materia: ${grupo.codigo_materia}`}>
@@ -134,10 +134,6 @@ export function TablaGrupos({ gruposFiltrados, loadingGrupos, profesores, onEdit
                         </span>
                       )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{grupo?.nombre_materia || 'N/A'}</div>
-                    <DocenteInfo grupo={grupo} profesores={profesores} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">{grupo?.created_at ? new Date(grupo.created_at).toLocaleDateString() : 'N/A'}</div>
@@ -150,7 +146,7 @@ export function TablaGrupos({ gruposFiltrados, loadingGrupos, profesores, onEdit
                       <button onClick={() => onEdit(grupo)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
                         <i className="pi pi-pencil"></i>
                       </button>
-                      <button onClick={() => onDelete(grupo?.codigo_grupo)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Eliminar">
+                      <button onClick={() => onDelete(grupo?.nombre_grupo)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Eliminar">
                         <i className="pi pi-trash"></i>
                       </button>
                     </div>

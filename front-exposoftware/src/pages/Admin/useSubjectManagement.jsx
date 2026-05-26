@@ -8,30 +8,48 @@ export const CICLOS_SEMESTRALES = [
   "Ciclo de Profundización"
 ];
 
+// Mapeo de ciclo a ID numérico para el API
+export const CICLOS_ID_MAP = {
+  "Ciclo Básico": 1,
+  "Ciclo Profesional": 2,
+  "Ciclo de Profundización": 3
+};
+
+// Mapeo inverso de ID a ciclo
+export const ID_CICLOS_MAP = {
+  1: "Ciclo Básico",
+  2: "Ciclo Profesional",
+  3: "Ciclo de Profundización"
+};
+
 
 export const useSubjectManagement = () => {
 
   const [codigoMateria, setCodigoMateria] = useState("");
   const [nombreMateria, setNombreMateria] = useState("");
   const [cicloSemestral, setCicloSemestral] = useState("");
-  
+
   // Estados para grupos disponibles y seleccionados
   const [gruposDisponibles, setGruposDisponibles] = useState([]);
   const [gruposSeleccionados, setGruposSeleccionados] = useState([]);
   const [profesores, setProfesores] = useState([]);
-  
+
   // Estado para la lista de materias
   const [materias, setMaterias] = useState([]);
-  
+
   // Estados para edición
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  
+
+  // Estados para asignaciones
+  const [showAsignacionesModal, setShowAsignacionesModal] = useState(false);
+  const [materiaSeleccionada, setMateriaSeleccionada] = useState(null);
+
   // Estado para búsqueda/filtro
   const [searchTerm, setSearchTerm] = useState("");
 
- 
+
 
   /**
    * Obtener nombre del docente por ID (maneja estructura anidada {docente, usuario})
@@ -248,117 +266,34 @@ export const useSubjectManagement = () => {
   };
 
   /**
-   * Guardar edición de materia (actualizar información básica y grupos)
+   * Guardar edición de materia (actualizar solo el ciclo)
    */
   const handleSaveEdit = async (e) => {
     e.preventDefault();
-    
+
     console.log('💾 Guardando cambios de materia...');
     console.log('📋 ID de materia (codigo_materia):', editingId);
-    console.log('📋 Grupos seleccionados:', gruposSeleccionados);
-    
-    // Validar campos usando el servicio
-    const validacion = SubjectService.validarDatosMateria({
-      codigo_materia: codigoMateria,
-      nombre_materia: nombreMateria,
-      ciclo_semestral: cicloSemestral
-    });
+    console.log('📋 Ciclo semestral:', cicloSemestral);
 
-    if (!validacion.valido) {
-      alert(validacion.errores.join('\n'));
+    if (!cicloSemestral) {
+      alert('Por favor selecciona un ciclo semestral');
       return;
     }
 
     try {
-      // 1. Actualizar información básica de la materia (sin grupos)
-      console.log('1️⃣ Actualizando información básica de la materia...');
+      // Convertir ciclo a ID numérico
+      const idCiclo = CICLOS_ID_MAP[cicloSemestral];
+
+      console.log('1️⃣ Actualizando ciclo de la materia...');
       await SubjectService.actualizarMateria(editingId, {
-        codigo_materia: codigoMateria,
         nombre_materia: nombreMateria,
-        ciclo_semestral: cicloSemestral
+        id_ciclo: idCiclo
       });
 
-      // 2. Obtener la materia actual para comparar grupos
-      const materiaActual = materias.find(m => m.codigo_materia === editingId);
-      const gruposActuales = materiaActual?.grupos_asignados || [];
-      
-      console.log('2️⃣ Grupos actuales en backend:', gruposActuales);
-      console.log('2️⃣ Grupos nuevos seleccionados:', gruposSeleccionados.map(g => g.codigo_grupo));
-
-      // 3. Identificar grupos a agregar y grupos a eliminar
-      const gruposAAgregar = gruposSeleccionados.filter(
-        g => !gruposActuales.includes(String(g.codigo_grupo))
-      );
-      
-      const gruposAEliminar = gruposActuales.filter(
-        codigoGrupo => !gruposSeleccionados.find(g => String(g.codigo_grupo) === String(codigoGrupo))
-      );
-
-      console.log('3️⃣ Grupos a agregar:', gruposAAgregar.map(g => g.codigo_grupo));
-      console.log('3️⃣ Grupos a eliminar:', gruposAEliminar);
-
-      // 4. Agregar nuevos grupos
-      if (gruposAAgregar.length > 0) {
-        console.log('4️⃣ Agregando nuevos grupos...');
-        for (const grupo of gruposAAgregar) {
-          try {
-            await SubjectService.agregarGrupoAMateria(editingId, grupo.codigo_grupo);
-            console.log(`   ✅ Grupo ${grupo.codigo_grupo} agregado`);
-          } catch (error) {
-            // Si el grupo ya está asignado a otra materia, intentar liberarlo primero
-            if (error.message && error.message.includes('ya está asignado')) {
-              console.warn(`   ⚠️ Grupo ${grupo.codigo_grupo} ya asignado a otra materia`);
-              
-              // Extraer el código de materia del mensaje de error
-              const match = error.message.match(/materia\s+([A-Z0-9_]+)/i);
-              if (match && match[1]) {
-                const materiaAnterior = match[1];
-                console.log(`   🔄 Intentando liberar grupo de materia anterior: ${materiaAnterior}`);
-                
-                try {
-                  // Eliminar grupo de la materia anterior
-                  await SubjectService.eliminarGrupoDeMateria(materiaAnterior, grupo.codigo_grupo);
-                  console.log(`   ✅ Grupo liberado de ${materiaAnterior}`);
-                  
-                  // Intentar agregar nuevamente
-                  await SubjectService.agregarGrupoAMateria(editingId, grupo.codigo_grupo);
-                  console.log(`   ✅ Grupo ${grupo.codigo_grupo} agregado después de liberarlo`);
-                } catch (secondError) {
-                  console.error(`   ❌ Error al liberar/agregar grupo ${grupo.codigo_grupo}:`, secondError.message);
-                  alert(`⚠️ No se pudo agregar el grupo ${grupo.codigo_grupo}: ${secondError.message}`);
-                }
-              } else {
-                console.error(`   ❌ Error al agregar grupo ${grupo.codigo_grupo}:`, error.message);
-                alert(`⚠️ ${error.message}`);
-              }
-            } else {
-              console.error(`   ❌ Error al agregar grupo ${grupo.codigo_grupo}:`, error.message);
-              alert(`⚠️ Error al agregar grupo ${grupo.codigo_grupo}: ${error.message}`);
-            }
-          }
-        }
-      }
-
-      // 5. Eliminar grupos removidos
-      if (gruposAEliminar.length > 0) {
-        console.log('5️⃣ Eliminando grupos removidos...');
-        for (const codigoGrupo of gruposAEliminar) {
-          try {
-            await SubjectService.eliminarGrupoDeMateria(editingId, codigoGrupo);
-            console.log(`   ✅ Grupo ${codigoGrupo} eliminado`);
-          } catch (error) {
-            console.error(`   ❌ Error al eliminar grupo ${codigoGrupo}:`, error.message);
-          }
-        }
-      }
-
-      // 6. Recargar materias Y grupos para actualizar la UI
-      console.log('6️⃣ Recargando lista de materias y grupos...');
-      await Promise.all([
-        cargarMaterias(),
-        cargarGrupos() // También recargar grupos para actualizar la lista de disponibles
-      ]);
-      alert("✅ Materia actualizada exitosamente");
+      // 2. Recargar materias para actualizar la UI
+      console.log('2️⃣ Recargando lista de materias...');
+      await cargarMaterias();
+      alert("✅ Ciclo actualizado exitosamente");
       handleCancelEdit();
       
     } catch (error) {
@@ -401,6 +336,24 @@ export const useSubjectManagement = () => {
     limpiarFormulario();
   };
 
+  /**
+   * Abrir modal de asignaciones de materia
+   */
+  const handleAbrirAsignaciones = (materia) => {
+    console.log('🔓 Abriendo modal de asignaciones para materia:', materia.codigo_materia);
+    setMateriaSeleccionada(materia);
+    setShowAsignacionesModal(true);
+  };
+
+  /**
+   * Cerrar modal de asignaciones
+   */
+  const handleCerrarAsignaciones = () => {
+    console.log('🔐 Cerrando modal de asignaciones');
+    setShowAsignacionesModal(false);
+    setMateriaSeleccionada(null);
+  };
+
   useEffect(() => {
     cargarMaterias();
     cargarGrupos();
@@ -419,31 +372,35 @@ export const useSubjectManagement = () => {
     setNombreMateria,
     cicloSemestral,
     setCicloSemestral,
-    
+
     // Estados de grupos
     gruposDisponibles,
     gruposSeleccionados,
     profesores,
-    
+
     // Estados de materias
     materias,
     materiasFiltradas,
-    
+
     // Estados de edición
     isEditing,
     editingId,
     showEditModal,
-    
+
+    // Estados de asignaciones
+    showAsignacionesModal,
+    materiaSeleccionada,
+
     // Estado de búsqueda
     searchTerm,
     setSearchTerm,
-    
+
     // Funciones auxiliares
     getDocenteNombre,
     getGrupoCompleto,
     agregarGrupoSeleccionado,
     eliminarGrupoSeleccionado,
-    
+
     // Funciones CRUD
     handleSubmit,
     handleEdit,
@@ -451,7 +408,11 @@ export const useSubjectManagement = () => {
     handleCancelEdit,
     handleDelete,
     handleCancel,
-    
+
+    // Funciones de asignaciones
+    handleAbrirAsignaciones,
+    handleCerrarAsignaciones,
+
     // Funciones de carga
     cargarMaterias,
     cargarGrupos,

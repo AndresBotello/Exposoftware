@@ -24,6 +24,8 @@ export default function ManageEvents() {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [lugarEvento, setLugarEvento] = useState("");
+  const [fechaAperturaInscripciones, setFechaAperturaInscripciones] = useState("");
+  const [fechaCierreInscripciones, setFechaCierreInscripciones] = useState("");
   const [cupoMaximo, setCupoMaximo] = useState("");
   const [estado, setEstado] = useState("ACTIVO");
   const [guardandoEvento, setGuardandoEvento] = useState(false);
@@ -62,12 +64,23 @@ export default function ManageEvents() {
       const ahora = new Date();
       setEstadisticas({
         total_eventos: eventos.length,
-        eventos_activos: eventos.filter(e => e.estado === 'ACTIVO').length,
-        eventos_proximos: eventos.filter(e => new Date(e.fecha_inicio) > ahora && e.estado === 'ACTIVO').length,
-        eventos_finalizados: eventos.filter(e => new Date(e.fecha_fin) < ahora).length
+        eventos_activos: eventos.filter(e => e.estado === 'en_curso' || e.estado === 'inscripciones_abiertas').length,
+        eventos_proximos: eventos.filter(e => new Date(e.fecha_inicio) > ahora && e.estado !== 'cancelado').length,
+        eventos_finalizados: eventos.filter(e => e.estado === 'finalizado').length
       });
     }
   }, [eventos]);
+
+  const formatearFechaParaInput = (fecha) => {
+    if (!fecha) return "";
+    const date = new Date(fecha);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   const handleEditarEvento = async (evento) => {
     try {
@@ -75,10 +88,11 @@ export default function ManageEvents() {
       setEventoEditando(eventoCompleto);
       setNombreEvento(eventoCompleto.nombre_evento || "");
       setDescripcion(eventoCompleto.descripcion || "");
-      const formatearFecha = (fecha) => fecha ? new Date(fecha).toISOString().slice(0, 16) : "";
-      setFechaInicio(formatearFecha(eventoCompleto.fecha_inicio));
-      setFechaFin(formatearFecha(eventoCompleto.fecha_fin));
+      setFechaInicio(formatearFechaParaInput(eventoCompleto.fecha_inicio));
+      setFechaFin(formatearFechaParaInput(eventoCompleto.fecha_fin));
       setLugarEvento(eventoCompleto.lugar || "");
+      setFechaAperturaInscripciones(formatearFechaParaInput(eventoCompleto.fecha_apertura_inscripciones));
+      setFechaCierreInscripciones(formatearFechaParaInput(eventoCompleto.fecha_cierre_inscripciones));
       setCupoMaximo(eventoCompleto.cupo_maximo?.toString() || "");
       setEstado(eventoCompleto.estado || "ACTIVO");
       setShowEditModal(true);
@@ -88,24 +102,87 @@ export default function ManageEvents() {
     }
   };
 
+  const isValidStateTransition = (estadoActual, nuevoEstado) => {
+    const transiciones = {
+      'borrador': ['inscripciones_abiertas', 'cancelado'],
+      'inscripciones_abiertas': ['inscripciones_cerradas', 'cancelado'],
+      'inscripciones_cerradas': ['en_curso', 'cancelado'],
+      'en_curso': ['finalizado', 'cancelado'],
+      'finalizado': ['cancelado'],
+      'cancelado': []
+    };
+    return transiciones[estadoActual]?.includes(nuevoEstado) || estadoActual === nuevoEstado;
+  };
+
   const handleGuardarEvento = async (e) => {
     e.preventDefault();
-    if (!nombreEvento || !descripcion || !fechaInicio || !fechaFin || !lugarEvento || !cupoMaximo) {
+    if (!nombreEvento || !descripcion || !fechaInicio || !fechaFin || !lugarEvento || !fechaAperturaInscripciones || !fechaCierreInscripciones) {
       alert("Por favor completa todos los campos"); return;
     }
-    const cupo = parseInt(cupoMaximo);
-    if (isNaN(cupo) || cupo < 1) { alert("El cupo máximo debe ser un número mayor a 0"); return; }
     if (new Date(fechaFin) < new Date(fechaInicio)) { alert("La fecha de fin no puede ser anterior a la fecha de inicio"); return; }
+    if (new Date(fechaCierreInscripciones) < new Date(fechaAperturaInscripciones)) { alert("La fecha de cierre de inscripciones no puede ser anterior a la apertura"); return; }
+    if (new Date(fechaAperturaInscripciones) > new Date(fechaInicio)) { alert("La fecha de apertura de inscripciones no puede ser posterior a la fecha de inicio"); return; }
+    if (new Date(fechaCierreInscripciones) > new Date(fechaInicio)) { alert("La fecha de cierre de inscripciones no puede ser posterior a la fecha de inicio del evento"); return; }
+
+    const estadoActual = eventoEditando.estado;
+    if (estadoActual !== estado && !isValidStateTransition(estadoActual, estado)) {
+      const transicionesValidas = {
+        'borrador': 'inscripciones_abiertas',
+        'inscripciones_abiertas': 'inscripciones_cerradas',
+        'inscripciones_cerradas': 'en_curso',
+        'en_curso': 'finalizado'
+      }[estadoActual];
+      alert(`❌ Transición no permitida\n\nEstado actual: ${estadoActual}\nEstado solicitado: ${estado}\n\nPróximo estado permitido: ${transicionesValidas || 'ninguno (puede cancelar)'}`);
+      return;
+    }
+
+    const convertirFecha = (fechaStr) => {
+      if (!fechaStr) return null;
+      const [datePart, timePart] = fechaStr.split('T');
+      if (!datePart || !timePart) return null;
+      const [year, month, day] = datePart.split('-');
+      const [hours, minutes] = timePart.split(':');
+      try {
+        const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes), 0));
+        return date.toISOString();
+      } catch (e) {
+        console.error('❌ Error al convertir fecha:', fechaStr, e);
+        return null;
+      }
+    };
 
     const payload = {
-      nombre_evento: nombreEvento, descripcion, lugar: lugarEvento, cupo_maximo: cupo, estado,
-      fecha_inicio: new Date(fechaInicio).toISOString(),
-      fecha_fin: new Date(fechaFin).toISOString(),
+      nombre_evento: nombreEvento.trim(),
+      descripcion: descripcion.trim(),
+      lugar: lugarEvento.trim()
     };
+
+    // Agregar fechas solo si tienen valores válidos
+    const fechaInicioISO = convertirFecha(fechaInicio);
+    const fechaFinISO = convertirFecha(fechaFin);
+    const fechaAperturaISO = convertirFecha(fechaAperturaInscripciones);
+    const fechaCierreISO = convertirFecha(fechaCierreInscripciones);
+
+    if (fechaInicioISO) payload.fecha_inicio = fechaInicioISO;
+    if (fechaFinISO) payload.fecha_fin = fechaFinISO;
+    if (fechaAperturaISO) payload.fecha_apertura_inscripciones = fechaAperturaISO;
+    if (fechaCierreISO) payload.fecha_cierre_inscripciones = fechaCierreISO;
+
+    if (cupoMaximo && cupoMaximo.toString().trim()) {
+      const cupo = parseInt(cupoMaximo);
+      if (!isNaN(cupo) && cupo > 0) {
+        payload.cupo_maximo = cupo;
+      }
+    }
 
     setGuardandoEvento(true);
     try {
       await EventosService.actualizarEvento(eventoEditando.id_evento, payload);
+
+      if (estadoActual !== estado) {
+        await EventosService.cambiarEstadoEvento(eventoEditando.id_evento, estado);
+      }
+
       alert("✅ Evento actualizado exitosamente");
       setShowEditModal(false);
       cargarEventos();
@@ -140,13 +217,32 @@ export default function ManageEvents() {
     }
   };
 
+  const handleArchivarEvento = async (eventoId) => {
+    if (!window.confirm("¿Está seguro de que desea archivar este evento? Esta acción es permanente y lo marcará como histórico.")) return;
+    try {
+      await EventosService.archivarEvento(eventoId);
+      alert("✅ Evento archivado exitosamente");
+      cargarEventos();
+    } catch (error) {
+      console.error("❌ Error al archivar evento:", error);
+      alert(`❌ Error al archivar evento: ${error.message}`);
+    }
+  };
+
   const formatearFechaDisplay = (fecha) => {
     if (!fecha) return "N/A";
     return new Date(fecha).toLocaleString('es-CO', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const getEstadoBadgeColor = (estadoEvento) => {
-    const colors = { 'ACTIVO': 'bg-green-100 text-green-800', 'INACTIVO': 'bg-gray-100 text-gray-800', 'CANCELADO': 'bg-red-100 text-red-800' };
+    const colors = {
+      'borrador': 'bg-yellow-100 text-yellow-800',
+      'inscripciones_abiertas': 'bg-green-100 text-green-800',
+      'inscripciones_cerradas': 'bg-blue-100 text-blue-800',
+      'en_curso': 'bg-purple-100 text-purple-800',
+      'finalizado': 'bg-gray-100 text-gray-800',
+      'cancelado': 'bg-red-100 text-red-800'
+    };
     return colors[estadoEvento] || 'bg-blue-100 text-blue-800';
   };
 
@@ -184,6 +280,7 @@ export default function ManageEvents() {
               handleEditarEvento={handleEditarEvento}
               handleVerCapacidad={handleVerCapacidad}
               handleCambiarEstado={handleCambiarEstado}
+              handleArchivarEvento={handleArchivarEvento}
             />
           </main>
         </div>
@@ -196,6 +293,8 @@ export default function ManageEvents() {
         fechaInicio={fechaInicio} setFechaInicio={setFechaInicio}
         fechaFin={fechaFin} setFechaFin={setFechaFin}
         lugarEvento={lugarEvento} setLugarEvento={setLugarEvento}
+        fechaAperturaInscripciones={fechaAperturaInscripciones} setFechaAperturaInscripciones={setFechaAperturaInscripciones}
+        fechaCierreInscripciones={fechaCierreInscripciones} setFechaCierreInscripciones={setFechaCierreInscripciones}
         cupoMaximo={cupoMaximo} setCupoMaximo={setCupoMaximo}
         estado={estado} setEstado={setEstado}
         guardandoEvento={guardandoEvento}

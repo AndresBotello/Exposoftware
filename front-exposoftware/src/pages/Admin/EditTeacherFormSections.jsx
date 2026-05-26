@@ -13,7 +13,7 @@ const selectStyles = {
 };
 
 export default function EditTeacherFormSections({
-  municipios, opcionesPaises, programas, loadingProgramas,
+  municipios, opcionesPaises, departamentos = [], programas, loadingProgramas,
   pais, setPais, nacionalidad, setNacionalidad,
   departamento, setDepartamento, municipio, setMunicipio,
   ciudadResidencia, setCiudadResidencia, direccionResidencia, setDireccionResidencia,
@@ -50,7 +50,14 @@ export default function EditTeacherFormSections({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 bg-white"
             >
               <option value="">Seleccionar</option>
-              {DEPARTAMENTOS_COLOMBIA.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+              {Array.isArray(departamentos) && departamentos.map((d, idx) => {
+                const deptName = d.nombre || d.departamento || d.nombre_departamento;
+                return (
+                  <option key={`dept-${idx}-${d.codigo || deptName}`} value={deptName}>
+                    {deptName}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -60,7 +67,14 @@ export default function EditTeacherFormSections({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 bg-white disabled:bg-gray-100"
             >
               <option value="">Seleccionar municipio</option>
-              {municipios.map((mun) => <option key={mun} value={mun}>{mun}</option>)}
+              {Array.isArray(municipios) && municipios.map((mun, idx) => {
+                const munNombre = typeof mun === 'string' ? mun : (mun.nombre_municipio || mun.municipio || '');
+                return munNombre ? (
+                  <option key={`mun-${idx}-${munNombre}`} value={munNombre}>
+                    {munNombre}
+                  </option>
+                ) : null;
+              })}
             </select>
           </div>
 

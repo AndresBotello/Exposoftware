@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getEventoById } from "../../Services/EventosPublicService";
+import { useAuth } from "../../contexts/AuthContext";
+import * as AuthService from "../../Services/AuthService";
+import { FiLogOut } from "react-icons/fi";
 import logo from "../../assets/Logo-unicesar.png";
 
 const obtenerProyectosPublicos = async () => {
@@ -48,6 +51,8 @@ const TIPOS_ACTIVIDAD = {
 };
 
 export default function PublicProjects() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [proyectos, setProyectos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -55,6 +60,18 @@ export default function PublicProjects() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [eventoNombre, setEventoNombre] = useState({});
+
+  const isGuest = user?.rol === 'invitado';
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      navigate('/');
+    }
+  };
 
   useEffect(() => {
     const cargar = async () => {
@@ -136,27 +153,48 @@ export default function PublicProjects() {
             </Link>
 
             <div className="flex items-center gap-3">
-              <Link
-                to="/"
-                className="text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors flex items-center gap-2 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50"
-              >
-                <i className="pi pi-home"></i>
-                <span className="hidden sm:inline">Home</span>
-              </Link>
-              <Link
-                to="/login"
-                className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-2 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-50"
-              >
-                <i className="pi pi-sign-in"></i>
-                <span className="hidden sm:inline">Iniciar Sesión</span>
-              </Link>
-              <Link
-                to="/register"
-                className="text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg"
-              >
-                <i className="pi pi-user-plus"></i>
-                <span className="hidden sm:inline">Registrarse</span>
-              </Link>
+              {isGuest ? (
+                <>
+                  <Link
+                    to="/"
+                    className="text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors flex items-center gap-2 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50"
+                  >
+                    <i className="pi pi-home"></i>
+                    <span className="hidden sm:inline">Inicio</span>
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors flex items-center gap-2 px-4 py-1.5 rounded-lg"
+                  >
+                    <FiLogOut size={16} />
+                    <span className="hidden sm:inline">Salir</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/"
+                    className="text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors flex items-center gap-2 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50"
+                  >
+                    <i className="pi pi-home"></i>
+                    <span className="hidden sm:inline">Home</span>
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-2 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-50"
+                  >
+                    <i className="pi pi-sign-in"></i>
+                    <span className="hidden sm:inline">Iniciar Sesión</span>
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg"
+                  >
+                    <i className="pi pi-user-plus"></i>
+                    <span className="hidden sm:inline">Registrarse</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

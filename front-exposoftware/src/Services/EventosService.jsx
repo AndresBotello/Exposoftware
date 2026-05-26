@@ -1,6 +1,4 @@
-import { API_BASE_URL } from '../utils/constants';
-
-const API_URL = API_BASE_URL;
+import { API_ENDPOINTS } from '../utils/constants';
 
 /**
  * Obtener el token de autenticación
@@ -33,7 +31,8 @@ class EventosService {
     try {
       console.log('📅 Obteniendo todos los eventos...');
       
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS, {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -70,7 +69,8 @@ class EventosService {
     try {
       console.log(`📅 Obteniendo evento con ID ${eventoId}...`);
       
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos/${eventoId}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -144,7 +144,8 @@ class EventosService {
       
       console.log('📦 Payload final a enviar:', JSON.stringify(payload, null, 2));
 
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS, {
+        credentials: 'include',
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(payload)
@@ -175,36 +176,48 @@ class EventosService {
   static async actualizarEvento(eventoId, eventoData) {
     try {
       console.log(`📝 Actualizando evento ${eventoId}...`, eventoData);
-      
-      const payload = {};
-      
-      if (eventoData.nombre_evento) payload.nombre_evento = eventoData.nombre_evento;
-      if (eventoData.descripcion) payload.descripcion = eventoData.descripcion;
-      if (eventoData.fecha_inicio) payload.fecha_inicio = eventoData.fecha_inicio;
-      if (eventoData.fecha_fin) payload.fecha_fin = eventoData.fecha_fin;
-      if (eventoData.lugar) payload.lugar = eventoData.lugar;
-      if (eventoData.cupo_maximo) payload.cupo_maximo = eventoData.cupo_maximo;
 
-      if (Object.keys(payload).length === 0) {
-        throw new Error('No hay datos para actualizar');
-      }
+      console.log('📦 Payload final:', JSON.stringify(eventoData, null, 2));
 
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos/${eventoId}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
+        credentials: 'include',
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(payload)
+        body: JSON.stringify(eventoData)
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Error del servidor - Status:', response.status);
+        console.error('❌ Error del servidor - Response completa:', errorData);
+        console.error('❌ Payload enviado:', JSON.stringify(eventoData, null, 2));
+
+        let mensajeError = errorData.message || errorData.detail || `Error ${response.status}: ${response.statusText}`;
+
+        if (errorData.errors) {
+          console.error('❌ Errores:', errorData.errors);
+          if (Array.isArray(errorData.errors)) {
+            // Si es un array de errores
+            console.error('❌ Errores en array:', JSON.stringify(errorData.errors, null, 2));
+            mensajeError = errorData.errors.map((err, idx) => {
+              if (typeof err === 'string') return err;
+              if (err.message) return err.message;
+              return JSON.stringify(err);
+            }).join(', ');
+          } else {
+            // Si es un objeto de errores por campo
+            mensajeError = Object.entries(errorData.errors).map(([key, val]) => `${key}: ${val}`).join(', ');
+          }
+        }
+        console.error('❌ Mensaje de error final:', mensajeError);
+        throw new Error(mensajeError);
       }
 
       const data = await response.json();
       console.log(`✅ Evento ${eventoId} actualizado:`, data);
-      
+
       return data.data || data;
-      
+
     } catch (error) {
       console.error(`❌ Error actualizando evento ${eventoId}:`, error);
       throw error;
@@ -219,7 +232,8 @@ class EventosService {
     try {
       console.log(`🗑️ Eliminando evento ${eventoId}...`);
       
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos/${eventoId}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
+        credentials: 'include',
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -246,7 +260,8 @@ class EventosService {
     try {
       console.log(`👥 Obteniendo asistentes del evento ${eventoId}...`);
       
-      const response = await fetch(`${API_URL}/api/v1/eventos/${eventoId}/asistentes`, {
+      const response = await fetch(API_ENDPOINTS.EVENTO_ASISTENTES(eventoId), {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -273,8 +288,9 @@ class EventosService {
   static async obtenerEventosAdmin() {
     try {
       console.log('📅 [Admin] Obteniendo todos los eventos...');
-      
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos`, {
+
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS, {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -285,9 +301,9 @@ class EventosService {
 
       const data = await response.json();
       console.log('✅ Eventos admin obtenidos:', data);
-      
+
       return Array.isArray(data) ? data : (data.data || data.eventos || []);
-      
+
     } catch (error) {
       console.error('❌ Error obteniendo eventos (admin):', error);
       throw new Error('No se pudieron cargar los eventos');
@@ -302,7 +318,8 @@ class EventosService {
     try {
       console.log(`📅 [Admin] Obteniendo evento ${eventoId}...`);
       
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos/${eventoId}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -329,11 +346,19 @@ class EventosService {
   static async cambiarEstadoEvento(eventoId, estado) {
     try {
       console.log(`🔄 Cambiando estado del evento ${eventoId} a ${estado}...`);
-      
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos/${eventoId}/estado`, {
+
+      const payload = {
+        estado: estado.toLowerCase(),
+        comentario: null
+      };
+
+      console.log('📦 Payload:', JSON.stringify(payload, null, 2));
+
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_ESTADO(eventoId), {
+        credentials: 'include',
         method: 'PATCH',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ estado })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -343,9 +368,9 @@ class EventosService {
 
       const data = await response.json();
       console.log(`✅ Estado del evento ${eventoId} actualizado:`, data);
-      
+
       return data;
-      
+
     } catch (error) {
       console.error(`❌ Error cambiando estado del evento ${eventoId}:`, error);
       throw error;
@@ -360,7 +385,8 @@ class EventosService {
     try {
       console.log(`📊 Verificando capacidad del evento ${eventoId}...`);
       
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos/${eventoId}/capacidad`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_CAPACIDAD(eventoId), {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -388,7 +414,8 @@ class EventosService {
     try {
       console.log('📅 Obteniendo eventos próximos...');
       
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos/proximos/listado`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS_PROXIMOS, {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -415,8 +442,9 @@ class EventosService {
   static async obtenerEstadisticasGenerales() {
     try {
       console.log('📊 Obteniendo estadísticas generales...');
-      
-      const response = await fetch(`${API_URL}/api/v1/admin/eventos/estadisticas/generales`, {
+
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS_ESTADISTICAS, {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -427,11 +455,41 @@ class EventosService {
 
       const data = await response.json();
       console.log('✅ Estadísticas generales obtenidas:', data);
-      
+
       return data;
-      
+
     } catch (error) {
       console.error('❌ Error obteniendo estadísticas generales:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Archivar un evento
+   * PATCH /api/v1/admin/eventos/{id}/archivar
+   */
+  static async archivarEvento(eventoId) {
+    try {
+      console.log(`📦 Archivando evento ${eventoId}...`);
+
+      const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_ARCHIVAR(eventoId), {
+        credentials: 'include',
+        method: 'PATCH',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ Evento ${eventoId} archivado:`, data);
+
+      return data.data || data;
+
+    } catch (error) {
+      console.error(`❌ Error archivando evento ${eventoId}:`, error);
       throw error;
     }
   }

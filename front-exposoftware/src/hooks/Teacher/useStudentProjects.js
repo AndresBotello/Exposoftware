@@ -4,17 +4,23 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getTeacherProjects } from "../../Services/ProjectsService.jsx";
 import {
   calificarProyecto,
-  getTeacherSubjects,
   getTeacherSubjectGroups,
+  getMyProjects,
+  getProyectosByEvento,
+  updateProyectoStatus,
+  getMyTeachingLoad,
+  getMyGroups,
+  getUsersInfo,
+  obtenerCalificacionPopular,
 } from "../../Services/TeacherService.jsx";
 import ResearchLinesService from "../../Services/ResearchLinesService.jsx";
 import { getEventosMap, getAllEventos } from "../../Services/EventosPublicService.jsx";
 import {
-  resolveDocenteId,
   getLineaName as getLineaNameUtil,
   getSublineaName as getSublineaNameUtil,
   getAreaName as getAreaNameUtil,
   getEventoName as getEventoNameUtil,
+  resolveDocenteId,
 } from "../../utils/teacherHelpers";
 
 export function useStudentProjects() {
@@ -33,9 +39,21 @@ export function useStudentProjects() {
   const [projectToGrade, setProjectToGrade] = useState(null);
   const [gradeValue, setGradeValue] = useState("");
   const [gradingProject, setGradingProject] = useState(false);
+  const [projectCalificacionPopular, setProjectCalificacionPopular] = useState(null);
+  const [loadingCalificacionPopular, setLoadingCalificacionPopular] = useState(false);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [myProjects, setMyProjects] = useState([]);
+  const [myProjectsCount, setMyProjectsCount] = useState(0);
+  const [projectsForApproval, setProjectsForApproval] = useState([]);
+  const [approvingProject, setApprovingProject] = useState(false);
+  const [rejectingProject, setRejectingProject] = useState(false);
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [projectForAction, setProjectForAction] = useState(null);
+  const [showRejectReason, setShowRejectReason] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   const [lineasMap, setLineasMap] = useState(new Map());
   const [sublineasMap, setSublineasMap] = useState(new Map());
@@ -75,18 +93,137 @@ export function useStudentProjects() {
 
         if (!user) return;
 
-        const docenteId = await resolveDocenteId(user);
-        if (!docenteId) {
-          setError(
-            "No se pudo identificar al docente. Por favor, cierre sesión e inicie sesión nuevamente."
-          );
-          return;
+        // Cargar mi carga docente (materias y grupos que dicto)
+        let teachingLoadMap = new Map(); // Mapa de id_docente_materia -> {codigo_materia, nombre_materia, nombre_grupo, id_grupo}
+        let gruposMap = new Map(); // Mapa de id_grupo -> nombre_grupo
+        try {
+          const carga = await getMyTeachingLoad();
+          console.log('📚 Carga docente recibida:', carga);
+
+          // La respuesta puede ser un objeto con clases o un array
+          const clases = Array.isArray(carga) ? carga : (carga?.clases || []);
+
+          clases.forEach(clase => {
+            if (clase.id_docente_materia) {
+              teachingLoadMap.set(clase.id_docente_materia, {
+                codigo_materia: clase.codigo_materia,
+                nombre_materia: clase.nombre_materia,
+                nombre_grupo: clase.nombre_grupo,
+                id_grupo: clase.id_grupo
+              });
+              // También mapear el grupo
+              if (clase.id_grupo && clase.nombre_grupo) {
+                gruposMap.set(clase.id_grupo, clase.nombre_grupo);
+              }
+              console.log(`  ✅ Materia mapeada: ${clase.id_docente_materia} -> ${clase.nombre_materia || clase.codigo_materia}`);
+            }
+          });
+          console.log(`📚 Total materias cargadas: ${teachingLoadMap.size}, grupos: ${gruposMap.size}`);
+        } catch (err) {
+          console.warn("⚠️ Error cargando carga docente:", err.message || err);
+          // Fallback: cargar grupos por separado si la carga docente falla
+          try {
+            const grupos = await getMyGroups();
+            const gruposArray = Array.isArray(grupos) ? grupos : (grupos?.data || []);
+            gruposArray.forEach(grupo => {
+              if (grupo.id_grupo && grupo.nombre_grupo) {
+                gruposMap.set(grupo.id_grupo, grupo.nombre_grupo);
+              }
+            });
+            console.log(`👥 Grupos cargados como fallback: ${gruposMap.size}`);
+          } catch (groupErr) {
+            console.warn("⚠️ Error cargando grupos:", groupErr.message || groupErr);
+          }
         }
 
-        const data = await getTeacherProjects(docenteId);
+        // Cargar mis proyectos (proyectos asignados al docente)
+        try {
+          const myProjectsData = await getMyProjects();
 
-        // Filtrar solo proyectos de eventos activos
+          // Helper: detectar si un string es un UUID
+          const isUUID = (str) => {
+            if (!str) return false;
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            return uuidRegex.test(String(str));
+          };
+
+          // Transformar datos: mapear integrantes a id_estudiantes y asociar materias
+          const transformedProjects = (Array.isArray(myProjectsData) ? myProjectsData : []).map((p, idx) => {
+            const materiaInfo = teachingLoadMap.get(p.id_docente_materia) || {};
+
+            // Obtener nombre del grupo del mapa si no está en la materia info
+            let nombreGrupo = materiaInfo.nombre_grupo || p.nombre_grupo;
+            let idGrupo = materiaInfo.id_grupo || p.id_grupo;
+
+            if (!nombreGrupo && idGrupo) {
+              nombreGrupo = gruposMap.get(idGrupo) || p.nombre_grupo;
+            }
+
+            // Si nombreGrupo parece un UUID, no mostrarlo
+            if (isUUID(nombreGrupo)) {
+              nombreGrupo = null;
+            }
+
+            // Log de detalles del primer proyecto
+            if (idx === 0) {
+              console.log(`📦 Proyecto original - Campos disponibles:`, Object.keys(p));
+              console.log(`   id_docente_materia:`, p.id_docente_materia);
+              console.log(`   nombre_grupo original:`, p.nombre_grupo, `(¿es UUID? ${isUUID(p.nombre_grupo)})`);
+              console.log(`   id_grupo original:`, p.id_grupo);
+              console.log(`   materiaInfo desde teachingLoadMap:`, materiaInfo);
+              console.log(`   idGrupo después de enriquecimiento:`, idGrupo);
+              console.log(`   nombre_grupo final después de mapeo:`, nombreGrupo);
+            }
+
+            return {
+              ...p,
+              id_estudiantes: p.integrantes || [],
+              codigo_materia: materiaInfo.codigo_materia || p.codigo_materia,
+              nombre_materia: materiaInfo.nombre_materia || p.nombre_materia,
+              nombre_grupo: nombreGrupo || 'N/A',
+              id_grupo: idGrupo || 'N/A',
+              activo: p.estado !== 'inactivo' && p.estado !== 'rechazado'
+            };
+          });
+          setMyProjects(transformedProjects);
+          setMyProjectsCount(transformedProjects.length);
+          console.log(`📊 Mis proyectos transformados: ${transformedProjects.length}`);
+          transformedProjects.forEach(p => {
+            console.log(`  - ${p.titulo_proyecto}: ${p.nombre_materia || 'Sin materia'} - Grupo ${p.nombre_grupo}`);
+          });
+        } catch (err) {
+          console.warn("⚠️ Error cargando mis proyectos:", err.message || err);
+          setMyProjects([]);
+          setMyProjectsCount(0);
+        }
+
+        // Cargar proyectos de eventos para aprobación
+        try {
+          const eventos = await getAllEventos();
+          const eventosAbiertosList = eventos.filter(
+            (e) =>
+              e.estado === "inscripciones_abiertas" ||
+              (typeof e.estado === "string" && e.estado.toLowerCase() === "inscripciones_abiertas")
+          );
+
+          let projectosAprobacion = [];
+          for (const evento of eventosAbiertosList) {
+            const eventoId = evento.id || evento.id_evento || evento.evento_id;
+            if (eventoId) {
+              const proyectosEvento = await getProyectosByEvento(eventoId);
+              projectosAprobacion = [...projectosAprobacion, ...(Array.isArray(proyectosEvento) ? proyectosEvento : [])];
+            }
+          }
+          setProjectsForApproval(projectosAprobacion);
+          console.log(`📊 Proyectos para aprobación: ${projectosAprobacion.length}`);
+        } catch (err) {
+          console.warn("⚠️ Error cargando proyectos para aprobación:", err.message || err);
+          setProjectsForApproval([]);
+        }
+
+        // Filtrar solo proyectos de eventos activos para tab "Todos"
         let eventosActivosSet = null;
+        let allProjects = [];
         try {
           const eventos = await getAllEventos();
           eventosActivosSet = new Set(
@@ -99,36 +236,81 @@ export function useStudentProjects() {
               .map((e) => e.id || e.id_evento || e.evento_id)
               .filter(Boolean)
           );
-        } catch {
-          // Si falla la carga de eventos, mostrar todos los proyectos
-        }
 
-        const proyectosFiltrados =
-          eventosActivosSet !== null
-            ? data.filter((p) => p.id_evento && eventosActivosSet.has(p.id_evento))
-            : data;
-
-        setProjects(proyectosFiltrados);
-
-        try {
-          const materias = await getTeacherSubjects(docenteId, proyectosFiltrados);
-          const normalized = (Array.isArray(materias) ? materias : []).map((m) => ({
-            codigo: (
-              m.codigo_materia || m.codigo || m.subject_code || m.id || m.code || ""
-            ).toString(),
-            nombre:
-              m.nombre ||
-              m.nombre_materia ||
-              m.subject_name ||
-              m.title ||
-              m.name ||
-              String(m.codigo_materia || m.codigo || m.id || ""),
-          }));
-          setMateriasList(normalized);
+          // Cargar todos los proyectos de eventos activos
+          for (const eventoId of eventosActivosSet) {
+            try {
+              const proyectosEvento = await getProyectosByEvento(eventoId);
+              allProjects = [...allProjects, ...(Array.isArray(proyectosEvento) ? proyectosEvento : [])];
+            } catch (err) {
+              console.warn(`⚠️ Error cargando proyectos del evento ${eventoId}:`, err.message);
+            }
+          }
         } catch (err) {
-          console.warn("⚠️ No se pudieron cargar las materias:", err.message || err);
-          setMateriasList([]);
+          console.warn("⚠️ Error filtrando eventos activos:", err.message || err);
         }
+
+        // Transformar proyectos de eventos para enriquecer con información de materias/grupos
+        const isUUID = (str) => {
+          if (!str) return false;
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          return uuidRegex.test(String(str));
+        };
+
+        const transformedAllProjects = allProjects.map((p) => {
+          const materiaInfo = teachingLoadMap.get(p.id_docente_materia) || {};
+
+          // Obtener nombre del grupo del mapa si no está en la materia info
+          let nombreGrupo = materiaInfo.nombre_grupo || p.nombre_grupo;
+          if (!nombreGrupo && p.id_grupo) {
+            nombreGrupo = gruposMap.get(p.id_grupo) || p.nombre_grupo;
+          }
+
+          // Si nombreGrupo parece un UUID, no mostrarlo
+          if (isUUID(nombreGrupo)) {
+            nombreGrupo = null;
+          }
+
+          return {
+            ...p,
+            id_estudiantes: p.integrantes || [],
+            codigo_materia: materiaInfo.codigo_materia || p.codigo_materia,
+            nombre_materia: materiaInfo.nombre_materia || p.nombre_materia,
+            nombre_grupo: nombreGrupo || 'N/A',
+            id_grupo: materiaInfo.id_grupo || p.id_grupo,
+            activo: p.estado !== 'inactivo' && p.estado !== 'rechazado'
+          };
+        });
+
+        setProjects(transformedAllProjects);
+
+        // Extraer materias únicas del teaching load (más confiables que de proyectos)
+        const materiasUnicas = new Map();
+
+        // Primero añadir del teaching load
+        teachingLoadMap.forEach((info, id) => {
+          const codigo = info.codigo_materia;
+          if (codigo && !materiasUnicas.has(codigo)) {
+            materiasUnicas.set(codigo, info.nombre_materia || `Materia ${codigo}`);
+          }
+        });
+
+        // Luego añadir de proyectos si no están en el mapa (para proyectos sin asignación)
+        allProjects.forEach((proyecto) => {
+          if (proyecto.codigo_materia) {
+            const codigo = proyecto.codigo_materia.toString();
+            if (!materiasUnicas.has(codigo)) {
+              materiasUnicas.set(codigo, proyecto.nombre_materia || `Materia ${codigo}`);
+            }
+          }
+        });
+
+        const normalized = Array.from(materiasUnicas, ([codigo, nombre]) => ({
+          codigo,
+          nombre
+        }));
+        setMateriasList(normalized);
+        console.log(`📚 Materias extraídas: ${normalized.length} (del teaching load: ${teachingLoadMap.size})`);
       } catch (err) {
         console.error("❌ Error al cargar proyectos:", err);
         setError(err.message);
@@ -205,9 +387,21 @@ export function useStudentProjects() {
     return matchesQuery && matchesMateria && matchesGroup;
   });
 
-  const handleViewDetails = (project) => {
+  const handleViewDetails = async (project) => {
     setSelectedProject(project);
     setShowModal(true);
+
+    // Cargar calificación popular del proyecto
+    try {
+      setLoadingCalificacionPopular(true);
+      const calificacion = await obtenerCalificacionPopular(project.id_proyecto);
+      setProjectCalificacionPopular(calificacion);
+    } catch (err) {
+      console.warn('⚠️ Error cargando calificación popular:', err);
+      setProjectCalificacionPopular(null);
+    } finally {
+      setLoadingCalificacionPopular(false);
+    }
   };
 
   const closeModal = () => {
@@ -262,6 +456,248 @@ export function useStudentProjects() {
     }
   };
 
+  const handleOpenActionModal = async (project) => {
+    setProjectForAction(project);
+    setShowActionModal(true);
+    setGradeValue(project.calificacion || "");
+    setShowRejectReason(false);
+    setRejectReason("");
+
+    // Cargar calificación popular del proyecto
+    try {
+      setLoadingCalificacionPopular(true);
+      const calificacion = await obtenerCalificacionPopular(project.id_proyecto);
+      setProjectCalificacionPopular(calificacion);
+    } catch (err) {
+      console.warn('⚠️ Error cargando calificación popular:', err);
+      setProjectCalificacionPopular(null);
+    } finally {
+      setLoadingCalificacionPopular(false);
+    }
+  };
+
+  const handleCloseActionModal = () => {
+    setShowActionModal(false);
+    setProjectForAction(null);
+    setGradeValue("");
+    setShowRejectReason(false);
+    setRejectReason("");
+  };
+
+  const handleGradeProjectAction = async () => {
+    if (!projectForAction) return;
+    try {
+      setGradingProject(true);
+      const nota = parseFloat(gradeValue);
+
+      if (isNaN(nota)) {
+        alert("Por favor ingrese una calificación válida");
+        return;
+      }
+      if (nota < 0 || nota > 5) {
+        alert("La calificación debe estar entre 0 y 5");
+        return;
+      }
+
+      const proyectoActualizado = await calificarProyecto(
+        projectForAction.id_proyecto,
+        nota
+      );
+
+      // Transformar proyecto con activo basado en estado
+      const proyectoTransformado = {
+        ...proyectoActualizado,
+        activo: proyectoActualizado.estado !== 'inactivo' && proyectoActualizado.estado !== 'rechazado'
+      };
+
+      // Actualizar todos los arrays que contienen el proyecto
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      setMyProjects((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      setProjectsForApproval((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      // Actualizar el proyecto en el modal también
+      setProjectForAction(proyectoTransformado);
+
+      alert(`✅ Proyecto calificado exitosamente con nota ${nota}`);
+    } catch (err) {
+      console.error("❌ Error al calificar proyecto:", err);
+      alert(`Error al calificar proyecto: ${err.message}`);
+    } finally {
+      setGradingProject(false);
+    }
+  };
+
+  const handleApproveProjectAction = async () => {
+    if (!projectForAction) return;
+    try {
+      setApprovingProject(true);
+      const proyectoActualizado = await updateProyectoStatus(
+        projectForAction.id_proyecto,
+        { estado: "aprobado" }
+      );
+
+      // Transformar proyecto con activo basado en estado
+      const proyectoTransformado = {
+        ...proyectoActualizado,
+        activo: proyectoActualizado.estado !== 'inactivo' && proyectoActualizado.estado !== 'rechazado'
+      };
+
+      // Actualizar todos los arrays que contienen el proyecto
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      setMyProjects((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      setProjectsForApproval((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      // Actualizar el proyecto en el modal también
+      setProjectForAction(proyectoTransformado);
+
+      alert(`✅ Proyecto aprobado exitosamente`);
+      handleCloseActionModal();
+    } catch (err) {
+      console.error("❌ Error al aprobar proyecto:", err);
+      alert(`Error al aprobar proyecto: ${err.message}`);
+    } finally {
+      setApprovingProject(false);
+    }
+  };
+
+  const handleRejectProjectAction = async () => {
+    if (!projectForAction) return;
+    try {
+      setRejectingProject(true);
+      const payload = { estado: "rechazado" };
+      if (rejectReason.trim()) {
+        payload.razon_rechazo = rejectReason;
+      }
+
+      const proyectoActualizado = await updateProyectoStatus(
+        projectForAction.id_proyecto,
+        payload
+      );
+
+      // Transformar proyecto con activo basado en estado
+      const proyectoTransformado = {
+        ...proyectoActualizado,
+        activo: proyectoActualizado.estado !== 'inactivo' && proyectoActualizado.estado !== 'rechazado'
+      };
+
+      // Actualizar todos los arrays que contienen el proyecto
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      setMyProjects((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      setProjectsForApproval((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      // Actualizar el proyecto en el modal también
+      setProjectForAction(proyectoTransformado);
+
+      alert(`✅ Proyecto rechazado exitosamente`);
+      handleCloseActionModal();
+    } catch (err) {
+      console.error("❌ Error al rechazar proyecto:", err);
+      alert(`Error al rechazar proyecto: ${err.message}`);
+    } finally {
+      setRejectingProject(false);
+    }
+  };
+
+  const handleApproveProject = async (project) => {
+    try {
+      setApprovingProject(true);
+      const proyectoActualizado = await updateProyectoStatus(
+        project.id_proyecto,
+        { estado: "aprobado" }
+      );
+
+      // Transformar proyecto con activo basado en estado
+      const proyectoTransformado = {
+        ...proyectoActualizado,
+        activo: proyectoActualizado.estado !== 'inactivo' && proyectoActualizado.estado !== 'rechazado'
+      };
+
+      setProjectsForApproval((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      alert(`✅ Proyecto aprobado exitosamente`);
+    } catch (err) {
+      console.error("❌ Error al aprobar proyecto:", err);
+      alert(`Error al aprobar proyecto: ${err.message}`);
+    } finally {
+      setApprovingProject(false);
+    }
+  };
+
+  const handleRejectProject = async (project) => {
+    try {
+      setApprovingProject(true);
+      const proyectoActualizado = await updateProyectoStatus(
+        project.id_proyecto,
+        { estado: "rechazado" }
+      );
+
+      // Transformar proyecto con activo basado en estado
+      const proyectoTransformado = {
+        ...proyectoActualizado,
+        activo: proyectoActualizado.estado !== 'inactivo' && proyectoActualizado.estado !== 'rechazado'
+      };
+
+      setProjectsForApproval((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      alert(`✅ Proyecto rechazado exitosamente`);
+    } catch (err) {
+      console.error("❌ Error al rechazar proyecto:", err);
+      alert(`Error al rechazar proyecto: ${err.message}`);
+    } finally {
+      setApprovingProject(false);
+    }
+  };
+
   return {
     user,
     getFullName,
@@ -283,8 +719,21 @@ export function useStudentProjects() {
     gradeValue,
     setGradeValue,
     gradingProject,
+    projectCalificacionPopular,
+    loadingCalificacionPopular,
     projects,
     filteredProjects,
+    myProjects,
+    myProjectsCount,
+    projectsForApproval,
+    approvingProject,
+    rejectingProject,
+    showActionModal,
+    projectForAction,
+    showRejectReason,
+    setShowRejectReason,
+    rejectReason,
+    setRejectReason,
     loading,
     error,
     handleLogout,
@@ -293,6 +742,13 @@ export function useStudentProjects() {
     handleOpenGradeModal,
     closeGradeModal,
     handleGradeProject,
+    handleOpenActionModal,
+    handleCloseActionModal,
+    handleGradeProjectAction,
+    handleApproveProjectAction,
+    handleRejectProjectAction,
+    handleApproveProject,
+    handleRejectProject,
     getLineaName,
     getSublineaName,
     getAreaName,

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getTeacherProfile, procesarDatosDocente } from "../../Services/TeacherService.jsx";
-import countryList from 'react-select-country-list';
-import colombiaData from "../../data/colombia.json";
+import { getTeacherProfile } from "../../Services/TeacherService.jsx";
 import logo from "../../assets/Logo-unicesar.png";
 import ProfileForm from "./ProfileForm";
 
@@ -19,45 +17,22 @@ export default function TeacherProfile() {
     confirmPassword: ""
   });
 
-  // Estado del perfil del docente - Valores por defecto
+  // Estado del perfil del docente - Solo campos que vienen del endpoint
   const [profileData, setProfileData] = useState({
-    // Campos propios de Docentes
-    id_docente: "",
+    // Datos del usuario
     id_usuario: "",
-    categoria_docente: "Interno",
-    codigo_programa: "",
-    
-    // Campos heredados de Usuarios
-    tipo_documento: "CC",
     identificacion: "",
-    nombres: "",
-    apellidos: "",
-    genero: "",
-    identidad_sexual: "",
-    fecha_nacimiento: "",
-    telefono: "",
-    
-    // Ubicación
-    pais: "CO",
-    nacionalidad: "",
-    departamento_residencia: "",
-    ciudad_residencia: "",
-    direccion_residencia: "",
-    departamento: "",
-    municipio: "",
-    ciudad: "",
-    
-    // Institucional
+    p_nombre: "",
+    p_apellido: "",
     correo: "",
-    anio_ingreso: new Date().getFullYear(),
-    periodo: 1,
-    rol: "Docente"
-  });
+    telefono: "",
+    activo: true,
 
-  // Estados para los selectores dinámicos
-  const [opcionesPaises, setOpcionesPaises] = useState([]);
-  const [ciudadesResidencia, setCiudadesResidencia] = useState([]);
-  const [municipios, setMunicipios] = useState([]);
+    // Datos del docente
+    id_docente: "",
+    categoria_docente: "",
+    codigo_programa: ""
+  });
 
   // Cargar información del docente desde el backend
   useEffect(() => {
@@ -65,16 +40,25 @@ export default function TeacherProfile() {
       try {
         setLoading(true);
         setError(null);
-        
-        console.log('📋 Cargando perfil del docente desde backend...');
-        const datosCrudos = await getTeacherProfile();
-        
-        // Procesar los datos
-        const datosProcesados = procesarDatosDocente(datosCrudos);
-        console.log('✅ Perfil procesado:', datosProcesados);
-        
-        // Establecer los datos en el estado
-        setProfileData(datosProcesados);
+
+        console.log('📋 Cargando perfil del docente...');
+        const datos = await getTeacherProfile();
+
+        console.log('✅ Datos del perfil recibidos:', datos);
+
+        // Mapear directamente desde la estructura del endpoint
+        setProfileData({
+          id_usuario: datos.usuario?.id_usuario || "",
+          identificacion: datos.usuario?.identificacion || "",
+          p_nombre: datos.usuario?.p_nombre || "",
+          p_apellido: datos.usuario?.p_apellido || "",
+          correo: datos.usuario?.correo || "",
+          telefono: datos.usuario?.telefono || "",
+          activo: datos.usuario?.activo ?? true,
+          id_docente: datos.docente?.id_docente || "",
+          categoria_docente: datos.docente?.categoria_docente || "",
+          codigo_programa: datos.docente?.codigo_programa || ""
+        });
       } catch (err) {
         console.error('❌ Error al cargar perfil:', err);
         setError(err.message);
@@ -85,43 +69,6 @@ export default function TeacherProfile() {
 
     loadTeacherProfile();
   }, []);
-
-  // Inicializar opciones de países
-  useEffect(() => {
-    const paises = countryList().getData();
-    setOpcionesPaises(paises);
-  }, []);
-
-  // Actualizar ciudades de residencia cuando cambia el departamento de residencia
-  useEffect(() => {
-    if (profileData.departamento_residencia) {
-      const dept = colombiaData.find(d => d.departamento === profileData.departamento_residencia);
-      if (dept) {
-        setCiudadesResidencia(dept.ciudades || []);
-      }
-    } else {
-      setCiudadesResidencia([]);
-    }
-  }, [profileData.departamento_residencia]);
-
-  // Actualizar municipios cuando cambia el departamento
-  useEffect(() => {
-    if (profileData.departamento) {
-      const dept = colombiaData.find(d => d.departamento === profileData.departamento);
-      if (dept) {
-        setMunicipios(dept.ciudades || []);
-      }
-    } else {
-      setMunicipios([]);
-    }
-  }, [profileData.departamento]);
-
-  const handleInputChange = (field, value) => {
-    setProfileData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
   const handleOpenPasswordModal = () => {
     setShowPasswordModal(true);
@@ -304,11 +251,6 @@ export default function TeacherProfile() {
                 <>
               <ProfileForm
                 profileData={profileData}
-                opcionesPaises={opcionesPaises}
-                ciudadesResidencia={ciudadesResidencia}
-                municipios={municipios}
-                colombiaData={colombiaData}
-                handleInputChange={handleInputChange}
               />
 
               {/* Seguridad */}

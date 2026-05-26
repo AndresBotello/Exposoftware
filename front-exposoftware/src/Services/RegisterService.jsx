@@ -5,520 +5,288 @@ import { API_ENDPOINTS } from "../utils/constants";
  * Endpoints públicos - NO requieren autenticación
  */
 
-// Sanitizar dirección: remover caracteres no permitidos
-const sanitizarDireccion = (direccion) => {
-  return direccion
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ñ/gi, "n")
-    .replace(/[^A-Za-z0-9#\-\s,]/g, "");
+// Quitar tildes para el backend
+const sanitizar = (str) =>
+  (str || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ñ/gi, "n").replace(/Ñ/g, "N");
+
+// Mapas de IDs del catálogo del backend
+const TIPO_DOC_IDS = { CC: 1, TI: 2, CE: 3, PTE: 4, PAS: 5 };
+const GENERO_IDS   = { Hombre: 1, Mujer: 2, Otro: 3 };
+const TIPO_VIA_IDS = { CL: 1, CR: 2, AV: 3, DG: 4, TV: 5, CIR: 6 };
+
+// Parsear dirección colombiana "Calle 10 #15-30" en campos separados
+const parsearDireccion = (direccion = "") => {
+  const d = sanitizar(direccion).trim();
+  const tipoMap = [
+    [/^(calle|cl\.?)\s*/i,       "CL"],
+    [/^(carrera|cra?\.?)\s*/i,   "CR"],
+    [/^(avenida|av\.?)\s*/i,     "AV"],
+    [/^(diagonal|dg\.?)\s*/i,    "DG"],
+    [/^(transversal|tv\.?)\s*/i, "TV"],
+    [/^(circular|cir\.?)\s*/i,   "CIR"],
+  ];
+  let tipoCod = "CL", resto = d;
+  for (const [re, cod] of tipoMap) {
+    if (re.test(d)) { tipoCod = cod; resto = d.replace(re, "").trim(); break; }
+  }
+  const idTipoVia = TIPO_VIA_IDS[tipoCod] || 1;
+  const m = resto.match(/^(\d+[A-Za-z]?)\s*#\s*(\d+[A-Za-z]?)\s*-\s*(\d+[A-Za-z]?)/i);
+  if (m) return { id_tipo_via: idTipoVia, numero_via: m[1], numero_cruce: m[2], numero_placa: m[3] };
+  const nums = resto.match(/\d+[A-Za-z]?/gi) || ["0", "0", "0"];
+  return { id_tipo_via: idTipoVia, numero_via: nums[0] || "0", numero_cruce: nums[1] || "0", numero_placa: nums[2] || "0" };
+};
+
+// Buscar ID de identidad sexual en el catálogo del backend
+const getIdIdentidadSexual = async (orientacion) => {
+  if (!orientacion) return null;
+  try {
+    const resp = await fetch(API_ENDPOINTS.CATALOGOS_IDENTIDADES_SEXUALES);
+    if (!resp.ok) return null;
+    const catalogo = await resp.json();
+    const arr = Array.isArray(catalogo) ? catalogo : (catalogo.data || []);
+    const found = arr.find(
+      (i) => (i.nombre || i.name || "").toLowerCase() === orientacion.toLowerCase()
+    );
+    return found ? (found.id ?? found.codigo ?? null) : null;
+  } catch {
+    return null;
+  }
 };
 
 // Manejar respuestas de error consistentemente
 const handleErrorResponse = async (response) => {
   if (response.status === 400) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('❌ Solicitud incorrecta:', errorData);
-    throw new Error(errorData.message || errorData.detail || 'Datos incorrectos');
+    console.error("❌ Solicitud incorrecta:", errorData);
+    throw new Error(errorData.message || errorData.detail || "Datos incorrectos");
   } else if (response.status === 409) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('❌ Conflicto:', errorData);
-    throw new Error(errorData.message || errorData.detail || 'El usuario ya existe');
+    console.error("❌ Conflicto:", errorData);
+    throw new Error(errorData.message || errorData.detail || "El usuario ya existe");
   } else if (response.status === 422) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('❌ Error de validación (422):', errorData);
-    console.error('📋 Detalle completo:', JSON.stringify(errorData, null, 2));
-    
+    console.error("❌ Error de validación (422):", JSON.stringify(errorData, null, 2));
     const errorList = errorData.errors || errorData.detail || [];
-    
     if (Array.isArray(errorList) && errorList.length > 0) {
-      console.error('📝 Errores encontrados:');
-      errorList.forEach((err, idx) => {
-        const campo = err.field || (err.loc ? err.loc.join(' > ') : 'N/A');
-        const mensaje = err.message || err.msg || 'Error de validación';
-        const tipo = err.type || 'N/A';
-        
-        console.error(`  ${idx + 1}. Campo: ${campo}`);
-        console.error(`     Mensaje: ${mensaje}`);
-        console.error(`     Tipo: ${tipo}`);
-        if (err.input !== undefined) {
-          console.error(`     Valor recibido: ${JSON.stringify(err.input)}`);
-        }
-      });
-      
-      const errorMessages = errorList.map(err => {
-        const campo = err.field || (err.loc ? err.loc.join(' > ') : 'Desconocido');
-        const mensaje = err.message || err.msg || 'Error de validación';
-        return `• Campo: ${campo}\n  ${mensaje}`;
-      }).join('\n\n');
-      
-      throw new Error('Errores de validación:\n\n' + errorMessages);
+      const errorMessages = errorList
+        .map((err) => {
+          const campo = err.field || (err.loc ? err.loc.join(" > ") : "Desconocido");
+          const mensaje = err.message || err.msg || "Error de validación";
+          return `• Campo: ${campo}\n  ${mensaje}`;
+        })
+        .join("\n\n");
+      throw new Error("Errores de validación:\n\n" + errorMessages);
     }
-    
-    throw new Error(errorData.message || 'Datos no válidos');
+    throw new Error(errorData.message || "Datos no válidos");
   } else {
     const errorData = await response.json().catch(() => ({}));
-    console.error('❌ Error del servidor:', errorData);
-    throw new Error(errorData.message || errorData.detail || 'Error al registrar');
+    console.error("❌ Error del servidor:", errorData);
+    throw new Error(errorData.message || errorData.detail || "Error al registrar");
   }
 };
 
 /**
  * Registrar un nuevo ESTUDIANTE
- * @param {Object} studentData - Datos del estudiante desde el formulario
- * @returns {Promise<Object>} Resultado del registro
  */
 export const registrarEstudiante = async (studentData) => {
-  // Normalizar género para que coincida con el backend (primera letra mayúscula)
-  const normalizarGenero = (genero) => {
-    if (!genero) return '';
-    const generoLower = genero.toLowerCase();
-    if (generoLower === 'hombre') return 'Hombre';
-    if (generoLower === 'mujer') return 'Mujer';
-    if (generoLower === 'hermafrodita') return 'Hermafrodita';
-    return genero; // Si ya está correcto, devolverlo tal cual
-  };
+  const dir = parsearDireccion(studentData.direccionResidencia);
+  const idIdentidadSexual = await getIdIdentidadSexual(studentData.orientacionSexual);
+  const idTipoDoc = TIPO_DOC_IDS[studentData.tipoDocumento] ?? null;
+  const idGenero  = GENERO_IDS[studentData.genero] ?? null;
 
-  // Normalizar identidad sexual (primera letra mayúscula)
-  const normalizarIdentidadSexual = (identidad) => {
-    if (!identidad) return '';
-    return identidad.charAt(0).toUpperCase() + identidad.slice(1).toLowerCase();
-  };
-  
   const payload = {
     usuario: {
-      tipo_documento: studentData.tipoDocumento,
-      identificacion: studentData.numeroDocumento,
-      primer_nombre: studentData.primerNombre,
-      segundo_nombre: studentData.segundoNombre || null,
-      primer_apellido: studentData.primerApellido,
-      segundo_apellido: studentData.segundoApellido || null,
-      sexo: normalizarGenero(studentData.genero),
-      identidad_sexual: normalizarIdentidadSexual(studentData.orientacionSexual),
-      fecha_nacimiento: studentData.fechaNacimiento,
-      nacionalidad: studentData.paisNacimiento,
-      pais_residencia: studentData.nacionalidad,
-      departamento: studentData.departamentoResidencia,
-      municipio: studentData.ciudadResidencia,
-      ciudad_residencia: studentData.ciudadResidencia,
-      direccion_residencia: sanitizarDireccion(studentData.direccionResidencia),
-      telefono: studentData.telefono,
-      correo: studentData.correo,
-      rol: "Estudiante",
-      contraseña: studentData.contraseña
+      id_tipo_doc:               idTipoDoc,
+      identificacion:            studentData.numeroDocumento,
+      p_nombre:                  sanitizar(studentData.primerNombre),
+      s_nombre:                  studentData.segundoNombre ? sanitizar(studentData.segundoNombre) : null,
+      p_apellido:                sanitizar(studentData.primerApellido),
+      s_apellido:                studentData.segundoApellido ? sanitizar(studentData.segundoApellido) : null,
+      id_genero:                 idGenero,
+      id_identidad_sexual:       idIdentidadSexual,
+      fecha_nacimiento:          studentData.fechaNacimiento,
+      telefono:                  studentData.telefono,
+      correo:                    studentData.correo,
+      contrasena:                sanitizar(studentData.contraseña),
+      id_tipo_via:               dir.id_tipo_via,
+      numero_via:                dir.numero_via,
+      numero_cruce:              dir.numero_cruce,
+      numero_placa:              dir.numero_placa,
+      codigo_municipio_residencia:  studentData.ciudadResidencia,
+      codigo_municipio_nacimiento:  studentData.ciudadResidencia,
+      codigo_pais_nacimiento:       studentData.paisNacimiento,
+      codigo_pais_nacionalidad:     studentData.nacionalidad,
     },
-    codigo_programa: studentData.programa,
-    semestre: parseInt(studentData.semestre),
-    periodo: parseInt(studentData.periodo),
-    anio_ingreso: parseInt(studentData.fechaIngreso)
+    perfil: {
+      codigo_programa: studentData.programa || "5095",
+      semestre:        parseInt(studentData.semestre),
+      periodo:         String(studentData.periodo),
+      anio_ingreso:    parseInt(studentData.fechaIngreso),
+    },
   };
 
-  console.log('🎓 Registrando ESTUDIANTE:', {
-    ...payload,
-    usuario: { ...payload.usuario, contraseña: '***' }
-  });
-  console.log('🔗 Endpoint:', API_ENDPOINTS.REGISTRO_ESTUDIANTE);
+  console.log("🎓 Registrando ESTUDIANTE:", { ...payload, usuario: { ...payload.usuario, contrasena: "***" } });
+  console.log("🔗 Endpoint:", API_ENDPOINTS.REGISTRO_ESTUDIANTE);
 
   try {
     const response = await fetch(API_ENDPOINTS.REGISTRO_ESTUDIANTE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(payload)
+      credentials: 'include',
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload),
     });
-
-    console.log('📡 Status:', response.status, response.statusText);
-
+    console.log("📡 Status:", response.status, response.statusText);
     if (response.status === 201 || response.ok) {
       const data = await response.json();
-      console.log('✅ Registro de estudiante exitoso:', data);
-      return { success: true, data, message: data.message || 'Registro exitoso' };
+      console.log("✅ Registro de estudiante exitoso:", data);
+      return { success: true, data, message: data.message || "Registro exitoso" };
     } else {
       await handleErrorResponse(response);
     }
   } catch (error) {
-    if (error.message) {
-      throw error;
-    }
-    console.error('❌ Error de conexión:', error);
+    if (error.message) throw error;
+    console.error("❌ Error de conexión:", error);
     throw new Error("Error de conexión. Verifique su conexión a internet.");
   }
 };
 
 /**
  * Registrar un nuevo EGRESADO
- * @param {Object} graduateData - Datos del egresado desde el formulario
- * @returns {Promise<Object>} Resultado del registro
  */
 export const registrarEgresado = async (graduateData) => {
-  // Normalizar género para que coincida con el backend (primera letra mayúscula)
-  const normalizarGenero = (genero) => {
-    if (!genero) return '';
-    const generoLower = genero.toLowerCase();
-    if (generoLower === 'hombre') return 'Hombre';
-    if (generoLower === 'mujer') return 'Mujer';
-    if (generoLower === 'hermafrodita') return 'Hermafrodita';
-    return genero; // Si ya está correcto, devolverlo tal cual
-  };
-
-  // Normalizar identidad sexual (primera letra mayúscula)
-  const normalizarIdentidadSexual = (identidad) => {
-    if (!identidad) return '';
-    return identidad.charAt(0).toUpperCase() + identidad.slice(1).toLowerCase();
-  };
+  const dir = parsearDireccion(graduateData.direccionResidencia);
+  const idIdentidadSexual = await getIdIdentidadSexual(graduateData.orientacionSexual);
+  const idTipoDoc = TIPO_DOC_IDS[graduateData.tipoDocumento] ?? null;
+  const idGenero  = GENERO_IDS[graduateData.genero] ?? null;
 
   const payload = {
-    tipo_documento: graduateData.tipoDocumento,
-    identificacion: graduateData.numeroDocumento,
-    primer_nombre: graduateData.primerNombre,
-    segundo_nombre: graduateData.segundoNombre || null,
-    primer_apellido: graduateData.primerApellido,
-    segundo_apellido: graduateData.segundoApellido || null,
-    sexo: normalizarGenero(graduateData.genero),
-    identidad_sexual: normalizarIdentidadSexual(graduateData.orientacionSexual),
-    fecha_nacimiento: graduateData.fechaNacimiento,
-    nacionalidad: graduateData.paisNacimiento,
-    pais_residencia: graduateData.nacionalidad,
-    departamento: graduateData.departamentoResidencia,
-    municipio: graduateData.ciudadResidencia,
-    ciudad_residencia: graduateData.ciudadResidencia,
-    direccion_residencia: sanitizarDireccion(graduateData.direccionResidencia),
-    telefono: graduateData.telefono,
-    correo: graduateData.correo,
-    rol: "Egresado",
-    contraseña: graduateData.contraseña,
-    // Campos específicos del egresado
-    codigo_programa: graduateData.programa,
-    año_graduacion: parseInt(graduateData.fechaFinalizacion),
-    titulado: graduateData.titulado === 'si',
-    ...(graduateData.tituloObtenido && { titulo_obtenido: graduateData.tituloObtenido })
+    usuario: {
+      id_tipo_doc:               idTipoDoc,
+      identificacion:            graduateData.numeroDocumento,
+      p_nombre:                  sanitizar(graduateData.primerNombre),
+      s_nombre:                  graduateData.segundoNombre ? sanitizar(graduateData.segundoNombre) : null,
+      p_apellido:                sanitizar(graduateData.primerApellido),
+      s_apellido:                graduateData.segundoApellido ? sanitizar(graduateData.segundoApellido) : null,
+      id_genero:                 idGenero,
+      id_identidad_sexual:       idIdentidadSexual,
+      fecha_nacimiento:          graduateData.fechaNacimiento,
+      telefono:                  graduateData.telefono,
+      correo:                    graduateData.correo,
+      contrasena:                sanitizar(graduateData.contraseña),
+      id_tipo_via:               dir.id_tipo_via,
+      numero_via:                dir.numero_via,
+      numero_cruce:              dir.numero_cruce,
+      numero_placa:              dir.numero_placa,
+      codigo_municipio_residencia:  graduateData.ciudadResidencia,
+      codigo_municipio_nacimiento:  graduateData.ciudadResidencia,
+      codigo_pais_nacimiento:       graduateData.paisNacimiento,
+      codigo_pais_nacionalidad:     graduateData.nacionalidad,
+    },
+    perfil: {
+      codigo_programa:    graduateData.programa || "5095",
+      titulado:           graduateData.titulado === "true" || graduateData.titulado === true,
+      titulo_obtenido:    graduateData.tituloObtenido || null,
+      anio_graduacion:    graduateData.fechaFinalizacion ? parseInt(graduateData.fechaFinalizacion) : null,
+      periodo_graduacion: graduateData.periodo ? String(graduateData.periodo) : null,
+    },
   };
 
-  console.log('🎓 Registrando EGRESADO:', {
-    ...payload,
-    contraseña: '***'
-  });
-  console.log('🔗 Endpoint:', API_ENDPOINTS.REGISTRO_EGRESADO);
+  console.log("🎓 Registrando EGRESADO:", { ...payload, usuario: { ...payload.usuario, contrasena: "***" } });
+  console.log("🔗 Endpoint:", API_ENDPOINTS.REGISTRO_EGRESADO);
 
   try {
     const response = await fetch(API_ENDPOINTS.REGISTRO_EGRESADO, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(payload)
+      credentials: 'include',
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload),
     });
-
-    console.log('📡 Status:', response.status, response.statusText);
-
+    console.log("📡 Status:", response.status, response.statusText);
     if (response.status === 201 || response.ok) {
       const data = await response.json();
-      console.log('✅ Registro de egresado exitoso:', data);
-      return { success: true, data, message: data.message || 'Registro exitoso' };
+      return { success: true, data, message: data.message || "Registro exitoso" };
     } else {
       await handleErrorResponse(response);
     }
   } catch (error) {
-    if (error.message) {
-      throw error;
-    }
-    console.error('❌ Error de conexión:', error);
+    if (error.message) throw error;
     throw new Error("Error de conexión. Verifique su conexión a internet.");
   }
 };
 
 /**
  * Registrar un nuevo INVITADO
- * @param {Object} guestData - Datos del invitado desde el formulario
- * @returns {Promise<Object>} Resultado del registro
  */
 export const registrarInvitado = async (guestData) => {
-  // Normalizar género para que coincida con el backend (primera letra mayúscula)
-  const normalizarGenero = (genero) => {
-    if (!genero) return '';
-    const generoLower = genero.toLowerCase();
-    if (generoLower === 'hombre') return 'Hombre';
-    if (generoLower === 'mujer') return 'Mujer';
-    if (generoLower === 'hermafrodita') return 'Hermafrodita';
-    return genero; // Si ya está correcto, devolverlo tal cual
-  };
-
-  // Normalizar identidad sexual (primera letra mayúscula)
-  const normalizarIdentidadSexual = (identidad) => {
-    if (!identidad) return '';
-    return identidad.charAt(0).toUpperCase() + identidad.slice(1).toLowerCase();
-  };
+  const dir = parsearDireccion(guestData.direccionResidencia);
+  const idIdentidadSexual = await getIdIdentidadSexual(guestData.orientacionSexual);
+  const idTipoDoc = TIPO_DOC_IDS[guestData.tipoDocumento] ?? null;
+  const idGenero  = GENERO_IDS[guestData.genero] ?? null;
 
   const payload = {
-    tipo_documento: guestData.tipoDocumento,
-    identificacion: guestData.numeroDocumento,
-    primer_nombre: guestData.primerNombre,
-    segundo_nombre: guestData.segundoNombre || null,
-    primer_apellido: guestData.primerApellido,
-    segundo_apellido: guestData.segundoApellido || null,
-    sexo: normalizarGenero(guestData.genero),
-    identidad_sexual: normalizarIdentidadSexual(guestData.orientacionSexual),
-    fecha_nacimiento: guestData.fechaNacimiento,
-    nacionalidad: guestData.paisNacimiento,
-    pais_residencia: guestData.nacionalidad,
-    departamento: guestData.departamentoResidencia,
-    municipio: guestData.ciudadResidencia,
-    ciudad_residencia: guestData.ciudadResidencia,
-    direccion_residencia: sanitizarDireccion(guestData.direccionResidencia),
-    telefono: guestData.telefono,
-    correo: guestData.correo,
-    rol: "Invitado",
-    contraseña: guestData.contraseña,
-    // Campos específicos del invitado
-    ...(guestData.intitucionOrigen && { institucion_origen: guestData.intitucionOrigen }),
-    ...(guestData.nombreEmpresa && { nombre_empresa: guestData.nombreEmpresa }),
-    ...(guestData.sector && { id_sector: parseInt(guestData.sector) })
+    usuario: {
+      id_tipo_doc:               idTipoDoc,
+      identificacion:            guestData.numeroDocumento,
+      p_nombre:                  sanitizar(guestData.primerNombre),
+      s_nombre:                  guestData.segundoNombre ? sanitizar(guestData.segundoNombre) : null,
+      p_apellido:                sanitizar(guestData.primerApellido),
+      s_apellido:                guestData.segundoApellido ? sanitizar(guestData.segundoApellido) : null,
+      id_genero:                 idGenero,
+      id_identidad_sexual:       idIdentidadSexual,
+      fecha_nacimiento:          guestData.fechaNacimiento,
+      telefono:                  guestData.telefono,
+      correo:                    guestData.correo,
+      contrasena:                sanitizar(guestData.contraseña),
+      id_tipo_via:               dir.id_tipo_via,
+      numero_via:                dir.numero_via,
+      numero_cruce:              dir.numero_cruce,
+      numero_placa:              dir.numero_placa,
+      codigo_municipio_residencia:  guestData.ciudadResidencia,
+      codigo_municipio_nacimiento:  guestData.ciudadResidencia,
+      codigo_pais_nacimiento:       guestData.paisNacimiento,
+      codigo_pais_nacionalidad:     guestData.nacionalidad,
+    },
+    perfil: {
+      sector:          guestData.sector || null,
+      nombre_empresa:  guestData.nombreEmpresa || null,
+      institucion:     guestData.intitucionOrigen || null,
+    },
   };
 
-  console.log('👤 Registrando INVITADO con credenciales:');
-  console.log('📧 Correo:', payload.correo);
-  console.log('🔐 Contraseña:', payload.contraseña ? '***' + payload.contraseña.slice(-3) : 'NO PROPORCIONADA');
-  console.log('📦 Payload completo:', {
-    ...payload,
-    contraseña: '***'
-  });
-  console.log('🔗 Endpoint:', API_ENDPOINTS.REGISTRO_INVITADO);
+  console.log("👥 Registrando INVITADO:", { ...payload, usuario: { ...payload.usuario, contrasena: "***" } });
+  console.log("🔗 Endpoint:", API_ENDPOINTS.REGISTRO_INVITADO);
 
   try {
     const response = await fetch(API_ENDPOINTS.REGISTRO_INVITADO, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(payload)
+      credentials: 'include',
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload),
     });
-
-    console.log('📡 Status:', response.status, response.statusText);
-
+    console.log("📡 Status:", response.status, response.statusText);
     if (response.status === 201 || response.ok) {
       const data = await response.json();
-      console.log('✅ Registro de invitado exitoso:', data);
-      return { success: true, data, message: data.message || 'Registro exitoso' };
+      return { success: true, data, message: data.message || "Registro exitoso" };
     } else {
       await handleErrorResponse(response);
     }
   } catch (error) {
-    if (error.message) {
-      throw error;
-    }
-    console.error('❌ Error de conexión:', error);
+    if (error.message) throw error;
     throw new Error("Error de conexión. Verifique su conexión a internet.");
   }
 };
 
 /**
  * Validar datos del formulario - ESTUDIANTE
- * @param {Object} formData - Datos del formulario
- * @returns {Object} {valido: boolean, errores: string[]}
  */
 export const validarDatosEstudiante = (formData) => {
   const errores = [];
-
-  // Validar usuario base
-  if (!formData.tipo_documento) errores.push('Tipo de documento es requerido');
-  if (!formData.identificacion) errores.push('Identificación es requerida');
-  if (!formData.primerNombre || formData.primerNombre.trim().length < 2) errores.push('Nombre es requerido (mínimo 2 caracteres)');
-  if (!formData.primerApellido || formData.primerApellido.trim().length < 2) errores.push('Apellido es requerido (mínimo 2 caracteres)');
-  if (!formData.genero) errores.push('Género es requerido');
-  if (!formData.orientacionSexual) errores.push('Orientación sexual es requerida');
-  if (!formData.fechaNacimiento) errores.push('Fecha de nacimiento es requerida');
-  if (!formData.nacionalidad) errores.push('Nacionalidad es requerida');
-  if (!formData.paisNacimiento) errores.push('País de residencia es requerido');
-  if (!formData.departamentoResidencia) errores.push('Departamento es requerido');
-  if (!formData.ciudadResidencia) errores.push('Ciudad de residencia es requerida');
-  if (!formData.direccionResidencia) errores.push('Dirección de residencia es requerida');
-  if (!formData.telefono) errores.push('Teléfono es requerido');
-  
-  // Validar correo
-  if (!formData.correo) {
-    errores.push('Correo es requerido');
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) {
-    errores.push('Correo inválido');
-  }
-  
-  // Validar contraseña
-  if (!formData.contraseña) {
-    errores.push('Contraseña es requerida');
-  } else if (formData.contraseña.length < 8) {
-    errores.push('La contraseña debe tener al menos 8 caracteres');
-  }
-  
-  if (formData.contraseña !== formData.confirmarcontraseña) {
-    errores.push('Las contraseñas no coinciden');
-  }
-
-  // Validar datos específicos de estudiante
-  if (!formData.programa) errores.push('Programa es requerido');
-  if (!formData.semestre) errores.push('Semestre es requerido');
-  if (!formData.periodo) errores.push('Periodo académico es requerido');
-  if (!formData.fechaIngreso) errores.push('Año de ingreso es requerido');
-
-  return {
-    valido: errores.length === 0,
-    errores
-  };
-};
-
-/**
- * Validar datos del formulario - EGRESADO
- * @param {Object} formData - Datos del formulario
- * @returns {Object} {valido: boolean, errores: string[]}
- */
-export const validarDatosEgresado = (formData) => {
-  const errores = [];
-
-  // Validar usuario base
-  if (!formData.tipo_documento) errores.push('Tipo de documento es requerido');
-  if (!formData.identificacion) errores.push('Identificación es requerida');
-  if (!formData.primerNombre || formData.primerNombre.trim().length < 2) errores.push('Nombre es requerido (mínimo 2 caracteres)');
-  if (!formData.primerApellido || formData.primerApellido.trim().length < 2) errores.push('Apellido es requerido (mínimo 2 caracteres)');
-  if (!formData.genero) errores.push('Género es requerido');
-  if (!formData.orientacionSexual) errores.push('Orientación sexual es requerida');
-  if (!formData.fechaNacimiento) errores.push('Fecha de nacimiento es requerida');
-  if (!formData.nacionalidad) errores.push('Nacionalidad es requerida');
-  if (!formData.paisNacimiento) errores.push('País de residencia es requerido');
-  if (!formData.departamentoResidencia) errores.push('Departamento es requerido');
-  if (!formData.ciudadResidencia) errores.push('Ciudad de residencia es requerida');
-  if (!formData.direccionResidencia) errores.push('Dirección de residencia es requerida');
-  if (!formData.telefono) errores.push('Teléfono es requerido');
-  
-  // Validar correo
-  if (!formData.correo) {
-    errores.push('Correo es requerido');
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) {
-    errores.push('Correo inválido');
-  }
-  
-  // Validar contraseña
-  if (!formData.contraseña) {
-    errores.push('Contraseña es requerida');
-  } else if (formData.contraseña.length < 8) {
-    errores.push('La contraseña debe tener al menos 8 caracteres');
-  }
-  
-  if (formData.contraseña !== formData.confirmarcontraseña) {
-    errores.push('Las contraseñas no coinciden');
-  }
-
-  // Validar datos específicos de egresado
-  if (!formData.programa) errores.push('Programa académico es requerido');
-  if (!formData.fechaFinalizacion) errores.push('Año de graduación es requerido');
-  if (!formData.titulado) errores.push('Especifique si está titulado');
-  if (formData.titulado === 'si' && !formData.tituloObtenido) {
-    errores.push('Título obtenido es requerido si está titulado');
-  }
-
-  return {
-    valido: errores.length === 0,
-    errores
-  };
-};
-
-/**
- * Validar datos del formulario - INVITADO
- * @param {Object} formData - Datos del formulario
- * @returns {Object} {valido: boolean, errores: string[]}
- */
-export const validarDatosInvitado = (formData) => {
-  const errores = [];
-
-  // Validar usuario base
-  if (!formData.tipo_documento) errores.push('Tipo de documento es requerido');
-  if (!formData.identificacion) errores.push('Identificación es requerida');
-  if (!formData.primerNombre || formData.primerNombre.trim().length < 2) errores.push('Nombre es requerido (mínimo 2 caracteres)');
-  if (!formData.primerApellido || formData.primerApellido.trim().length < 2) errores.push('Apellido es requerido (mínimo 2 caracteres)');
-  if (!formData.genero) errores.push('Género es requerido');
-  if (!formData.orientacionSexual) errores.push('Orientación sexual es requerida');
-  if (!formData.fechaNacimiento) errores.push('Fecha de nacimiento es requerida');
-  if (!formData.nacionalidad) errores.push('Nacionalidad es requerida');
-  if (!formData.paisNacimiento) errores.push('País de residencia es requerido');
-  if (!formData.departamentoResidencia) errores.push('Departamento es requerido');
-  if (!formData.ciudadResidencia) errores.push('Ciudad de residencia es requerida');
-  if (!formData.direccionResidencia) errores.push('Dirección de residencia es requerida');
-  if (!formData.telefono) errores.push('Teléfono es requerido');
-  
-  // Validar correo
-  if (!formData.correo) {
-    errores.push('Correo es requerido');
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) {
-    errores.push('Correo inválido');
-  }
-  
-  // Validar contraseña
-  if (!formData.contraseña) {
-    errores.push('Contraseña es requerida');
-  } else if (formData.contraseña.length < 8) {
-    errores.push('La contraseña debe tener al menos 8 caracteres');
-  }
-  
-  if (formData.contraseña !== formData.confirmarcontraseña) {
-    errores.push('Las contraseñas no coinciden');
-  }
-
-  // Validar datos específicos de invitado
-  if (!formData.sector && !formData.nombreEmpresa && !formData.institucionOrigen) {
-    errores.push('Se requiere al menos una de: Sector, Empresa o Institución');
-  }
-
-  return {
-    valido: errores.length === 0,
-    errores
-  };
-};
-
-/**
- * Validar datos del registro (genérica)
- * @param {Object} formData - Datos del formulario
- * @returns {Object} {valido: boolean, errores: string[]}
- */
-export const validarDatosRegistro = (formData) => {
-  const errores = [];
-
-  // Validar usuario base
-  if (!formData.tipo_documento) errores.push('Tipo de documento es requerido');
-  if (!formData.identificacion) errores.push('Identificación es requerida');
-  if (!formData.nombres || formData.nombres.trim().length < 2) errores.push('Nombres es requerido (mínimo 2 caracteres)');
-  if (!formData.apellidos || formData.apellidos.trim().length < 2) errores.push('Apellidos es requerido (mínimo 2 caracteres)');
-  if (!formData.sexo) errores.push('Sexo es requerido');
-  if (!formData.identidad_sexual) errores.push('Identidad sexual es requerida');
-  if (!formData.fecha_nacimiento) errores.push('Fecha de nacimiento es requerida');
-  if (!formData.nacionalidad) errores.push('Nacionalidad es requerida');
-  if (!formData.pais_residencia) errores.push('País de residencia es requerido');
-  if (!formData.departamento) errores.push('Departamento es requerido');
-  if (!formData.municipio) errores.push('Municipio es requerido');
-  if (!formData.ciudad_residencia) errores.push('Ciudad de residencia es requerida');
-  if (!formData.direccion_residencia) errores.push('Dirección de residencia es requerida');
-  if (!formData.telefono) errores.push('Teléfono es requerido');
-  
-  // Validar correo
-  if (!formData.correo) {
-    errores.push('Correo es requerido');
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) {
-    errores.push('Correo inválido');
-  }
-  
-  // Validar contraseña
-  if (!formData.contraseña) {
-    errores.push('Contraseña es requerida');
-  } else if (formData.contraseña.length < 8) {
-    errores.push('La contraseña debe tener al menos 8 caracteres');
-  }
-  
-  if (formData.contraseña !== formData.confirmar_contraseña) {
-    errores.push('Las contraseñas no coinciden');
-  }
-
-  return {
-    valido: errores.length === 0,
-    errores
-  };
+  if (!formData.primerNombre?.trim()) errores.push("El primer nombre es requerido");
+  if (!formData.primerApellido?.trim()) errores.push("El primer apellido es requerido");
+  if (!formData.correo?.trim()) errores.push("El correo es requerido");
+  if (!formData.contraseña?.trim()) errores.push("La contraseña es requerida");
+  if (!formData.tipoDocumento) errores.push("El tipo de documento es requerido");
+  if (!formData.numeroDocumento?.trim()) errores.push("El número de documento es requerido");
+  if (!formData.semestre) errores.push("El semestre es requerido");
+  return { valido: errores.length === 0, errores };
 };

@@ -79,28 +79,28 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       setLoading(true);
-      
+
       console.log('🔐 AuthContext - Iniciando login...');
-      
+
       // Usar AuthService para hacer login
       const resultado = await AuthService.login(credentials);
-      
+
       if (resultado.success && resultado.data) {
         const userRole = AuthService.getUserRole();
-        
+
         console.log('✅ AuthContext - Login exitoso, rol:', userRole);
         console.log('📦 AuthContext - Datos del usuario:', resultado.data);
-        
+
         // 🚀 ACTUALIZAR EL ESTADO INMEDIATAMENTE
         setUser(resultado.data);
         setLoading(false);
-        
+
         console.log('✅ AuthContext - Estado de usuario actualizado');
-        
+
         // Si es estudiante, cargar perfil completo en SEGUNDO PLANO
         if (userRole === 'estudiante') {
           console.log('📚 AuthContext - Actualizando perfil completo en segundo plano tras login...');
-          
+
           // Esta llamada NO bloquea la UI
           StudentProfileService.obtenerMiPerfil()
             .then(perfilResultado => {
@@ -117,14 +117,46 @@ export const AuthProvider = ({ children }) => {
               console.log('✅ AuthContext - Manteniendo datos básicos del login');
             });
         }
-        
+
         return { success: true, user: resultado.data };
       }
-      
+
       setLoading(false);
       return { success: false, error: 'Error en el login' };
     } catch (error) {
       console.error('❌ AuthContext - Error en login:', error);
+      setLoading(false);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Función para hacer login como invitado
+  const loginAsGuest = async () => {
+    try {
+      setLoading(true);
+
+      console.log('👥 AuthContext - Iniciando login como invitado...');
+
+      // Usar AuthService para hacer login como invitado
+      const resultado = await AuthService.loginAsGuest();
+
+      if (resultado.success && resultado.data) {
+        console.log('✅ AuthContext - Login como invitado exitoso');
+        console.log('📦 AuthContext - Datos del invitado:', resultado.data);
+
+        // 🚀 ACTUALIZAR EL ESTADO INMEDIATAMENTE
+        setUser(resultado.data);
+        setLoading(false);
+
+        console.log('✅ AuthContext - Estado de invitado actualizado');
+
+        return { success: true, user: resultado.data };
+      }
+
+      setLoading(false);
+      return { success: false, error: 'Error en login de invitado' };
+    } catch (error) {
+      console.error('❌ AuthContext - Error en login de invitado:', error);
       setLoading(false);
       return { success: false, error: error.message };
     }
@@ -268,6 +300,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     login,
+    loginAsGuest,
     logout,
     updateUser,
     reloadUserProfile,

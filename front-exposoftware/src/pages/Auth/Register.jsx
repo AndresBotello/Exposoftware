@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 import {
   validateAllFields,
@@ -13,37 +13,30 @@ import {
   getInputClassName as getInputClassNameUtil,
 } from "./Register/formHandlers";
 import RoleSections from "./RoleSections/RoleSections";
-import countryList from "react-select-country-list";
-import colombia from "../../assets/colombia-json-master/colombia.json";
+import { API_ENDPOINTS } from "../../utils/constants";
 import BackgroundCarousel from "./Register/BackgroundCarousel";
 import MessageAlerts from "./Register/MessageAlerts";
 import PersonalInfoSection from "./Register/PersonalInfoSection";
 import IdentificationSection from "./Register/IdentificationSection";
 import CredentialsSection from "./Register/CredentialsSection";
-import * as AcademicService from "../../Services/AcademicService";
 
 function RegisterPage() {
   const [errors, setErrors] = useState({});
   const [successFields, setSuccessFields] = useState({});
-  const options = useMemo(() => countryList().getData(), []);
-  const [ciudades, setciudades] = useState([]);
+  const [paises, setPaises] = useState([]);
+  const [departamentos, setDepartamentos] = useState([]);
+  const [municipios, setMunicipios] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState("");
   const [mensajeError, setMensajeError] = useState("");
   const [rol, setrol] = useState("");
-  
+
   // Estados para términos y condiciones
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  
-  // Estados para datos académicos
-  const [facultades, setFacultades] = useState([]);
-  const [programas, setProgramas] = useState([]);
-  const [cargandoFacultades, setCargandoFacultades] = useState(false);
-  const [cargandoProgramas, setCargandoProgramas] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     primerNombre: "",
     segundoNombre: "",
@@ -64,9 +57,10 @@ function RegisterPage() {
     tipoDocumento: "",
     numeroDocumento: "",
     correo: "",
-    programa: "",
+    programa: "5095",
     facultad: "",
     semestre: "",
+    materia: "",
     sector: "",
     intitucionOrigen: "",
     nombreEmpresa: "",
@@ -77,14 +71,53 @@ function RegisterPage() {
     confirmarcontraseña: "",
   });
 
+  // Cargar catálogos de países y departamentos al montar
+  useEffect(() => {
+    const loadCatalogs = async () => {
+      try {
+        const [paisesRes, deptoRes] = await Promise.all([
+          fetch(API_ENDPOINTS.CATALOGOS_PAISES),
+          fetch(API_ENDPOINTS.CATALOGOS_DEPARTAMENTOS),
+        ]);
+
+        if (paisesRes.ok) {
+          const data = await paisesRes.json();
+          const arr = Array.isArray(data) ? data : (data.data || data.paises || []);
+          setPaises(arr.map((p) => ({ value: p.codigo || p.code, label: p.nombre || p.name })));
+        }
+
+        if (deptoRes.ok) {
+          const data = await deptoRes.json();
+          setDepartamentos(Array.isArray(data) ? data : (data.data || data.departamentos || []));
+        }
+      } catch (err) {
+        console.error("Error cargando catálogos de ubicación:", err);
+      }
+    };
+    loadCatalogs();
+  }, []);
+
+  // Cargar municipios cuando cambia el departamento
+  useEffect(() => {
+    if (formData.departamentoResidencia) {
+      fetch(API_ENDPOINTS.CATALOGOS_MUNICIPIOS(formData.departamentoResidencia))
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data) => setMunicipios(Array.isArray(data) ? data : (data.data || data.municipios || [])))
+        .catch(() => setMunicipios([]));
+    } else {
+      setMunicipios([]);
+    }
+  }, [formData.departamentoResidencia]);
+
   // Limpiar campos específicos según el rol
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
       correo: "",
-      programa: "",
+      programa: "5095",
       facultad: "",
       semestre: "",
+      materia: "",
       sector: "",
       nombreEmpresa: "",
       periodo: "",
@@ -94,19 +127,19 @@ function RegisterPage() {
       fechaFinalizacion: "",
       intitucionOrigen: "",
     }));
-    
+
     const camposRol = [
-      "correo", "programa", "facultad", "semestre", 
+      "correo", "semestre", "materia",
       "sector", "nombreEmpresa", "periodo", "titulado", "tituloObtenido",
       "fechaIngreso", "fechaFinalizacion", "intitucionOrigen"
     ];
-    
+
     setErrors((prev) => {
       const newErrors = { ...prev };
       camposRol.forEach(campo => delete newErrors[campo]);
       return newErrors;
     });
-    
+
     setSuccessFields((prev) => {
       const newSuccess = { ...prev };
       camposRol.forEach(campo => delete newSuccess[campo]);
@@ -114,66 +147,17 @@ function RegisterPage() {
     });
   }, [rol]);
 
-  // Desactivar Departamento y Municipio si el país no es Colombia
+  // Desactivar Departamento y Municipio si el país no es Colombia (COL)
   useEffect(() => {
-    if (formData.nacionalidad !== "CO") {
+    if (formData.nacionalidad !== "COL") {
       setFormData((prev) => ({
         ...prev,
         departamentoResidencia: "",
         ciudadResidencia: "",
       }));
-      setciudades([]);
+      setMunicipios([]);
     }
   }, [formData.nacionalidad]);
-
-  // Cargar facultades al montar el componente
-  useEffect(() => {
-    const cargarFacultades = async () => {
-      setCargandoFacultades(true);
-      try {
-        const facultadesData = await AcademicService.obtenerFacultades();
-        setFacultades(facultadesData);
-        console.log('✅ Facultades cargadas:', facultadesData);
-      } catch (error) {
-        console.error('❌ Error al cargar facultades:', error);
-        setMensajeError('No se pudieron cargar las facultades. Intenta recargar la página.');
-      } finally {
-        setCargandoFacultades(false);
-      }
-    };
-
-    cargarFacultades();
-  }, []);
-
-  // Cargar programas cuando se selecciona una facultad
-  useEffect(() => {
-    const cargarProgramas = async () => {
-      if (!formData.facultad) {
-        setProgramas([]);
-        return;
-      }
-
-      setCargandoProgramas(true);
-      try {
-        const programasData = await AcademicService.obtenerProgramasPorFacultad(formData.facultad);
-        setProgramas(programasData);
-        console.log('✅ Programas cargados para facultad', formData.facultad, ':', programasData);
-        
-        // Limpiar programa seleccionado si ya no está disponible
-        if (formData.programa && !programasData.find(p => p.codigo === formData.programa)) {
-          setFormData(prev => ({ ...prev, programa: "" }));
-        }
-      } catch (error) {
-        console.error('❌ Error al cargar programas:', error);
-        setProgramas([]);
-        setMensajeError('No se pudieron cargar los programas. Intenta seleccionar otra facultad.');
-      } finally {
-        setCargandoProgramas(false);
-      }
-    };
-
-    cargarProgramas();
-  }, [formData.facultad]);
 
   // Handlers
   const handleChange = (e) => {
@@ -192,7 +176,7 @@ function RegisterPage() {
   };
 
   const handleDepartamentoChange = (e) => {
-    handleDepartamentoChangeUtil(e, formData, setFormData, setciudades, setErrors, setSuccessFields, rol, colombia);
+    handleDepartamentoChangeUtil(e, formData, setFormData, setErrors, setSuccessFields, rol);
   };
 
   const handleTermsChange = (e) => {
@@ -200,12 +184,10 @@ function RegisterPage() {
   };
 
   const handleSubmit = (e) => {
-    // Validar que acepte términos y condiciones
     if (!acceptedTerms) {
       setMensajeError("Debes aceptar los términos y condiciones para continuar.");
       return;
     }
-    
     handleSubmitUtil(e, formData, rol, setCargando, setMensajeExito, setMensajeError, setErrors, validateAllFields, hasErrors);
   };
 
@@ -214,25 +196,25 @@ function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center relative overflow-hidden py-20">
+    <main className="min-h-screen flex items-center justify-center relative overflow-hidden py-8 md:py-20 px-4 sm:px-6">
       <BackgroundCarousel />
 
       {/* Contenido del formulario */}
-      <section className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-3xl relative z-10">
-        <h1 className="text-3xl font-bold text-center mb-2 text-green-700">
+      <section className="bg-white p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-3xl relative z-10">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-2 text-green-700">
           Registro de Usuario
         </h1>
-        <p className="text-center text-gray-600 mb-6">
+        <p className="text-center text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
           Completa los campos para crear tu cuenta en{" "}
           <span className="font-semibold text-green-600">Exposoftware</span>.
         </p>
 
-        <MessageAlerts 
-          mensajeExito={mensajeExito} 
-          mensajeError={mensajeError} 
+        <MessageAlerts
+          mensajeExito={mensajeExito}
+          mensajeError={mensajeError}
         />
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 text-xs md:text-base auto-rows-max"> 
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 text-sm lg:text-base auto-rows-max">
           <PersonalInfoSection
             formData={formData}
             errors={errors}
@@ -243,9 +225,9 @@ function RegisterPage() {
             handleDepartamentoChange={handleDepartamentoChange}
             getInputClassName={getInputClassName}
             cargando={cargando}
-            options={options}
-            ciudades={ciudades}
-            colombia={colombia}
+            paises={paises}
+            departamentos={departamentos}
+            municipios={municipios}
           />
 
           <IdentificationSection
@@ -258,18 +240,14 @@ function RegisterPage() {
             rol={rol}
           />
 
-          <RoleSections 
-            rol={rol} 
-            formData={formData} 
-            errors={errors} 
-            handleChange={handleChange} 
-            cargando={cargando} 
-            successFields={successFields} 
+          <RoleSections
+            rol={rol}
+            formData={formData}
+            errors={errors}
+            handleChange={handleChange}
+            cargando={cargando}
+            successFields={successFields}
             getInputClassName={getInputClassName}
-            facultades={facultades}
-            programas={programas}
-            cargandoFacultades={cargandoFacultades}
-            cargandoProgramas={cargandoProgramas}
           />
 
           <CredentialsSection
@@ -285,7 +263,7 @@ function RegisterPage() {
           />
 
           {/* SECCIÓN DE TÉRMINOS Y CONDICIONES */}
-          <div className="col-span-2 border-t pt-6 mt-4">
+          <div className="lg:col-span-2 border-t pt-4 sm:pt-6 mt-4">
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
               {/* Botón para expandir/contraer */}
               <button
@@ -390,10 +368,10 @@ function RegisterPage() {
             </div>
           </div>
 
-          <div className="col-span-2 mt-4">
-            <button 
-              type="submit" 
-              disabled={cargando || !acceptedTerms} 
+          <div className="lg:col-span-2 mt-4">
+            <button
+              type="submit"
+              disabled={cargando || !acceptedTerms}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {cargando ? (
@@ -410,8 +388,8 @@ function RegisterPage() {
         <div className="mt-6 text-center">
           <p className="text-gray-600">
             ¿Ya tienes una cuenta?{" "}
-            <a 
-              href="/login" 
+            <a
+              href="/login"
               className="text-green-600 hover:text-green-700 font-semibold hover:underline transition-colors"
             >
               Inicia sesión aquí
@@ -419,7 +397,7 @@ function RegisterPage() {
           </p>
         </div>
       </section>
-              
+
       <style>{`
         @keyframes fadeIn {
           from {

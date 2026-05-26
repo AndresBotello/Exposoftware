@@ -6,7 +6,7 @@ import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login: loginContext } = useAuth();
+  const { login: loginContext, loginAsGuest: loginAsGuestContext } = useAuth();
   
   // Estados del formulario
   const [correo, setCorreo] = useState("");
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [loadingGuest, setLoadingGuest] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [reenvioOk, setReenvioOk] = useState(false);
 
   // Si ya está autenticado
   useEffect(() => {
@@ -139,19 +140,38 @@ export default function LoginPage() {
 
     } catch (err) {
       console.error("❌ Error en login:", err);
-      
-      // Manejar diferentes tipos de errores
+
       if (err.message.includes('502') || err.message.includes('503')) {
-        setError("⚠️ El servidor no está disponible temporalmente. Por favor, intenta más tarde.");
+        setError("El servidor no está disponible temporalmente. Por favor, intenta más tarde.");
       } else if (err.message.includes('conexión') || err.message.includes('network')) {
-        setError("🌐 Error de conexión. Verifica tu conexión a internet.");
-      } else if (err.message.includes('401') || err.message.includes('credenciales')) {
-        setError("❌ Correo o contraseña incorrectos. Por favor, verifica tus datos.");
+        setError("Error de conexión. Verifica tu conexión a internet.");
+      } else if (err.message.startsWith('CUENTA_NO_VERIFICADA:')) {
+        const detalle = err.message.replace('CUENTA_NO_VERIFICADA:', '').trim();
+        setError("VERIFICACION:" + detalle);
       } else {
         setError(err.message || "Error al iniciar sesión. Por favor, intenta nuevamente.");
       }
     } finally {
       setLoadingLogin(false);
+    }
+  };
+
+  const handleReenviarVerificacion = async () => {
+    try {
+      const res = await fetch('/api/v1/auth/reenviar-verificacion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ correo }),
+      });
+      if (res.ok) {
+        setReenvioOk(true);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError("VERIFICACION:" + (data.message || "No se pudo reenviar el correo."));
+      }
+    } catch {
+      setError("VERIFICACION:Error de conexión al reenviar el correo.");
     }
   };
 
@@ -163,8 +183,8 @@ export default function LoginPage() {
 
       console.log("📤 Intentando iniciar sesión como invitado...");
 
-      // loginAsGuest guarda el token y rol localmente, no requiere backend
-      const resultado = await AuthService.loginAsGuest();
+      // Usar el contexto de autenticación para hacer login como invitado
+      const resultado = await loginAsGuestContext();
 
       if (!resultado.success) {
         throw new Error(resultado.error || "Error al iniciar sesión como invitado");
@@ -249,27 +269,34 @@ export default function LoginPage() {
             <p className="text-gray-500 text-sm sm:text-base">Bienvenido de nuevo a Exposoftware</p>
             
             {/* Mostrar error si existe */}
-            {error && (
+            {error && error.startsWith('VERIFICACION:') ? (
+              <div className="mt-4 border border-yellow-300 bg-yellow-50 px-4 py-3 rounded-lg text-sm text-yellow-800">
+                <p className="font-semibold mb-1">Cuenta no verificada</p>
+                <p className="mb-2">{error.replace('VERIFICACION:', '').trim()}</p>
+                {reenvioOk ? (
+                  <p className="text-green-700 font-medium">Correo reenviado. Revisa tu bandeja de entrada.</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleReenviarVerificacion}
+                    className="underline font-medium hover:text-yellow-900"
+                  >
+                    Reenviar correo de verificación
+                  </button>
+                )}
+              </div>
+            ) : error ? (
               <div className={`mt-4 border px-4 py-3 rounded-lg text-sm ${
-                error.includes('servidor') || error.includes('502') || error.includes('503')
+                error.includes('servidor') || error.includes('disponible')
                   ? 'bg-yellow-50 border-yellow-300 text-yellow-800'
                   : 'bg-red-50 border-red-200 text-red-700'
               }`}>
-                <div className="flex items-start gap-2">
-                  {error.includes('servidor') || error.includes('502') || error.includes('503') ? (
-                    <span className="text-xl">⚠️</span>
-                  ) : error.includes('conexión') ? (
-                    <span className="text-xl">🌐</span>
-                  ) : (
-                    <span className="text-xl">❌</span>
-                  )}
-                  <div>
-                    <p className="font-semibold">{error.includes('servidor') ? 'Servidor no disponible' : 'Error'}</p>
-                    <p>{error}</p>
-                  </div>
-                </div>
+                <p className="font-semibold mb-1">
+                  {error.includes('servidor') || error.includes('disponible') ? 'Servidor no disponible' : 'Error al iniciar sesión'}
+                </p>
+                <p>{error}</p>
               </div>
-            )}
+            ) : null}
           </header>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">

@@ -11,6 +11,7 @@ export default function EventsTable({
   handleEditarEvento,
   handleVerCapacidad,
   handleCambiarEstado,
+  handleArchivarEvento,
 }) {
   return (
     <div className="space-y-6">
@@ -19,9 +20,9 @@ export default function EventsTable({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
             { key: "TODOS", label: "Total Eventos", value: estadisticas.total_eventos || 0, color: "blue", icon: "pi-calendar" },
-            { key: "ACTIVO", label: "Activos", value: estadisticas.eventos_activos || 0, color: "green", icon: "pi-check-circle" },
-            { key: "INACTIVO", label: "Inactivos", value: eventos.filter(e => e.estado === 'INACTIVO').length, color: "gray", icon: "pi-pause-circle" },
-            { key: "CANCELADO", label: "Cancelados", value: eventos.filter(e => e.estado === 'CANCELADO').length, color: "red", icon: "pi-times-circle" },
+            { key: "cancelado", label: "Cancelados", value: eventos.filter(e => e.estado === 'cancelado').length, color: "red", icon: "pi-times-circle" },
+            { key: "finalizado", label: "Finalizados", value: eventos.filter(e => e.estado === 'finalizado').length, color: "gray", icon: "pi-check-circle" },
+            { key: "borrador", label: "Borradores", value: eventos.filter(e => e.estado === 'borrador').length, color: "yellow", icon: "pi-pencil" },
           ].map(({ key, label, value, color, icon }) => (
             <button
               key={key}
@@ -48,7 +49,7 @@ export default function EventsTable({
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                {filtroEstado === "TODOS" ? "Todos los Eventos" : `Eventos ${filtroEstado.toLowerCase()}`}
+                {filtroEstado === "TODOS" ? "Todos los Eventos" : `Eventos ${filtroEstado.charAt(0).toUpperCase() + filtroEstado.slice(1)}`}
               </h3>
               <p className="text-sm text-gray-500 mt-1">
                 Mostrando {eventosFiltrados.length} de {eventos.length} eventos
@@ -125,21 +126,19 @@ export default function EventsTable({
                         <button onClick={() => handleVerCapacidad(evento.id_evento)} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Ver Capacidad">
                           <i className="pi pi-chart-bar"></i>
                         </button>
-                        {evento.estado === 'ACTIVO' && (
-                          <button onClick={() => handleCambiarEstado(evento.id_evento, 'INACTIVO')} className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors" title="Desactivar">
-                            <i className="pi pi-pause"></i>
-                          </button>
-                        )}
-                        {evento.estado === 'INACTIVO' && (
-                          <button onClick={() => handleCambiarEstado(evento.id_evento, 'ACTIVO')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Activar">
-                            <i className="pi pi-play"></i>
-                          </button>
-                        )}
-                        {evento.estado !== 'CANCELADO' && (
-                          <button onClick={() => handleCambiarEstado(evento.id_evento, 'CANCELADO')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancelar">
+                        {evento.estado !== 'cancelado' && evento.estado !== 'finalizado' && (
+                          <button onClick={() => handleCambiarEstado(evento.id_evento, 'cancelado')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancelar">
                             <i className="pi pi-times-circle"></i>
                           </button>
                         )}
+                        {evento.estado === 'cancelado' && (
+                          <button onClick={() => handleCambiarEstado(evento.id_evento, 'borrador')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Reagendar">
+                            <i className="pi pi-refresh"></i>
+                          </button>
+                        )}
+                        <button onClick={() => handleArchivarEvento(evento.id_evento)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Archivar">
+                          <i className="pi pi-folder"></i>
+                        </button>
                       </div>
                     </td>
                   </tr>

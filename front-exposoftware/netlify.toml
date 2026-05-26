@@ -1,0 +1,22 @@
+# Configuración de Netlify para React Router (SPA)
+
+# Directorio de build
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Redirecciones para rutas del frontend
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers para CORS y seguridad
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"

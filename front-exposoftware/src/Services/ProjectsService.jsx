@@ -1,6 +1,4 @@
-import { API_BASE_URL } from '../utils/constants';
-
-const API_URL = API_BASE_URL;
+import { API_ENDPOINTS } from '../utils/constants';
 
 const getAuthToken = () => {
   return localStorage.getItem('auth_token');
@@ -21,7 +19,8 @@ export const obtenerProyectos = async () => {
   try {
     console.log('📊 Obteniendo todos los proyectos...');
     
-    const response = await fetch(`${API_URL}/api/v1/proyectos`, {
+    const response = await fetch(API_ENDPOINTS.PROYECTOS, {
+      credentials: 'include',
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -51,144 +50,42 @@ export const obtenerProyectos = async () => {
  */
 export const obtenerMisProyectos = async (idEstudiante) => {
   try {
-    console.log('📊 Obteniendo proyectos del estudiante...', { idEstudiante });
-    
-    // ESTRATEGIA: Intentar múltiples endpoints hasta encontrar uno que funcione
-    let proyectos = [];
-    
-    // Intento 1: Endpoint simple GET /api/v1/proyectos (el más común)
-    try {
-      console.log('🔄 Intento 1: GET /api/v1/proyectos (endpoint simple)');
-      const response = await fetch(`${API_URL}/api/v1/proyectos`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
+    console.log('📊 Obteniendo mis proyectos del estudiante autenticado...');
 
-      console.log('📡 Status:', response.status);
+    // Usar directamente el endpoint /api/v1/proyectos/mis-proyectos
+    // Este endpoint trae los proyectos donde el usuario autenticado participa
+    const response = await fetch(API_ENDPOINTS.MIS_PROYECTOS, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        const todosProyectos = Array.isArray(data) ? data : (data.data || data.proyectos || []);
-        
-        console.log('📋 Total proyectos:', todosProyectos.length);
-        console.log('🔍 Filtrando por estudiante:', idEstudiante);
-        
-        // DEBUG: Ver estructura del primer proyecto
-        if (todosProyectos.length > 0) {
-          console.log('🔍 DEBUG - Estructura del primer proyecto:', {
-            id: todosProyectos[0].id_proyecto,
-            titulo: todosProyectos[0].titulo_proyecto,
-            id_estudiantes: todosProyectos[0].id_estudiantes,
-            id_estudiantes_type: typeof todosProyectos[0].id_estudiantes,
-            id_estudiantes_isArray: Array.isArray(todosProyectos[0].id_estudiantes)
-          });
-          
-          // Ver cada estudiante
-          if (Array.isArray(todosProyectos[0].id_estudiantes)) {
-            todosProyectos[0].id_estudiantes.forEach((est, idx) => {
-              console.log(`   📍 Estudiante [${idx}]:`, {
-                tipo: typeof est,
-                valor: est,
-                id_estudiante: est?.id_estudiante,
-                nombre: est?.nombre
-              });
-            });
-          }
-        }
-        
-        // Filtrar proyectos donde aparece el estudiante
-        proyectos = todosProyectos.filter(proyecto => {
-          const esParticipante = proyecto.id_estudiantes?.some(est => {
-            const estudianteId = est?.id_estudiante || est;
-            const match = estudianteId === idEstudiante;
-            
-            // DEBUG: Ver cada comparación
-            if (proyecto.id_estudiantes?.length > 0) {
-              console.log(`   🔎 Comparando en proyecto "${proyecto.titulo_proyecto}":`, {
-                estudianteId,
-                buscando: idEstudiante,
-                match
-              });
-            }
-            
-            return match;
-          });
-          return esParticipante;
+    console.log('📡 Status:', response.status);
+
+    if (response.ok) {
+      const data = await response.json();
+      const proyectos = Array.isArray(data) ? data : (data.data || data.proyectos || []);
+
+      console.log('✅ Proyectos obtenidos:', proyectos.length);
+      console.log('📦 Respuesta del servidor:', data);
+
+      if (proyectos.length > 0) {
+        console.log('🔍 Primer proyecto:', {
+          id: proyectos[0].id_proyecto,
+          titulo: proyectos[0].titulo_proyecto,
+          url_cloudinary: proyectos[0].url_cloudinary,
+          integrantes: proyectos[0].integrantes,
+          estado: proyectos[0].estado
         });
-        
-        console.log('✅ Proyectos filtrados:', proyectos.length);
-        if (proyectos.length > 0) {
-          console.log('📊 Proyectos encontrados:', proyectos.map(p => ({
-            id: p.id_proyecto,
-            titulo: p.titulo_proyecto
-          })));
-        }
-        return proyectos;
-      } else {
-        console.warn('⚠️ Endpoint /api/v1/proyectos falló con status:', response.status);
       }
-    } catch (error) {
-      console.warn('⚠️ Endpoint /api/v1/proyectos falló:', error.message);
+
+      return proyectos;
+    } else if (response.status === 401) {
+      throw new Error('No autorizado. Por favor, inicie sesión nuevamente');
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || `Error ${response.status}: ${response.statusText}`);
     }
-    
-    // Intento 2: Endpoint específico del estudiante (puede no estar implementado)
-    try {
-      console.log('🔄 Intento 2: /api/v1/estudiantes/{id}/proyectos');
-      const response = await fetch(`${API_URL}/api/v1/estudiantes/${idEstudiante}/proyectos`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        proyectos = Array.isArray(data) ? data : (data.data || data.proyectos || []);
-        console.log('✅ Proyectos obtenidos (endpoint estudiante):', proyectos.length);
-        return proyectos;
-      }
-    } catch (error) {
-      console.warn('⚠️ Endpoint de estudiante falló:', error.message);
-    }
-
-    // Intento 3: Endpoint admin con filtro (requiere permisos pero puede funcionar)
-    try {
-      console.log('🔄 Intento 3: /api/v1/admin/proyectos');
-      const response = await fetch(`${API_URL}/api/v1/admin/proyectos?limit=100`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const todosProyectos = Array.isArray(data) ? data : (data.data || data.proyectos || []);
-        
-        console.log('📋 Total proyectos (admin):', todosProyectos.length);
-        console.log('🔍 Filtrando por estudiante:', idEstudiante);
-        
-        // Filtrar proyectos donde aparece el estudiante
-        proyectos = todosProyectos.filter(proyecto => {
-          const esParticipante = proyecto.id_estudiantes?.some(est => {
-            const estudianteId = est?.id_estudiante || est;
-            return estudianteId === idEstudiante;
-          });
-          return esParticipante;
-        });
-        
-        console.log('✅ Proyectos filtrados:', proyectos.length);
-        return proyectos;
-      }
-    } catch (error) {
-      console.warn('⚠️ Endpoint admin falló:', error.message);
-    }
-
-    // Si llegamos aquí, ningún endpoint funcionó
-    console.error('❌ Ningún endpoint de proyectos está disponible');
-    console.log('💡 Sugerencia: Verifica que el backend tenga implementado al menos uno de estos endpoints:');
-    console.log('   - GET /api/v1/proyectos');
-    console.log('   - GET /api/v1/estudiantes/{id}/proyectos');
-    console.log('   - GET /api/v1/admin/proyectos');
-    
-    return [];
-    
   } catch (error) {
     console.error('❌ Error crítico obteniendo proyectos:', error);
     return [];
@@ -201,9 +98,10 @@ export const obtenerMisProyectos = async (idEstudiante) => {
 export const obtenerProyectoPorId = async (projectId) => {
   try {
     console.log(`📊 Obteniendo proyecto ${projectId}...`);
-    
-    const response = await fetch(`${API_URL}/api/v1/proyectos/${projectId}`, {
+
+    const response = await fetch(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
       method: 'GET',
+      credentials: 'include',
       headers: getAuthHeaders()
     });
 
@@ -222,13 +120,43 @@ export const obtenerProyectoPorId = async (projectId) => {
 };
 
 /**
+ * Obtener integrantes de un proyecto
+ */
+export const obtenerIntegrantesProyecto = async (proyectoId) => {
+  try {
+    console.log(`📊 Obteniendo integrantes del proyecto ${proyectoId}...`);
+
+    const response = await fetch(API_ENDPOINTS.PROYECTO_INTEGRANTES(proyectoId), {
+      method: 'GET',
+      credentials: 'include',
+      headers: getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      console.warn(`⚠️ Error obteniendo integrantes (${response.status})`);
+      return [];
+    }
+
+    const data = await response.json();
+    const integrantes = Array.isArray(data) ? data : (data.data || data.integrantes || []);
+    console.log(`✅ Integrantes obtenidos: ${integrantes.length}`);
+
+    return integrantes;
+  } catch (error) {
+    console.error(`❌ Error obteniendo integrantes:`, error);
+    return [];
+  }
+};
+
+/**
  * Crear un nuevo proyecto
  */
 export const crearProyecto = async (projectData) => {
   try {
     console.log('📤 Creando nuevo proyecto...', projectData);
-    
-    const response = await fetch(`${API_URL}/api/v1/proyectos`, {
+
+    const response = await fetch(API_ENDPOINTS.PROYECTOS, {
+      credentials: 'include',
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(projectData)
@@ -241,7 +169,7 @@ export const crearProyecto = async (projectData) => {
 
     const data = await response.json();
     console.log('✅ Proyecto creado:', data);
-    
+
     return data.data || data;
   } catch (error) {
     console.error('❌ Error creando proyecto:', error);
@@ -255,9 +183,10 @@ export const crearProyecto = async (projectData) => {
 export const actualizarProyecto = async (projectId, projectData) => {
   try {
     console.log(`📝 Actualizando proyecto ${projectId}...`, projectData);
-    
-    const response = await fetch(`${API_URL}/api/v1/proyectos/${projectId}`, {
+
+    const response = await fetch(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
       method: 'PUT',
+      credentials: 'include',
       headers: getAuthHeaders(),
       body: JSON.stringify(projectData)
     });
@@ -279,51 +208,20 @@ export const actualizarProyecto = async (projectId, projectData) => {
 
 /**
  * Obtener proyectos del docente autenticado
- * 
- * Estrategia:
- * 1. Intenta GET /api/v1/teachers/projects (endpoint específico)
- * 2. Si falla, obtiene todos los proyectos y filtra por id_docente
- * 
+ *
+ * Obtiene todos los proyectos y filtra por id_docente (session-based auth)
  * Filtra por id_docente.uid_docente (proyectos asignados al docente)
  */
 export const getTeacherProjects = async (teacherId) => {
   try {
     console.log(`👨‍🏫 Obteniendo proyectos del docente...`, { teacherId });
     console.log(`📋 ID del docente a buscar: ${teacherId}`);
-    
-    // ESTRATEGIA 1: Intentar endpoint específico de docentes
-    try {
-      console.log('🔄 Intento 1: GET /api/v1/teachers/projects (endpoint específico de docentes)');
-      
-      const response1 = await fetch(`${API_URL}/api/v1/teachers/projects`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
 
-      if (response1.ok) {
-        const data = await response1.json();
-        const proyectos = Array.isArray(data) ? data : (data.data || data.proyectos || []);
-        console.log('✅ Proyectos del docente desde endpoint específico:', proyectos.length);
-        
-        // Debug: mostrar estructura del primer proyecto
-        if (proyectos.length > 0) {
-          console.log('🔍 DEBUG - Estructura del primer proyecto:', proyectos[0]);
-          console.log('🔍 DEBUG - id_docente del primer proyecto:', proyectos[0].id_docente);
-        }
-        
-        return proyectos;
-      } else {
-        console.log(`⚠️ Endpoint específico falló con status ${response1.status}, intentando estrategia alternativa...`);
-      }
-    } catch (err) {
-      console.log('⚠️ Error en endpoint específico, intentando estrategia alternativa...', err.message);
-    }
-    
-    // ESTRATEGIA 2: Obtener todos los proyectos y filtrar
-    console.log('🔄 Intento 2: GET /api/v1/proyectos (filtrar manualmente)');
-    
-    const response = await fetch(`${API_URL}/api/v1/proyectos`, {
+    console.log('🔄 GET /api/v1/proyectos (filtrar manualmente por docente)');
+
+    const response = await fetch(API_ENDPOINTS.PROYECTOS, {
       method: 'GET',
+      credentials: 'include',
       headers: getAuthHeaders()
     });
 
@@ -333,10 +231,10 @@ export const getTeacherProjects = async (teacherId) => {
 
     const data = await response.json();
     const todosProyectos = Array.isArray(data) ? data : (data.data || data.proyectos || []);
-    
+
     console.log('📋 Total de proyectos recibidos:', todosProyectos.length);
     console.log('🔍 Filtrando proyectos del docente:', teacherId);
-    
+
     // Debug: Ver estructura del primer proyecto
     if (todosProyectos.length > 0) {
       console.log('🔍 DEBUG - Estructura del primer proyecto completo:', todosProyectos[0]);
@@ -346,43 +244,43 @@ export const getTeacherProjects = async (teacherId) => {
         console.log('🔍 DEBUG - uid_docente:', todosProyectos[0].id_docente.uid_docente);
       }
     }
-    
+
     console.log('🔍 DEBUG - ID que estamos buscando:', teacherId);
-    
+
     // Filtrar proyectos donde el docente está asignado
     // id_docente puede ser un string o un objeto {uid_docente: string, nombre: string}
     const proyectosDocente = todosProyectos.filter(proyecto => {
       let esDelDocente = false;
-      
+
       // Caso 1: id_docente es un objeto con uid_docente
       if (typeof proyecto.id_docente === 'object' && proyecto.id_docente !== null) {
         esDelDocente = proyecto.id_docente.uid_docente === teacherId;
-        
+
         console.log(`   🔎 Comparando: "${proyecto.id_docente.uid_docente}" === "${teacherId}" -> ${esDelDocente}`);
-        
+
         if (esDelDocente) {
           console.log('   ✅ Proyecto del docente (objeto):', proyecto.titulo_proyecto);
           console.log('      - uid_docente:', proyecto.id_docente.uid_docente);
           console.log('      - nombre:', proyecto.id_docente.nombre);
         }
-      } 
+      }
       // Caso 2: id_docente es un string simple
       else if (typeof proyecto.id_docente === 'string') {
         esDelDocente = proyecto.id_docente === teacherId;
-        
+
         console.log(`   🔎 Comparando string: "${proyecto.id_docente}" === "${teacherId}" -> ${esDelDocente}`);
-        
+
         if (esDelDocente) {
           console.log('   ✅ Proyecto del docente (string):', proyecto.titulo_proyecto);
         }
       }
-      
+
       return esDelDocente;
     });
-    
+
     console.log('✅ Proyectos del docente filtrados:', proyectosDocente.length);
     return proyectosDocente;
-    
+
   } catch (error) {
     console.error('❌ Error obteniendo proyectos del docente:', error);
     throw error;
@@ -395,9 +293,10 @@ export const getTeacherProjects = async (teacherId) => {
 export const updateProjectStatus = async (projectId, status) => {
   try {
     console.log(`🔄 Actualizando estado del proyecto ${projectId} a ${status}...`);
-    
-    const response = await fetch(`${API_URL}/api/v1/proyectos/${projectId}/estado`, {
+
+    const response = await fetch(API_ENDPOINTS.PROYECTO_ESTADO(projectId), {
       method: 'PATCH',
+      credentials: 'include',
       headers: getAuthHeaders(),
       body: JSON.stringify({ estado: status })
     });
@@ -423,9 +322,10 @@ export const updateProjectStatus = async (projectId, status) => {
 export const obtenerMiembrosProyecto = async (projectId) => {
   try {
     console.log(`👥 Obteniendo miembros del proyecto ${projectId}...`);
-    
-    const response = await fetch(`${API_URL}/api/v1/proyectos/${projectId}/miembros`, {
+
+    const response = await fetch(API_ENDPOINTS.PROYECTO_INTEGRANTES(projectId), {
       method: 'GET',
+      credentials: 'include',
       headers: getAuthHeaders()
     });
 
@@ -449,9 +349,10 @@ export const obtenerMiembrosProyecto = async (projectId) => {
 export const eliminarProyecto = async (projectId) => {
   try {
     console.log(`🗑️ Eliminando proyecto ${projectId}...`);
-    
-    const response = await fetch(`${API_URL}/api/v1/proyectos/${projectId}`, {
+
+    const response = await fetch(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
       method: 'DELETE',
+      credentials: 'include',
       headers: getAuthHeaders()
     });
 

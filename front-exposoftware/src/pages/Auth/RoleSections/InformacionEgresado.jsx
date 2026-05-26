@@ -14,11 +14,11 @@ function InformacionEgresado({
 }) {
   return (
     <>
-      <div className="col-span-2 border-l-4 border-green-600 pl-2 mt-4 mb-2">
+      <div className="lg:col-span-2 border-l-4 border-green-600 pl-2 mt-4 mb-2">
         <h2 className="text-lg font-semibold text-gray-700">Información Egresado</h2>
       </div>
 
-      <div className="col-span-2">
+      <div className="lg:col-span-2">
         <label className="block font-medium text-gray-700 mb-1">Correo Institucional *</label>
         <div className="relative">
           <input
@@ -42,7 +42,7 @@ function InformacionEgresado({
         )}
       </div>
 
-      <div className="col-span-2">
+      <div className="lg:col-span-2">
         <label className="block font-medium text-gray-700 mb-1">
           Facultad *
           {cargandoFacultades && <span className="ml-2 text-sm text-gray-500">(Cargando...)</span>}

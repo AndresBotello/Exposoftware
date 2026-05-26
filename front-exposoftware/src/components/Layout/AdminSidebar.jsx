@@ -38,6 +38,11 @@ const AdminSidebar = memo(({ userName = "Carlos Mendoza", userRole = "Administra
       label: "Gestión de Profesores"
     },
     {
+      to: "/admin/crear-invitado-egresado",
+      icon: "pi-users",
+      label: "Gestión de Invitados y Egresados"
+    },
+    {
       to: "/admin/estudiantes",
       icon: "pi-graduation-cap",
       label: "Gestión de Estudiantes"
@@ -46,12 +51,6 @@ const AdminSidebar = memo(({ userName = "Carlos Mendoza", userRole = "Administra
       to: "/admin/lineas-investigacion",
       icon: "pi-lightbulb",
       label: "Gestión de Líneas de Investigación"
-    },
-    // 🔹 Nuevo apartado: Evento
-    {
-      to: "/admin/evento",
-      icon: "pi-calendar",
-      label: "Evento Exposoftware"
     },
     {
       to: "/admin/asistencia",

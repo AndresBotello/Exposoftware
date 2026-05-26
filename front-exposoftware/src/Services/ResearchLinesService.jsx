@@ -1,6 +1,4 @@
-import { API_BASE_URL } from '../utils/constants';
-
-const API_URL = API_BASE_URL;
+import { API_ENDPOINTS } from '../utils/constants';
 
 /**
  * Obtener el token de autenticación
@@ -33,9 +31,10 @@ class ResearchLinesService {
    */
   static async obtenerLineas() {
     try {
-      console.log('🔍 Obteniendo líneas desde:', `${API_URL}/api/v1/public-investigacion/lineas`);
+      console.log('🔍 Obteniendo líneas desde:', API_ENDPOINTS.PUBLIC_LINEAS_INVESTIGACION);
       
-      const response = await fetch(`${API_URL}/api/v1/public-investigacion/lineas`, {
+      const response = await fetch(API_ENDPOINTS.PUBLIC_LINEAS_INVESTIGACION, {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -123,7 +122,8 @@ class ResearchLinesService {
       console.log('📤 Creando línea - Payload enviado:', JSON.stringify(payload, null, 2));
       console.log('📤 Headers:', getAuthHeaders());
 
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_LINEAS_INVESTIGACION, {
+        credentials: 'include',
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(payload)
@@ -187,7 +187,8 @@ class ResearchLinesService {
 
       console.log(`📤 Actualizando línea ${codigoLinea}:`, payload);
 
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_LINEA_BY_CODE(codigoLinea), {
+        credentials: 'include',
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(payload)
@@ -217,7 +218,8 @@ class ResearchLinesService {
     try {
       console.log(`🗑️ Eliminando línea ${codigoLinea}`);
 
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_LINEA_BY_CODE(codigoLinea), {
+        credentials: 'include',
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -244,7 +246,8 @@ class ResearchLinesService {
    */
   static async obtenerSublineas(codigoLinea) {
     try {
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}/sublineas`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEAS_BY_LINE(codigoLinea), {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -268,7 +271,8 @@ class ResearchLinesService {
   static async obtenerTodasSublineas() {
     try {
       // Usar el endpoint del árbol completo
-      const response = await fetch(`${API_URL}/api/v1/public-investigacion/arbol-completo`, {
+      const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -349,7 +353,8 @@ class ResearchLinesService {
 
       console.log(`📤 Creando sublínea en línea ${codigoLinea}:`, payload);
 
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}/sublineas`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEAS_BY_LINE(codigoLinea), {
+        credentials: 'include',
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(payload)
@@ -387,7 +392,8 @@ class ResearchLinesService {
 
       console.log(`📤 Actualizando sublínea ${codigoSublinea}:`, payload);
 
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}/sublineas/${codigoSublinea}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEA_BY_CODE(codigoLinea, codigoSublinea), {
+        credentials: 'include',
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(payload)
@@ -417,7 +423,8 @@ class ResearchLinesService {
     try {
       console.log(`🗑️ Eliminando sublínea ${codigoSublinea}`);
 
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}/sublineas/${codigoSublinea}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEA_BY_CODE(codigoLinea, codigoSublinea), {
+        credentials: 'include',
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -444,7 +451,8 @@ class ResearchLinesService {
    */
   static async obtenerAreas(codigoLinea, codigoSublinea) {
     try {
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}/sublineas/${codigoSublinea}/areas-tematicas`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_AREAS_BY_SUBLINEA(codigoLinea, codigoSublinea), {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -467,7 +475,8 @@ class ResearchLinesService {
    */
   static async obtenerTodasAreas() {
     try {
-      const response = await fetch(`${API_URL}/api/v1/public-investigacion/arbol-completo`, {
+      const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -518,7 +527,8 @@ class ResearchLinesService {
     try {
       console.log('🌳 Obteniendo árbol completo de investigación...');
       
-      const response = await fetch(`${API_URL}/api/v1/public-investigacion/arbol-completo`, {
+      const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
+        credentials: 'include',
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -639,7 +649,8 @@ class ResearchLinesService {
 
       console.log(`📤 Creando área en sublínea ${codigoSublinea}:`, payload);
 
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}/sublineas/${codigoSublinea}/areas-tematicas`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_AREAS_BY_SUBLINEA(codigoLinea, codigoSublinea), {
+        credentials: 'include',
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(payload)
@@ -677,7 +688,8 @@ class ResearchLinesService {
 
       console.log(`📤 Actualizando área ${codigoArea}:`, payload);
 
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}/sublineas/${codigoSublinea}/areas-tematicas/${codigoArea}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_AREA_BY_CODE(codigoLinea, codigoSublinea, codigoArea), {
+        credentials: 'include',
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(payload)
@@ -707,7 +719,8 @@ class ResearchLinesService {
     try {
       console.log(`🗑️ Eliminando área ${codigoArea}`);
 
-      const response = await fetch(`${API_URL}/api/v1/admin/investigacion/lineas/${codigoLinea}/sublineas/${codigoSublinea}/areas-tematicas/${codigoArea}`, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_AREA_BY_CODE(codigoLinea, codigoSublinea, codigoArea), {
+        credentials: 'include',
         method: 'DELETE',
         headers: getAuthHeaders()
       });

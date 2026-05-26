@@ -70,6 +70,7 @@ export const obtenerEstudiantes = async (params = {}) => {
     console.log('🔑 Token presente:', AuthService.getToken() ? 'Sí' : 'No');
     
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'GET',
       headers: headers
     });
@@ -105,6 +106,7 @@ export const obtenerEstudiantePorId = async (studentId) => {
     console.log('👤 Obteniendo estudiante:', studentId);
     
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'GET',
       headers: AuthService.getAuthHeaders()
     });
@@ -126,11 +128,12 @@ export const obtenerEstudiantePorId = async (studentId) => {
  */
 export const obtenerEstudianteCompleto = async (studentId) => {
   try {
-    const url = API_ENDPOINTS.ADMIN_ESTUDIANTE_COMPLETO(studentId);
+    const url = API_ENDPOINTS.ADMIN_ESTUDIANTE_BY_ID(studentId);
     
     console.log('👤📋 Obteniendo estudiante completo:', studentId);
     
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'GET',
       headers: AuthService.getAuthHeaders()
     });
@@ -154,11 +157,12 @@ export const obtenerEstudianteCompleto = async (studentId) => {
 export const obtenerEstudiantesPorPrograma = async (codigoPrograma, params = {}) => {
   try {
     // El endpoint no acepta parámetros de paginación
-    const url = API_ENDPOINTS.ADMIN_ESTUDIANTES_POR_PROGRAMA(codigoPrograma);
+    const url = `/api/v1/admin/estudiantes/programa/${codigoPrograma}`;
     
     console.log('🎓 Obteniendo estudiantes del programa:', codigoPrograma);
     
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'GET',
       headers: AuthService.getAuthHeaders()
     });
@@ -198,6 +202,7 @@ export const actualizarEstudiante = async (studentId, studentData) => {
     console.log('✏️ Actualizando estudiante:', studentId, studentData);
     
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'PUT',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(studentData)
@@ -225,6 +230,7 @@ export const activarEstudiante = async (studentId) => {
     console.log('✅ Activando estudiante:', studentId);
     
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'PATCH',
       headers: AuthService.getAuthHeaders()
     });
@@ -251,6 +257,7 @@ export const desactivarEstudiante = async (studentId) => {
     console.log('❌ Desactivando estudiante:', studentId);
     
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'PATCH',
       headers: AuthService.getAuthHeaders()
     });
@@ -277,11 +284,12 @@ export const desactivarEstudiante = async (studentId) => {
  */
 export const asignarEstudianteExistente = async (data) => {
   try {
-    const url = API_ENDPOINTS.ADMIN_ESTUDIANTE_ASIGNAR_EXISTENTE;
+    const url = `/api/v1/admin/estudiantes/asignar-existente`;
     
     console.log('🔗 Asignando rol de estudiante a usuario existente:', data);
     
     const response = await fetch(url, {
+      credentials: 'include',
       method: 'POST',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(data)

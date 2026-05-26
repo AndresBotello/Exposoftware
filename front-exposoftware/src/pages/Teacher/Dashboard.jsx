@@ -1,4 +1,3 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useTeacherDashboard } from "../../hooks/Teacher/useTeacherDashboard";
 import { TeacherHeader, TeacherSidebar } from "../../components/Teacher/TeacherLayout";
 
@@ -14,6 +13,8 @@ export default function TeacherDashboard() {
     proyectos,
     pieChartData,
     lineasChartData,
+    teachingLoad,
+    myGroups,
     handleLogout,
     exportarGraficaComoImagen,
     exportarGraficaComoPDF,
@@ -70,21 +71,7 @@ export default function TeacherDashboard() {
             </div>
 
             {/* Tarjetas de métricas */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-blue-700 mb-1">Total proyectos</p>
-                    <h3 className="text-3xl font-bold text-blue-900">
-                      {loading ? "..." : metricasProyectos.total}
-                    </h3>
-                  </div>
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <i className="pi pi-folder-open text-white text-xl"></i>
-                  </div>
-                </div>
-              </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200 p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -126,6 +113,20 @@ export default function TeacherDashboard() {
                   </div>
                 </div>
               </div>
+
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-purple-700 mb-1">Proyectos Asignados</p>
+                    <h3 className="text-3xl font-bold text-purple-900">
+                      {cargandoProyectos ? "..." : metricasProyectos.asignados}
+                    </h3>
+                  </div>
+                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i className="pi pi-briefcase text-white text-xl"></i>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Botón exportar reporte */}
@@ -139,227 +140,58 @@ export default function TeacherDashboard() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Gráfica: Estado de Proyectos */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                      <i className="pi pi-chart-pie text-white text-sm"></i>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">Estado de Proyectos</h3>
-                      <p className="text-sm text-gray-600">Distribución por calificación</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        exportarGraficaComoImagen("estado-proyectos-chart", "Estado_Proyectos")
-                      }
-                      className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors duration-200"
-                      title="Exportar como imagen"
-                    >
-                      <i className="pi pi-image text-lg"></i>
-                    </button>
-                    <button
-                      onClick={() =>
-                        exportarGraficaComoPDF(
-                          "estado-proyectos-chart",
-                          "Estado de Proyectos",
-                          pieChartData
-                        )
-                      }
-                      className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors duration-200"
-                      title="Exportar como PDF"
-                    >
-                      <i className="pi pi-file-pdf text-lg"></i>
-                    </button>
-                  </div>
+            {/* Sección: Carga Académica */}
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center">
+                  <i className="pi pi-book text-white"></i>
                 </div>
-
-                {cargandoProyectos ? (
-                  <div className="h-64 flex items-center justify-center">
-                    <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                ) : pieChartData.length > 0 ? (
-                  <div id="estado-proyectos-chart" className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={pieChartData}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          paddingAngle={3}
-                          dataKey="value"
-                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                          labelLine={false}
-                        >
-                          {pieChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value, name) => [
-                            `${value} proyecto${value !== 1 ? "s" : ""}`,
-                            name,
-                          ]}
-                          contentStyle={{
-                            backgroundColor: "white",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "12px",
-                            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
-                            fontSize: "14px",
-                          }}
-                        />
-                        <Legend
-                          verticalAlign="bottom"
-                          height={40}
-                          formatter={(value, entry) => (
-                            <span style={{ color: entry.color, fontWeight: "500" }}>
-                              {value}: {entry.payload.value}
-                            </span>
-                          )}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl">
-                    <div className="text-center">
-                      <i className="pi pi-chart-pie text-4xl text-gray-400 mb-2"></i>
-                      <p className="text-gray-500 text-sm">No hay datos para mostrar</p>
-                    </div>
-                  </div>
-                )}
+                <h3 className="text-xl font-bold text-gray-900">Carga Académica</h3>
               </div>
 
-              {/* Gráfica: Líneas de Investigación */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <i className="pi pi-sitemap text-white text-sm"></i>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">Líneas de Investigación</h3>
-                      <p className="text-sm text-gray-600">Distribución por línea</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        exportarGraficaComoImagen(
-                          "lineas-investigacion-chart",
-                          "Lineas_Investigacion"
-                        )
-                      }
-                      className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors duration-200"
-                      title="Exportar como imagen"
-                    >
-                      <i className="pi pi-image text-lg"></i>
-                    </button>
-                    <button
-                      onClick={() =>
-                        exportarGraficaComoPDF(
-                          "lineas-investigacion-chart",
-                          "Líneas de Investigación",
-                          lineasChartData
-                        )
-                      }
-                      className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors duration-200"
-                      title="Exportar como PDF"
-                    >
-                      <i className="pi pi-file-pdf text-lg"></i>
-                    </button>
-                  </div>
+              {cargandoProyectos ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                 </div>
-
-                <p className="text-sm text-gray-600 mb-6 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                  <i className="pi pi-info-circle text-blue-600 mr-2"></i>
-                  {mapasCargados ? (
-                    <>
-                      <strong>{lineasChartData.length}</strong> líneas •{" "}
-                      <strong>{proyectos.length}</strong> proyectos
-                    </>
-                  ) : (
-                    <>
-                      <i className="pi pi-spin pi-spinner text-blue-600 mr-1"></i>
-                      Cargando nombres de líneas...
-                    </>
-                  )}
-                </p>
-
-                {cargandoProyectos || !mapasCargados ? (
-                  <div className="h-64 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                      <p className="text-sm text-gray-600">
-                        {cargandoProyectos
-                          ? "Cargando proyectos..."
-                          : "Cargando nombres de líneas..."}
-                      </p>
-                    </div>
-                  </div>
-                ) : lineasChartData.length > 0 ? (
-                  <div id="lineas-investigacion-chart" className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={lineasChartData}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={85}
-                          paddingAngle={3}
-                          dataKey="value"
-                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                          labelLine={false}
-                        >
-                          {lineasChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value, name) => [
-                            `${value} proyecto${value !== 1 ? "s" : ""}`,
-                            name,
-                          ]}
-                          contentStyle={{
-                            backgroundColor: "white",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "12px",
-                            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
-                            fontSize: "14px",
-                          }}
-                        />
-                        <Legend
-                          verticalAlign="bottom"
-                          height={40}
-                          formatter={(value, entry) => (
-                            <span
-                              style={{
-                                color: entry.color,
-                                fontWeight: "500",
-                                fontSize: "13px",
-                              }}
-                            >
-                              {value}: {entry.payload.value}
+              ) : teachingLoad.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {teachingLoad.map((clase, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="text-xs text-blue-600 font-medium mb-1 uppercase">Materia</p>
+                          <h4 className="text-base font-bold text-gray-900 mb-2">
+                            {clase.nombre_materia || clase.codigo_materia || "Sin nombre"}
+                          </h4>
+                          <div className="flex gap-3 text-sm text-gray-700">
+                            <span className="flex items-center gap-1">
+                              <i className="pi pi-tag text-xs"></i>
+                              {clase.codigo_materia}
                             </span>
-                          )}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl">
-                    <div className="text-center">
-                      <i className="pi pi-sitemap text-4xl text-gray-400 mb-2"></i>
-                      <p className="text-gray-500 text-sm">No hay líneas asignadas</p>
+                            <span className="flex items-center gap-1">
+                              <i className="pi pi-users text-xs"></i>
+                              Grupo {clase.nombre_grupo || clase.id_grupo || "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i className="pi pi-check-circle text-blue-600"></i>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                  <i className="pi pi-book text-4xl text-blue-300 mb-2"></i>
+                  <p className="text-blue-700">No hay clases asignadas</p>
+                </div>
+              )}
             </div>
           </main>
         </div>

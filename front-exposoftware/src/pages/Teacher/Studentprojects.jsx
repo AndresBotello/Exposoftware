@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useStudentProjects } from "../../hooks/Teacher/useStudentProjects";
-import { ProjectDetailsModal, GradeModal } from "../../components/Teacher/ProjectModals";
+import { ProjectDetailsModal, GradeModal, ProjectActionModal } from "../../components/Teacher/ProjectModals";
 import { TeacherHeader, TeacherSidebar } from "../../components/Teacher/TeacherLayout";
 
 export default function StudentProjects() {
+  const [activeSection, setActiveSection] = useState("assigned");
+
   const {
     user,
     getFullName,
@@ -24,8 +27,20 @@ export default function StudentProjects() {
     gradeValue,
     setGradeValue,
     gradingProject,
+    projectCalificacionPopular,
+    loadingCalificacionPopular,
     projects,
     filteredProjects,
+    myProjects,
+    projectsForApproval,
+    approvingProject,
+    rejectingProject,
+    showActionModal,
+    projectForAction,
+    showRejectReason,
+    setShowRejectReason,
+    rejectReason,
+    setRejectReason,
     loading,
     error,
     handleLogout,
@@ -34,11 +49,33 @@ export default function StudentProjects() {
     handleOpenGradeModal,
     closeGradeModal,
     handleGradeProject,
+    handleOpenActionModal,
+    handleCloseActionModal,
+    handleGradeProjectAction,
+    handleApproveProjectAction,
+    handleRejectProjectAction,
+    handleApproveProject,
+    handleRejectProject,
     getLineaName,
     getSublineaName,
     getAreaName,
     getEventoName,
   } = useStudentProjects();
+
+  // Determine which projects to display based on active section
+  let displayProjects = projects;
+  let displayTitle = "Proyectos de Estudiantes";
+  let displayFiltered = filteredProjects;
+
+  if (activeSection === "assigned") {
+    displayProjects = myProjects;
+    displayTitle = "Mis Proyectos Asignados";
+    displayFiltered = myProjects; // No filtering for assigned projects for now
+  } else if (activeSection === "approval") {
+    displayProjects = projectsForApproval;
+    displayTitle = "Proyectos para Aprobar";
+    displayFiltered = projectsForApproval; // No filtering for approval projects
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -68,6 +105,49 @@ export default function StudentProjects() {
               <p className="text-sm text-gray-600">
                 Gestión y visualización de todos los proyectos de los estudiantes.
               </p>
+            </div>
+
+            {/* Tabs/Sections */}
+            <div className="flex gap-4 mb-6 border-b border-gray-200">
+              <button
+                onClick={() => setActiveSection("assigned")}
+                className={`pb-3 px-1 font-medium text-sm transition-all duration-200 border-b-2 ${
+                  activeSection === "assigned"
+                    ? "text-emerald-600 border-b-emerald-600"
+                    : "text-gray-600 border-b-transparent hover:text-gray-800"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <i className="pi pi-briefcase"></i>
+                  Mis Proyectos ({myProjects.length})
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveSection("approval")}
+                className={`pb-3 px-1 font-medium text-sm transition-all duration-200 border-b-2 ${
+                  activeSection === "approval"
+                    ? "text-emerald-600 border-b-emerald-600"
+                    : "text-gray-600 border-b-transparent hover:text-gray-800"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <i className="pi pi-check-circle"></i>
+                  Proyectos para Aprobar ({projectsForApproval.length})
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveSection("all")}
+                className={`pb-3 px-1 font-medium text-sm transition-all duration-200 border-b-2 ${
+                  activeSection === "all"
+                    ? "text-emerald-600 border-b-emerald-600"
+                    : "text-gray-600 border-b-transparent hover:text-gray-800"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <i className="pi pi-list"></i>
+                  Todos ({projects.length})
+                </span>
+              </button>
             </div>
 
             {/* Barra de búsqueda y filtros */}
@@ -167,7 +247,7 @@ export default function StudentProjects() {
 
               {/* Mensajes informativos */}
               <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                {materiasList.length === 0 && projects.length > 0 && (
+                {materiasList.length === 0 && displayProjects.length > 0 && (
                   <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
                     <i className="pi pi-info-circle text-blue-600"></i>
                     <span>
@@ -176,12 +256,15 @@ export default function StudentProjects() {
                     </span>
                   </div>
                 )}
-                {materiasList.length === 0 && projects.length === 0 && (
+                {materiasList.length === 0 && displayProjects.length === 0 && (
                   <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
                     <i className="pi pi-exclamation-triangle text-amber-600"></i>
                     <span>
-                      <strong>Nota:</strong> No tienes proyectos asignados. Los filtros
-                      estarán disponibles cuando tengas proyectos.
+                      <strong>Nota:</strong> {activeSection === "assigned"
+                        ? "No tienes proyectos asignados. Los filtros estarán disponibles cuando tengas proyectos."
+                        : activeSection === "approval"
+                        ? "No hay proyectos para aprobar en este momento."
+                        : "No hay proyectos disponibles."}
                     </span>
                   </div>
                 )}
@@ -190,7 +273,7 @@ export default function StudentProjects() {
                     <i className="pi pi-search text-emerald-600"></i>
                     <span>
                       <strong>Búsqueda:</strong> "{searchQuery}" -{" "}
-                      {filteredProjects.length} resultado(s)
+                      {displayFiltered.length} resultado(s)
                     </span>
                   </div>
                 )}
@@ -205,7 +288,7 @@ export default function StudentProjects() {
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
                     <span className="text-sm font-medium text-gray-700">
-                      {filteredProjects.length} de {projects.length} proyectos
+                      {displayFiltered.length} de {displayProjects.length} proyectos
                     </span>
                   </div>
 
@@ -303,7 +386,7 @@ export default function StudentProjects() {
                     <p className="text-red-600 font-medium">Error al cargar proyectos</p>
                     <p className="text-sm text-red-500 mt-1">{error}</p>
                   </div>
-                ) : filteredProjects.length === 0 ? (
+                ) : displayFiltered.length === 0 ? (
                   <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                       <i className="pi pi-search text-4xl text-gray-400"></i>
@@ -315,7 +398,7 @@ export default function StudentProjects() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
-                    {filteredProjects.map((project) => (
+                    {displayFiltered.map((project) => (
                       <div
                         key={project.id_proyecto}
                         className="group bg-white rounded-xl border border-gray-200 hover:border-emerald-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
@@ -334,16 +417,20 @@ export default function StudentProjects() {
                                 <i className="pi pi-calendar text-xs"></i>
                                 <span>
                                   {project.fecha_subida
-                                    ? new Date(project.fecha_subida).toLocaleDateString(
-                                        "es-ES"
-                                      )
+                                    ? new Date(project.fecha_subida).toLocaleDateString("es-ES")
+                                    : project.created_at
+                                    ? new Date(project.created_at).toLocaleDateString("es-ES")
+                                    : project.fecha_creacion
+                                    ? new Date(project.fecha_creacion).toLocaleDateString("es-ES")
                                     : "Fecha no disponible"}
                                 </span>
                               </div>
                             </div>
                             <div
                               className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                project.calificacion >= 3.0
+                                project.estado === "rechazado"
+                                  ? "bg-red-500 text-white"
+                                  : project.estado === "aprobado" || project.calificacion >= 3.0
                                   ? "bg-green-500 text-white"
                                   : project.calificacion < 3.0 &&
                                     project.calificacion !== null
@@ -353,7 +440,9 @@ export default function StudentProjects() {
                                   : "bg-gray-500 text-white"
                               }`}
                             >
-                              {project.calificacion >= 3.0
+                              {project.estado === "rechazado"
+                                ? "Rechazado"
+                                : project.estado === "aprobado" || project.calificacion >= 3.0
                                 ? "Aprobado"
                                 : project.calificacion < 3.0 &&
                                   project.calificacion !== null
@@ -368,15 +457,28 @@ export default function StudentProjects() {
                         {/* Contenido principal */}
                         <div className="p-5">
                           <div className="space-y-3 mb-4">
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                              <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2 text-sm">
                                 <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
                                   <i className="pi pi-users text-emerald-600 text-sm"></i>
                                 </div>
-                                <span className="font-medium">
-                                  {project.id_estudiantes?.length || 0} estudiante(s)
+                                <span className="font-medium text-gray-600">
+                                  {project.integrantes?.length || project.id_estudiantes?.length || 0} estudiante(s)
                                 </span>
                               </div>
+                              {project.integrantes && project.integrantes.length > 0 && (
+                                <div className="ml-10 space-y-1">
+                                  {project.integrantes.map((integrante, idx) => (
+                                    <div key={idx} className="text-xs text-gray-600 flex items-center gap-1">
+                                      <span className={`w-1.5 h-1.5 rounded-full ${integrante.es_lider ? 'bg-yellow-500' : 'bg-gray-400'}`}></span>
+                                      <span className="truncate" title={integrante.nombre_completo || integrante.nombre}>
+                                        {integrante.nombre_completo || integrante.nombre || "Sin nombre"}
+                                        {integrante.es_lider && " (Líder)"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-3 text-sm text-gray-600">
@@ -385,23 +487,26 @@ export default function StudentProjects() {
                                   <i className="pi pi-book text-blue-600 text-sm"></i>
                                 </div>
                                 <span>
-                                  {project.codigo_materia || "Sin materia"} - Grupo{" "}
-                                  {project.id_grupo || "N/A"}
+                                  {project.nombre_materia || project.codigo_materia || "Sin materia"} - Grupo{" "}
+                                  {project.nombre_grupo || "N/A"}
                                 </span>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-2">
                               <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                                {project.tipo_actividad === 1
-                                  ? "📚 Proyecto"
-                                  : project.tipo_actividad === 2
-                                  ? "🛠️ Taller"
-                                  : project.tipo_actividad === 3
-                                  ? "🎤 Ponencia"
-                                  : project.tipo_actividad === 4
-                                  ? "🎭 Conferencia"
-                                  : "❓ No especificado"}
+                                {(() => {
+                                  const tipo = project.tipo_actividad || project.id_tipo_actividad;
+                                  return tipo === 1
+                                    ? "📚 Proyecto"
+                                    : tipo === 2
+                                    ? "🛠️ Taller"
+                                    : tipo === 3
+                                    ? "🎤 Ponencia"
+                                    : tipo === 4
+                                    ? "🎭 Conferencia"
+                                    : "❓ No especificado";
+                                })()}
                               </span>
                             </div>
                           </div>
@@ -448,13 +553,11 @@ export default function StudentProjects() {
                               <span className="hidden sm:inline">Ver detalles</span>
                             </button>
                             <button
-                              onClick={() => handleOpenGradeModal(project)}
-                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                              onClick={() => handleOpenActionModal(project)}
+                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
                             >
-                              <i className="pi pi-pencil"></i>
-                              <span className="hidden sm:inline">
-                                {project.calificacion ? "Editar" : "Calificar"}
-                              </span>
+                              <i className="pi pi-cog"></i>
+                              <span className="hidden sm:inline">Gestionar</span>
                             </button>
                           </div>
                         </div>
@@ -495,7 +598,7 @@ export default function StudentProjects() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredProjects.map((project, index) => (
+                      {displayFiltered.map((project, index) => (
                         <tr
                           key={project.id_proyecto}
                           className={`border-b border-gray-100 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 transition-all duration-200 ${
@@ -516,65 +619,94 @@ export default function StudentProjects() {
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">
                                   {project.fecha_subida
-                                    ? new Date(project.fecha_subida).toLocaleDateString(
-                                        "es-ES"
-                                      )
+                                    ? new Date(project.fecha_subida).toLocaleDateString("es-ES")
+                                    : project.created_at
+                                    ? new Date(project.created_at).toLocaleDateString("es-ES")
+                                    : project.fecha_creacion
+                                    ? new Date(project.fecha_creacion).toLocaleDateString("es-ES")
                                     : "Fecha no disponible"}
                                 </p>
                               </div>
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                                <i className="pi pi-users text-emerald-600 text-xs"></i>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <i className="pi pi-users text-emerald-600 text-xs"></i>
+                                </div>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {project.integrantes?.length || project.id_estudiantes?.length || 0}
+                                </span>
                               </div>
-                              <span className="text-sm font-medium text-gray-900">
-                                {project.id_estudiantes?.length || 0}
-                              </span>
-                              <span className="text-xs text-gray-500">estudiante(s)</span>
+                              {project.integrantes && project.integrantes.length > 0 && (
+                                <div className="ml-10 space-y-1">
+                                  {project.integrantes.slice(0, 2).map((integrante, idx) => (
+                                    <div key={idx} className="text-xs text-gray-600 flex items-center gap-1">
+                                      <span className={`w-1.5 h-1.5 rounded-full ${integrante.es_lider ? 'bg-yellow-500' : 'bg-gray-400'}`}></span>
+                                      <span className="truncate" title={integrante.nombre_completo || integrante.nombre}>
+                                        {integrante.nombre_completo || integrante.nombre || "Sin nombre"}
+                                        {integrante.es_lider && " (Líder)"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                  {project.integrantes.length > 2 && (
+                                    <div className="text-xs text-gray-500 italic ml-3">
+                                      +{project.integrantes.length - 2} más
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td className="py-4 px-6">
                             <div className="text-sm text-gray-900">
                               <p className="font-medium">
-                                {project.codigo_materia || "N/A"}
+                                {project.nombre_materia || project.codigo_materia || "N/A"}
                               </p>
                               <p className="text-gray-500">
-                                Grupo {project.id_grupo || "N/A"}
+                                Grupo {project.nombre_grupo || "N/A"}
                               </p>
                             </div>
                           </td>
                           <td className="py-4 px-6">
                             <span
                               className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                project.tipo_actividad === 1
-                                  ? "bg-blue-100 text-blue-800"
-                                  : project.tipo_actividad === 2
-                                  ? "bg-orange-100 text-orange-800"
-                                  : project.tipo_actividad === 3
-                                  ? "bg-purple-100 text-purple-800"
-                                  : project.tipo_actividad === 4
-                                  ? "bg-indigo-100 text-indigo-800"
-                                  : "bg-gray-100 text-gray-800"
+                                (() => {
+                                  const tipo = project.tipo_actividad || project.id_tipo_actividad;
+                                  return tipo === 1
+                                    ? "bg-blue-100 text-blue-800"
+                                    : tipo === 2
+                                    ? "bg-orange-100 text-orange-800"
+                                    : tipo === 3
+                                    ? "bg-purple-100 text-purple-800"
+                                    : tipo === 4
+                                    ? "bg-indigo-100 text-indigo-800"
+                                    : "bg-gray-100 text-gray-800";
+                                })()
                               }`}
                             >
-                              {project.tipo_actividad === 1
-                                ? "📚 Proyecto"
-                                : project.tipo_actividad === 2
-                                ? "🛠️ Taller"
-                                : project.tipo_actividad === 3
-                                ? "🎤 Ponencia"
-                                : project.tipo_actividad === 4
-                                ? "🎭 Conferencia"
-                                : "❓ No especificado"}
+                              {(() => {
+                                const tipo = project.tipo_actividad || project.id_tipo_actividad;
+                                return tipo === 1
+                                  ? "📚 Proyecto"
+                                  : tipo === 2
+                                  ? "🛠️ Taller"
+                                  : tipo === 3
+                                  ? "🎤 Ponencia"
+                                  : tipo === 4
+                                  ? "🎭 Conferencia"
+                                  : "❓ No especificado";
+                              })()}
                             </span>
                           </td>
                           <td className="py-4 px-6">
                             <div className="flex flex-col gap-1">
                               <span
                                 className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold w-fit ${
-                                  project.calificacion >= 3.0
+                                  project.estado === "rechazado"
+                                    ? "bg-red-100 text-red-800"
+                                    : project.estado === "aprobado" || project.calificacion >= 3.0
                                     ? "bg-green-100 text-green-800"
                                     : project.calificacion < 3.0 &&
                                       project.calificacion !== null
@@ -584,7 +716,9 @@ export default function StudentProjects() {
                                     : "bg-gray-100 text-gray-800"
                                 }`}
                               >
-                                {project.calificacion >= 3.0
+                                {project.estado === "rechazado"
+                                  ? "❌ Rechazado"
+                                  : project.estado === "aprobado" || project.calificacion >= 3.0
                                   ? "✅ Aprobado"
                                   : project.calificacion < 3.0 &&
                                     project.calificacion !== null
@@ -612,22 +746,12 @@ export default function StudentProjects() {
                                 <span className="hidden md:inline">Ver</span>
                               </button>
                               <button
-                                onClick={() => handleOpenGradeModal(project)}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
-                                  project.calificacion
-                                    ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                                    : "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                                }`}
-                                title={
-                                  project.calificacion
-                                    ? "Editar calificación"
-                                    : "Calificar proyecto"
-                                }
+                                onClick={() => handleOpenActionModal(project)}
+                                className="flex items-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
+                                title="Gestionar proyecto (calificar, aprobar, rechazar)"
                               >
-                                <i className="pi pi-pencil"></i>
-                                <span className="hidden md:inline">
-                                  {project.calificacion ? "Editar" : "Calificar"}
-                                </span>
+                                <i className="pi pi-cog"></i>
+                                <span className="hidden md:inline">Gestionar</span>
                               </button>
                             </div>
                           </td>
@@ -640,7 +764,7 @@ export default function StudentProjects() {
             )}
 
             {/* Sin resultados */}
-            {filteredProjects.length === 0 && (
+            {displayFiltered.length === 0 && (
               <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                 <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                   <i className="pi pi-search text-4xl text-gray-400"></i>
@@ -664,6 +788,8 @@ export default function StudentProjects() {
         getSublineaName={getSublineaName}
         getAreaName={getAreaName}
         getEventoName={getEventoName}
+        calificacionPopular={projectCalificacionPopular}
+        loadingCalificacionPopular={loadingCalificacionPopular}
       />
 
       <GradeModal
@@ -674,6 +800,26 @@ export default function StudentProjects() {
         gradingProject={gradingProject}
         onGrade={handleGradeProject}
         onClose={closeGradeModal}
+      />
+
+      <ProjectActionModal
+        show={showActionModal}
+        project={projectForAction}
+        gradeValue={gradeValue}
+        setGradeValue={setGradeValue}
+        gradingProject={gradingProject}
+        approvingProject={approvingProject}
+        rejectingProject={rejectingProject}
+        showRejectReason={showRejectReason}
+        setShowRejectReason={setShowRejectReason}
+        rejectReason={rejectReason}
+        setRejectReason={setRejectReason}
+        onGrade={handleGradeProjectAction}
+        onApprove={handleApproveProjectAction}
+        onReject={handleRejectProjectAction}
+        onClose={handleCloseActionModal}
+        calificacionPopular={projectCalificacionPopular}
+        loadingCalificacionPopular={loadingCalificacionPopular}
       />
     </div>
   );

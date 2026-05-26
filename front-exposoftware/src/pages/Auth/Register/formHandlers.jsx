@@ -81,11 +81,11 @@ export const handleChange = (
   }
 
   setFormData((prev) => {
-    // 🔥 Si cambia la facultad, resetear el programa
-    const updatedForm = name === "facultad" 
-      ? { ...prev, [name]: cleanValue, programa: "" }
+    // Si cambia el semestre, resetear la materia
+    const updatedForm = name === "semestre"
+      ? { ...prev, [name]: cleanValue, materia: "" }
       : { ...prev, [name]: cleanValue };
-    
+
     const error = validateField(
       name,
       cleanValue,
@@ -96,9 +96,8 @@ export const handleChange = (
     // Actualizar errores
     setErrors((prevErrors) => {
       const newErrors = { ...prevErrors, [name]: error };
-      // 🔥 Si cambió la facultad, limpiar también el error del programa
-      if (name === "facultad") {
-        newErrors.programa = "";
+      if (name === "semestre") {
+        newErrors.materia = "";
       }
       return newErrors;
     });
@@ -107,9 +106,8 @@ export const handleChange = (
     if (!error && cleanValue.trim() !== "") {
       setSuccessFields((prev) => {
         const newSuccess = { ...prev, [name]: true };
-        // 🔥 Si cambió la facultad, resetear el success del programa
-        if (name === "facultad") {
-          newSuccess.programa = false;
+        if (name === "semestre") {
+          newSuccess.materia = false;
         }
         return newSuccess;
       });
@@ -149,16 +147,15 @@ export const handleSelectChange = (
 
 /**
  * Maneja cambios en el departamento de residencia
+ * Las municipios se cargan via API en el componente padre cuando cambia departamentoResidencia
  */
 export const handleDepartamentoChange = (
   e,
   formData,
   setFormData,
-  setciudades,
   setErrors,
   setSuccessFields,
-  rol,
-  colombia
+  rol
 ) => {
   const selectedDepartamento = e.target.value;
 
@@ -167,9 +164,6 @@ export const handleDepartamentoChange = (
     departamentoResidencia: selectedDepartamento,
     ciudadResidencia: "",
   }));
-
-  const depto = colombia.find((d) => d.departamento === selectedDepartamento);
-  setciudades(depto && Array.isArray(depto.ciudades) ? depto.ciudades : []);
 
   const error = validateField(
     "departamentoResidencia",
@@ -333,7 +327,7 @@ export const getInputClassName = (
   cargando
 ) => {
   const baseClass =
-    "w-full border rounded-lg p-2 focus:ring-2 outline-none transition-all";
+    "w-full border rounded-lg p-2.5 focus:ring-2 outline-none transition-all";
 
   if (cargando) {
     return `${baseClass} bg-gray-100 cursor-not-allowed border-gray-300`;

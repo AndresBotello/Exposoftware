@@ -14,6 +14,7 @@ import EditStudent from "../pages/Admin/EditStudent";
 import CrearGrupo from "../pages/Admin/CreateGroup";
 import CrearMateria from "../pages/Admin/CreateSubject";
 import CrearProfesor from "../pages/Admin/CreateTeacher";
+import CrearInvitadoYEgresado from "../pages/Admin/CreateGuestAndGraduate";
 import LineasInvestigacion from "../pages/Admin/CreateLines";
 import CrearFacultad from "../pages/Admin/CrearFacultades";
 import CrearPrograma from "../pages/Admin/CreatePrograms";
@@ -125,13 +126,22 @@ export default function AdminRoutes() {
         } 
       />
       
-      <Route 
-        path="crear-profesor" 
+      <Route
+        path="crear-profesor"
         element={
           <AdminRoute>
             <CrearProfesor />
           </AdminRoute>
-        } 
+        }
+      />
+
+      <Route
+        path="crear-invitado-egresado"
+        element={
+          <AdminRoute>
+            <CrearInvitadoYEgresado />
+          </AdminRoute>
+        }
       />
 
       {/* 🏛️ GESTIÓN DE FACULTADES Y PROGRAMAS */}

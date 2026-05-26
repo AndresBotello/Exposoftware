@@ -21,6 +21,7 @@ import AdminProfile from "./pages/Admin/Profile";
 import CreateGroup from "./pages/Admin/CreateGroup";
 import CreateSubject from "./pages/Admin/CreateSubject";
 import CreateTeacher from "./pages/Admin/CreateTeacher";
+import CreateGuestAndGraduate from "./pages/Admin/CreateGuestAndGraduate";
 import AdminCreatelines from "./pages/Admin/CreateLines";
 import RegisterEvent from "./pages/Admin/RegisterEvent";
 import ManageEvents from "./pages/Admin/ManageEvents";
@@ -73,6 +74,7 @@ function App() {
     "/admin/crear-grupo",
     "/admin/crear-materia",
     "/admin/crear-profesor",
+    "/admin/crear-invitado-egresado",
     "/admin/lineas-investigacion",
     "/admin/registrar-eventos",
     "/admin/gestionar-eventos",
@@ -91,7 +93,8 @@ function App() {
     "/guest/profile",
     "/guest/proyectos",
     "/home-dinamico",
-    "/admin/evento"
+    "/admin/evento",
+    "/invited"
 
   ];
 
@@ -147,6 +150,7 @@ function App() {
           <Route path="/admin/crear-grupo" element={<AdminRoute><CreateGroup /></AdminRoute>} />
           <Route path="/admin/crear-materia" element={<AdminRoute><CreateSubject /></AdminRoute>} />
           <Route path="/admin/crear-profesor" element={<AdminRoute><CreateTeacher /></AdminRoute>} />
+          <Route path="/admin/crear-invitado-egresado" element={<AdminRoute><CreateGuestAndGraduate /></AdminRoute>} />
           <Route path="/admin/lineas-investigacion" element={<AdminRoute><AdminCreatelines /></AdminRoute>} />
           <Route path="/admin/registrar-eventos" element={<AdminRoute><RegisterEvent /></AdminRoute>} />
           <Route path="/admin/gestionar-eventos" element={<AdminRoute><ManageEvents /></AdminRoute>} />

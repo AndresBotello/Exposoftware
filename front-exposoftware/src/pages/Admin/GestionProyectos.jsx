@@ -5,11 +5,10 @@ import AdminSidebar from '../../components/Layout/AdminSidebar';
 import logo from '../../assets/Logo-unicesar.png';
 import * as AuthService from '../../Services/AuthService';
 import EventosService from '../../Services/EventosService';
+import { API_ENDPOINTS } from '../../utils/constants';
 import axios from 'axios';
 import ProyectosTable from './ProyectosTable';
 import ProyectoDetalleDialog from './ProyectoDetalleDialog';
-
-const API_BASE_URL = 'https://mtfr4g8e3k.execute-api.us-east-2.amazonaws.com';
 
 export default function GestionProyectos() {
   const navigate = useNavigate();
@@ -37,7 +36,10 @@ export default function GestionProyectos() {
     try {
       setLoading(true);
       const headers = AuthService.getAuthHeaders();
-      const response = await axios.get(`${API_BASE_URL}/api/v1/proyectos`, { headers });
+      const response = await axios.get(API_ENDPOINTS.PROYECTOS, {
+        headers,
+        withCredentials: true
+      });
       const proyectosData = Array.isArray(response.data) ? response.data : response.data?.data || response.data?.proyectos || [];
       setProyectos(proyectosData);
       toast.current?.show({ severity: 'success', summary: 'Proyectos Cargados', detail: `${proyectosData.length} proyecto(s) encontrado(s)`, life: 3000 });

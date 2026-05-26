@@ -37,6 +37,7 @@ function NavbarWrapper() {
     "/admin/facultades",
     "/admin/crear-facultad",
     "/admin/crear-programa",
+    "/admin/crear-invitado-egresado",
     "/admin/programas",
     "/admin/estudiantes",
     "/admin/certificados",

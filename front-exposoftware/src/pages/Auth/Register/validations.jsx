@@ -30,8 +30,8 @@ export const validateField = (name, value, formData = {}, rol = "") => {
     "contraseña",
     "confirmarcontraseña",
     "programa",
-    "facultad",
     "semestre",
+    "materia",
     "tipoDocente",
     "sector",
     "nombreEmpresa",
@@ -214,8 +214,8 @@ export const validateAllFields = (formData, rol) => {
     if (error) errors[field] = error;
   });
 
-  // Validar campos de residencia según nacionalidad
-  if (formData.nacionalidad === "CO") {
+  // Validar campos de residencia según nacionalidad (COL = Colombia en ISO alpha-3)
+  if (formData.nacionalidad === "COL") {
     ["departamentoResidencia", "ciudadResidencia"].forEach((field) => {
       const error = validateField(field, formData[field], formData, rol);
       if (error) errors[field] = error;
@@ -224,7 +224,7 @@ export const validateAllFields = (formData, rol) => {
 
   // Dependiendo del rol, se agregan campos extra
   if (rol === "estudiante") {
-    ["correo", "programa", "facultad", "semestre", "fechaIngreso", "periodo"].forEach(
+    ["correo", "semestre", "materia", "fechaIngreso", "periodo"].forEach(
       (f) => {
         const err = validateField(f, formData[f], formData, rol);
         if (err) errors[f] = err;
@@ -240,7 +240,7 @@ export const validateAllFields = (formData, rol) => {
   }
 
   if (rol === "egresado") {
-    ["correo", "titulado", "fechaFinalizacion", "periodo", "programa", "facultad"].forEach((f) => {
+    ["correo", "titulado", "fechaFinalizacion", "periodo"].forEach((f) => {
       const err = validateField(f, formData[f], formData, rol);
       if (err) errors[f] = err;
     });
