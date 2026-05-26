@@ -61,6 +61,9 @@ export default function GraduateForm({
   onCancel,
   departamentos,
   paises,
+  facultades,
+  idFacultad,
+  setIdFacultad,
   programas,
 }) {
   const countryOptions = useMemo(() => countryList().getData(), []);
@@ -304,6 +307,37 @@ export default function GraduateForm({
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Facultad</label>
+            <select
+              value={idFacultad}
+              onChange={(e) => setIdFacultad(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="">Seleccionar facultad...</option>
+              {facultades.map(fac => (
+                <option key={fac.id_facultad || fac.codigo_facultad} value={fac.id_facultad || fac.codigo_facultad}>
+                  {fac.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Programa</label>
+            <select
+              value={codigoPrograma}
+              onChange={(e) => setCodigoPrograma(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              disabled={!idFacultad}
+            >
+              <option value="">Seleccionar programa...</option>
+              {programas.map(prog => (
+                <option key={prog.codigo} value={prog.codigo}>{prog.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Año de Finalización</label>
             <input
               type="number"
@@ -314,20 +348,6 @@ export default function GraduateForm({
               min="1980"
               max={new Date().getFullYear()}
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Programa</label>
-            <select
-              value={codigoPrograma}
-              onChange={(e) => setCodigoPrograma(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="">Seleccionar...</option>
-              {programas.map(prog => (
-                <option key={prog.codigo} value={prog.codigo}>{prog.nombre}</option>
-              ))}
-            </select>
           </div>
 
           <div className="col-span-2">

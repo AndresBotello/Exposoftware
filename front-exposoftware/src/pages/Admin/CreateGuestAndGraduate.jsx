@@ -86,7 +86,10 @@ export default function CreateGuestAndGraduate() {
     departamentos,
     municipiosApi,
     sectores,
+    facultades,
     programas,
+    idFacultad,
+    setIdFacultad,
   } = useGuestAndGraduateManagement(userType);
 
   const [successMessage, setSuccessMessage] = useState("");
@@ -279,6 +282,9 @@ export default function CreateGuestAndGraduate() {
                     onCancel={handleCancel}
                     departamentos={departamentos}
                     paises={paisesCatalogo}
+                    facultades={facultades}
+                    idFacultad={idFacultad}
+                    setIdFacultad={setIdFacultad}
                     programas={programas}
                   />
                 )}

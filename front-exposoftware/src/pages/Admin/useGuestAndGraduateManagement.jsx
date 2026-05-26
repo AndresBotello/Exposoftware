@@ -65,7 +65,9 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
   const [departamentos, setDepartamentos] = useState([]);
   const [municipiosApi, setMunicipiosApi] = useState([]);
   const [sectores, setSectores] = useState([]);
+  const [facultades, setFacultades] = useState([]);
   const [programas, setProgramas] = useState([]);
+  const [idFacultad, setIdFacultad] = useState("");
 
   // Estados de listas
   const [usuarios, setUsuarios] = useState([]);
@@ -80,10 +82,15 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
   useEffect(() => {
     const loadCatalogs = async () => {
       try {
-        const [paisesRes, deptoRes, sectoresRes] = await Promise.all([
+        const [paisesRes, deptoRes, sectoresRes, facultadesRes] = await Promise.all([
           fetch(API_ENDPOINTS.CATALOGOS_PAISES),
           fetch(API_ENDPOINTS.CATALOGOS_DEPARTAMENTOS),
-          fetch(API_ENDPOINTS.ADMIN_SECTORES)
+          fetch(API_ENDPOINTS.ADMIN_SECTORES, {
+            headers: AuthService.getAuthHeaders()
+          }),
+          fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
+            headers: AuthService.getAuthHeaders()
+          })
         ]);
 
         if (paisesRes.ok) {
@@ -98,7 +105,16 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
 
         if (sectoresRes.ok) {
           const data = await sectoresRes.json();
-          setSectores(Array.isArray(data) ? data : (data.data || data.sectores || []));
+          const sectoresData = Array.isArray(data) ? data : (data.data || data.sectores || []);
+          console.log('📍 Sectores cargados:', sectoresData);
+          setSectores(sectoresData);
+        }
+
+        if (facultadesRes.ok) {
+          const data = await facultadesRes.json();
+          const facultadesData = Array.isArray(data) ? data : (data.data || data.facultades || []);
+          console.log('📍 Facultades cargadas:', facultadesData);
+          setFacultades(facultadesData);
         }
       } catch (err) {
         console.error("Error cargando catálogos:", err);
@@ -131,46 +147,33 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
     }
   }, [departamento]);
 
-  // Cargar programas si es egresado
+  // Cargar programas cuando se selecciona una facultad
   useEffect(() => {
-    if (userType === 'graduate') {
+    if (idFacultad) {
       const loadProgramas = async () => {
         try {
-          const response = await fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
-            headers: AuthService.getAuthHeaders()
-          });
+          const response = await fetch(
+            API_ENDPOINTS.ADMIN_PROGRAMAS_BY_FACULTAD(idFacultad),
+            { headers: AuthService.getAuthHeaders() }
+          );
 
           if (response.ok) {
             const data = await response.json();
-            const facultades = Array.isArray(data) ? data : (data.data || data.facultades || []);
-
-            let allPrograms = [];
-            for (const faculty of facultades) {
-              const facultyId = faculty.id_facultad || faculty.codigo_facultad;
-              try {
-                const progRes = await fetch(
-                  API_ENDPOINTS.ADMIN_PROGRAMAS_BY_FACULTAD(facultyId),
-                  { headers: AuthService.getAuthHeaders() }
-                );
-                if (progRes.ok) {
-                  const progData = await progRes.json();
-                  const progs = Array.isArray(progData) ? progData : (progData.data || progData.programas || []);
-                  allPrograms = [...allPrograms, ...progs];
-                }
-              } catch (err) {
-                console.warn('Error loading programs:', err);
-              }
-            }
-            setProgramas(allPrograms);
+            const programasData = Array.isArray(data) ? data : (data.data || data.programas || []);
+            console.log('📍 Programas cargados para facultad', idFacultad, ':', programasData);
+            setProgramas(programasData);
           }
         } catch (err) {
           console.error('Error loading programas:', err);
+          setProgramas([]);
         }
       };
 
       loadProgramas();
+    } else {
+      setProgramas([]);
     }
-  }, [userType]);
+  }, [idFacultad]);
 
   // Cargar lista de usuarios
   const loadUsuarios = async () => {
@@ -413,7 +416,9 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
     departamentos,
     municipiosApi,
     sectores,
+    facultades,
     programas,
+    idFacultad, setIdFacultad,
     opcionesPaises,
 
     // Lista y búsqueda
