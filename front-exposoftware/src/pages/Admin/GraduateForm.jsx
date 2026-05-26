@@ -315,8 +315,8 @@ export default function GraduateForm({
             >
               <option value="">Seleccionar facultad...</option>
               {facultades.map(fac => (
-                <option key={fac.id_facultad || fac.codigo_facultad} value={fac.id_facultad || fac.codigo_facultad}>
-                  {fac.nombre}
+                <option key={fac.id_facultad} value={fac.id_facultad}>
+                  {fac.nombre_facultad}
                 </option>
               ))}
             </select>
@@ -332,7 +332,7 @@ export default function GraduateForm({
             >
               <option value="">Seleccionar programa...</option>
               {programas.map(prog => (
-                <option key={prog.codigo} value={prog.codigo}>{prog.nombre}</option>
+                <option key={prog.codigo_programa} value={prog.codigo_programa}>{prog.nombre_programa}</option>
               ))}
             </select>
           </div>

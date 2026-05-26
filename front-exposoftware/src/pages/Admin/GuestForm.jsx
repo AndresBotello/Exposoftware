@@ -324,7 +324,7 @@ export default function GuestForm({
             >
               <option value="">Seleccionar...</option>
               {sectores.map(sector => (
-                <option key={sector.id} value={sector.id}>{sector.nombre}</option>
+                <option key={sector.id_sector} value={sector.id_sector}>{sector.nombre_sector}</option>
               ))}
             </select>
           </div>
