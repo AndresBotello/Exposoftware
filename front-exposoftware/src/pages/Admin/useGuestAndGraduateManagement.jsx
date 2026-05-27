@@ -4,6 +4,41 @@ import { API_ENDPOINTS } from "../../utils/constants";
 import * as AuthService from "../../Services/AuthService";
 import colombiaData from "../../data/colombia.json";
 
+const COUNTRY_CODE_MAP = {
+  'CO': 'COL',
+  'US': 'USA',
+  'MX': 'MEX',
+  'AR': 'ARG',
+  'BR': 'BRA',
+  'CL': 'CHL',
+  'PE': 'PER',
+  'VE': 'VEN',
+  'EC': 'ECU',
+  'BO': 'BOL',
+  'PY': 'PRY',
+  'UY': 'URY',
+  'GY': 'GUY',
+  'SR': 'SUR',
+  'FR': 'FRA',
+  'ES': 'ESP',
+  'IT': 'ITA',
+  'DE': 'DEU',
+  'GB': 'GBR',
+  'JP': 'JPN',
+  'CN': 'CHN',
+  'IN': 'IND',
+  'RU': 'RUS',
+  'CA': 'CAN',
+  'AU': 'AUS',
+  'NZ': 'NZL',
+};
+
+const convertCountryCode = (code) => {
+  if (!code) return code;
+  if (code.length === 3) return code;
+  return COUNTRY_CODE_MAP[code] || code;
+};
+
 export const TIPOS_DOCUMENTO = [
   { value: 1, label: "Cédula de Ciudadanía" },
   { value: 2, label: "Pasaporte" },
@@ -23,7 +58,7 @@ export const TIPOS_VIA = [
   { value: 4, label: "Transversal" }
 ];
 
-export function useGuestAndGraduateManagement(userType = 'guest') {
+export function useGuestAndGraduateManagement(userType = 'invitado') {
   const opcionesPaises = useMemo(() => countryList().getData(), []);
 
   // Estados para el formulario - Datos del Usuario
@@ -86,10 +121,12 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
           fetch(API_ENDPOINTS.CATALOGOS_PAISES),
           fetch(API_ENDPOINTS.CATALOGOS_DEPARTAMENTOS),
           fetch(API_ENDPOINTS.ADMIN_SECTORES, {
-            headers: AuthService.getAuthHeaders()
+            headers: AuthService.getAuthHeaders(),
+            credentials: 'include'
           }),
           fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
-            headers: AuthService.getAuthHeaders()
+            headers: AuthService.getAuthHeaders(),
+            credentials: 'include'
           })
         ]);
 
@@ -154,7 +191,7 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
         try {
           const response = await fetch(
             API_ENDPOINTS.ADMIN_PROGRAMAS_BY_FACULTAD(idFacultad),
-            { headers: AuthService.getAuthHeaders() }
+            { headers: AuthService.getAuthHeaders(), credentials: 'include' }
           );
 
           if (response.ok) {
@@ -179,14 +216,25 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
   const loadUsuarios = async () => {
     setLoading(true);
     try {
-      const endpoint = userType === 'guest' ? API_ENDPOINTS.ADMIN_INVITADOS : API_ENDPOINTS.ADMIN_EGRESADOS;
+      const endpoint = userType === 'invitado' ? API_ENDPOINTS.ADMIN_INVITADOS : API_ENDPOINTS.ADMIN_EGRESADOS;
       const response = await fetch(endpoint, {
-        headers: AuthService.getAuthHeaders()
+        headers: AuthService.getAuthHeaders(),
+        credentials: 'include'
       });
 
       if (response.ok) {
         const data = await response.json();
-        setUsuarios(Array.isArray(data) ? data : (data.data || data.usuarios || []));
+        console.log('📊 Respuesta completa del API:', data);
+        console.log('📊 Tipo de usuario:', userType);
+
+        const usuarios = Array.isArray(data) ? data : (data.data || data.usuarios || []);
+        console.log('📊 Usuarios procesados:', usuarios);
+
+        if (usuarios.length > 0) {
+          console.log('📊 Primer usuario estructura:', usuarios[0]);
+        }
+
+        setUsuarios(usuarios);
       } else {
         setServerError("Error al cargar la lista");
       }
@@ -218,31 +266,34 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
     setServerError("");
 
     try {
-      const endpoint = userType === 'guest' ? API_ENDPOINTS.ADMIN_INVITADOS : API_ENDPOINTS.ADMIN_EGRESADOS;
+      console.log('🔍 Estado actual - pais:', pais, 'nacionalidad:', nacionalidad);
+      const endpoint = userType === 'invitado' ? API_ENDPOINTS.ADMIN_INVITADOS : API_ENDPOINTS.ADMIN_EGRESADOS;
 
       const payload = {
         usuario: {
           id_tipo_doc: parseInt(tipoDocumento),
           identificacion,
           p_nombre: primerNombre,
-          s_nombre: segundoNombre,
+          s_nombre: segundoNombre || undefined,
           p_apellido: primerApellido,
-          s_apellido: segundoApellido,
+          s_apellido: segundoApellido || undefined,
           id_genero: parseInt(genero),
           fecha_nacimiento: fechaNacimiento,
-          codigo_pais_nacionalidad: nacionalidad,
-          codigo_pais_residencia: pais,
+          codigo_pais_nacionalidad: convertCountryCode(nacionalidad),
+          codigo_pais_residencia: convertCountryCode(pais),
+          codigo_pais_nacimiento: convertCountryCode(nacionalidad),
           codigo_municipio_nacimiento: municipio,
           codigo_municipio_residencia: municipio,
           id_tipo_via: parseInt(tipoVia) || 1,
-          numero_via: numeroVia,
-          numero_cruce: numeroCruce,
-          numero_placa: numeroPlaca,
+          numero_via: numeroVia || "0",
+          numero_cruce: numeroCruce || "0",
+          numero_placa: numeroPlaca || "0",
           telefono,
           correo,
-          contrasena: contraseña
+          contrasena: contraseña,
+          activo: true
         },
-        perfil: userType === 'guest'
+        perfil: userType === 'invitado'
           ? {
               es_profesor_extranjero: esProfesorExtranjero,
               id_sector: parseInt(idSector),
@@ -255,22 +306,28 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
             }
       };
 
+      console.log('📤 Enviando payload:', JSON.stringify(payload, null, 2));
+      console.log('📍 Endpoint:', endpoint);
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           ...AuthService.getAuthHeaders(),
           'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(payload)
       });
+      console.log('📥 Respuesta del API:', response.status, response.statusText);
+      const responseData = await response.json();
+      console.log('📥 Datos de respuesta:', JSON.stringify(responseData, null, 2));
 
       if (response.ok) {
-        onSuccess?.(`${userType === 'guest' ? 'Invitado' : 'Egresado'} creado exitosamente`);
+        onSuccess?.(`${userType === 'invitado' ? 'Invitado' : 'Egresado'} creado exitosamente`);
         handleCancel();
         loadUsuarios();
       } else {
-        const errorData = await response.json();
-        setServerError(errorData.detail || `Error al crear ${userType === 'guest' ? 'invitado' : 'egresado'}`);
+        console.error('❌ Error de API:', response.status, responseData);
+        setServerError(responseData.detail || responseData.message || JSON.stringify(responseData) || `Error al crear ${userType === 'invitado' ? 'invitado' : 'egresado'}`);
       }
     } catch (err) {
       setServerError(err.message);
@@ -303,7 +360,7 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
     setNumeroPlaca("");
     setComplemento("");
 
-    if (userType === 'guest') {
+    if (userType === 'invitado') {
       setEsProfesorExtranjero(false);
       setIdSector("");
       setNombreEmpresa("");
@@ -326,8 +383,10 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
     setSegundoApellido(usuario.usuario?.s_apellido || "");
     setGenero(usuario.usuario?.id_genero?.toString() || "");
     setFechaNacimiento(usuario.usuario?.fecha_nacimiento || "");
-    setNacionalidad(usuario.usuario?.codigo_pais_nacionalidad || "CO");
-    setPais(usuario.usuario?.codigo_pais_residencia || "CO");
+    const nacionalidadCode = usuario.usuario?.codigo_pais_nacionalidad;
+    const paisCode = usuario.usuario?.codigo_pais_residencia;
+    setNacionalidad(nacionalidadCode ? Object.keys(COUNTRY_CODE_MAP).find(k => COUNTRY_CODE_MAP[k] === nacionalidadCode) || nacionalidadCode : "CO");
+    setPais(paisCode ? Object.keys(COUNTRY_CODE_MAP).find(k => COUNTRY_CODE_MAP[k] === paisCode) || paisCode : "CO");
     setMunicipio(usuario.usuario?.codigo_municipio_residencia || "");
     setTelefono(usuario.usuario?.telefono || "");
     setCorreo(usuario.usuario?.correo || "");
@@ -336,14 +395,14 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
     setNumeroCruce(usuario.usuario?.numero_cruce || "");
     setNumeroPlaca(usuario.usuario?.numero_placa || "");
 
-    if (userType === 'guest' && usuario.perfil) {
-      setEsProfesorExtranjero(usuario.perfil.es_profesor_extranjero || false);
-      setIdSector(usuario.perfil.id_sector?.toString() || "");
-      setNombreEmpresa(usuario.perfil.nombre_empresa || "");
-    } else if (userType === 'graduate' && usuario.perfil) {
-      setAnioFinalizacion(usuario.perfil.anio_finalizacion?.toString() || "");
-      setCodigoPrograma(usuario.perfil.codigo_programa || "");
-      setTitulado(usuario.perfil.titulado || false);
+    if (userType === 'invitado' && usuario.invitado) {
+      setEsProfesorExtranjero(usuario.invitado.es_profesor_extranjero || false);
+      setIdSector(usuario.invitado.id_sector?.toString() || "");
+      setNombreEmpresa(usuario.invitado.nombre_empresa || "");
+    } else if (userType === 'egresado' && usuario.egresado) {
+      setAnioFinalizacion(usuario.egresado.anio_finalizacion?.toString() || "");
+      setCodigoPrograma(usuario.egresado.codigo_programa || "");
+      setTitulado(usuario.egresado.titulado || false);
     }
 
     setEditingId(usuario.id);
@@ -352,24 +411,29 @@ export function useGuestAndGraduateManagement(userType = 'guest') {
   };
 
   const handleDelete = async (usuarioId) => {
-    if (!window.confirm(`¿Desactivas este ${userType === 'guest' ? 'invitado' : 'egresado'}?`)) {
+    if (!window.confirm(`¿Desactivas este ${userType === 'invitado' ? 'invitado' : 'egresado'}?`)) {
       return;
     }
 
     try {
-      const endpoint = userType === 'guest'
+      const endpoint = userType === 'invitado'
         ? API_ENDPOINTS.ADMIN_INVITADO_DESACTIVAR(usuarioId)
         : API_ENDPOINTS.ADMIN_EGRESADO_DESACTIVAR(usuarioId);
 
       const response = await fetch(endpoint, {
-        method: 'PUT',
-        headers: AuthService.getAuthHeaders()
+        method: 'PATCH',
+        headers: {
+          ...AuthService.getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ razon: 'Desactivado por administrador' })
       });
 
       if (response.ok) {
         loadUsuarios();
       } else {
-        setServerError(`Error al desactivar ${userType === 'guest' ? 'invitado' : 'egresado'}`);
+        setServerError(`Error al desactivar ${userType === 'invitado' ? 'invitado' : 'egresado'}`);
       }
     } catch (err) {
       setServerError(err.message);

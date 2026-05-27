@@ -3,6 +3,7 @@ import { Mail, Lock, Leaf, Users, Trophy, Eye, EyeOff, Globe } from "lucide-reac
 import { Link, useNavigate } from "react-router-dom";
 import * as AuthService from "../../Services/AuthService";
 import { useAuth } from "../../contexts/AuthContext";
+import { API_BASE_URL } from "../../utils/constants";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -158,7 +159,7 @@ export default function LoginPage() {
 
   const handleReenviarVerificacion = async () => {
     try {
-      const res = await fetch('/api/v1/auth/reenviar-verificacion', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/reenviar-verificacion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

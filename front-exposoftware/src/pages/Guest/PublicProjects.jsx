@@ -5,10 +5,11 @@ import { useAuth } from "../../contexts/AuthContext";
 import * as AuthService from "../../Services/AuthService";
 import { FiLogOut } from "react-icons/fi";
 import logo from "../../assets/Logo-unicesar.png";
+import { API_BASE_URL } from "../../utils/constants";
 
 const obtenerProyectosPublicos = async () => {
   try {
-    const response = await fetch("/api/v1/proyectos", { method: "GET" });
+    const response = await fetch(`${API_BASE_URL}/api/v1/proyectos`, { method: "GET" });
     if (!response.ok) return [];
     const data = await response.json();
     let proyectos = data.data || data.proyectos || data;
@@ -23,7 +24,7 @@ const obtenerProyectosPublicos = async () => {
 
 const obtenerEventosActivos = async () => {
   try {
-    const response = await fetch("/api/v1/admin/eventos", { method: "GET" });
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/eventos`, { method: "GET" });
     if (!response.ok) return null; // null = no se pudo determinar
     const data = await response.json();
     let eventos = data.data || data.eventos || data;
