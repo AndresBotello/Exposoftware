@@ -46,62 +46,64 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
   try {
     console.log('📥 Descargando certificado:', idCertificado);
 
-    // Obtener el certificado del backend
-    // IMPORTANTE: No enviamos credentials porque el endpoint redirige a Cloudinary
-    // que usa CORS wildcard (*), incompatible con credentials mode
+    // SOLUCIÓN: No seguir el redirect automáticamente (redirect: 'manual')
+    // Esto evita que fetch() intente acceder a Cloudinary con CORS
+    // El navegador NO puede usar credentials con wildcard CORS de Cloudinary
     const response = await fetch(
       API_ENDPOINTS.CERTIFICADO_DESCARGAR(idCertificado),
       {
-        method: 'GET'
+        method: 'GET',
+        redirect: 'manual'  // Detener en el redirect, no seguirlo
       }
     );
 
     console.log('📡 Status de respuesta:', response.status);
     console.log('📋 Content-Type:', response.headers.get('content-type'));
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
-      } else if (response.status === 403) {
-        throw new Error('No tienes permiso para descargar este certificado.');
-      } else if (response.status === 404) {
-        throw new Error('El certificado no fue encontrado.');
-      } else {
-        throw new Error(`Error al descargar certificado: ${response.status}`);
-      }
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-
-    // Caso 1: Backend devuelve JSON con URL de Cloudinary
-    if (contentType.includes('application/json')) {
-      console.log('📋 Respuesta JSON detectada');
-      const data = await response.json();
-
-      if (data.url) {
-        console.log('✅ URL de Cloudinary obtenida desde JSON:', data.url);
-        // Abrir en nueva ventana para que el navegador descargue sin CORS
-        abrirDescargaEnNuevaVentana(data.url, nombreArchivo);
+    // Caso 1: Redirect a Cloudinary (status 302, 301, etc)
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const urlCloudinary = response.headers.get('location');
+      if (urlCloudinary) {
+        console.log('✅ Redirect detectado:', urlCloudinary);
+        // Abrir en nueva ventana evita CORS (no es fetch)
+        abrirDescargaEnNuevaVentana(urlCloudinary, nombreArchivo);
         return { success: true, message: 'Certificado descargado exitosamente' };
       }
     }
 
-    // Caso 2: Backend devuelve PDF directo
-    if (contentType.includes('application/pdf')) {
-      console.log('✅ Certificado obtenido (PDF directo)');
-      const blob = await response.blob();
-      console.log('   - Tamaño:', blob.size, 'bytes');
-      console.log('   - Tipo MIME:', blob.type);
+    // Caso 2: Respuesta exitosa (200)
+    if (response.ok) {
+      const contentType = response.headers.get('content-type') || '';
 
-      descargarBlob(blob, nombreArchivo);
-      return { success: true, message: 'Certificado descargado exitosamente' };
+      // Subcase 2a: PDF directo
+      if (contentType.includes('application/pdf')) {
+        console.log('✅ Certificado obtenido (PDF directo)');
+        const blob = await response.blob();
+        console.log('   - Tamaño:', blob.size, 'bytes');
+        descargarBlob(blob, nombreArchivo);
+        return { success: true, message: 'Certificado descargado exitosamente' };
+      }
+
+      // Subcase 2b: JSON con URL
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        if (data.url) {
+          console.log('✅ URL de Cloudinary en JSON:', data.url);
+          abrirDescargaEnNuevaVentana(data.url, nombreArchivo);
+          return { success: true, message: 'Certificado descargado exitosamente' };
+        }
+      }
     }
 
-    // Caso 3: Response.url contiene la URL redirigida (último recurso)
-    if (response.url && response.url.includes('cloudinary')) {
-      console.log('✅ URL final redirigida detectada:', response.url);
-      abrirDescargaEnNuevaVentana(response.url, nombreArchivo);
-      return { success: true, message: 'Certificado descargado exitosamente' };
+    // Errores HTTP
+    if (response.status === 401) {
+      throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
+    } else if (response.status === 403) {
+      throw new Error('No tienes permiso para descargar este certificado.');
+    } else if (response.status === 404) {
+      throw new Error('El certificado no fue encontrado.');
+    } else if (!response.ok) {
+      throw new Error(`Error al descargar certificado: ${response.status}`);
     }
 
     throw new Error('No se pudo obtener el certificado: formato de respuesta desconocido');
