@@ -205,22 +205,7 @@ const StudentDetails = () => {
                 </h3>
                 <div className="space-y-3">
                   <InfoField label="Nombre Completo" value={formateado.nombreCompleto} />
-                  <InfoField 
-                    label="Tipo de Documento" 
-                    value={usuario.tipo_documento || 'N/A'} 
-                  />
                   <InfoField label="Identificación" value={formateado.identificacion} />
-                  <InfoField 
-                    label="Género" 
-                    value={usuario.sexo === 'Hombre' ? 'Masculino' : usuario.sexo === 'Mujer' ? 'Femenino' : usuario.sexo || 'Otro'} 
-                  />
-                  <InfoField 
-                    label="Fecha de Nacimiento" 
-                    value={usuario.fecha_nacimiento 
-                      ? new Date(usuario.fecha_nacimiento).toLocaleDateString('es-ES')
-                      : 'N/A'
-                    } 
-                  />
                 </div>
               </div>
 
@@ -233,18 +218,6 @@ const StudentDetails = () => {
                 <div className="space-y-3">
                   <InfoField label="Email" value={formateado.email} />
                   <InfoField label="Teléfono" value={formateado.telefono} />
-                  <InfoField 
-                    label="Departamento" 
-                    value={usuario.departamento || 'N/A'} 
-                  />
-                  <InfoField 
-                    label="Ciudad" 
-                    value={usuario.ciudad_residencia || usuario.ciudad || 'N/A'} 
-                  />
-                  <InfoField 
-                    label="Dirección" 
-                    value={usuario.direccion_residencia || usuario.direccion || 'N/A'} 
-                  />
                 </div>
               </div>
 
@@ -255,88 +228,29 @@ const StudentDetails = () => {
                   Información Académica
                 </h3>
                 <div className="space-y-3">
-                  <InfoField 
-                    label="Programa" 
-                    value={formateado.programa} 
+                  <InfoField
+                    label="Programa"
+                    value={formateado.programa}
                   />
-                  <InfoField 
-                    label="Código del Programa" 
-                    value={formateado.codigoPrograma || 'N/A'} 
+                  <InfoField
+                    label="Código del Programa"
+                    value={formateado.codigoPrograma || 'N/A'}
                   />
-                  <InfoField 
-                    label="Facultad" 
-                    value={estudiante.programa?.facultad?.nombre || 'N/A'} 
+                  <InfoField
+                    label="Semestre Actual"
+                    value={`${formateado.semestre}°`}
                   />
-                  <InfoField 
-                    label="Semestre Actual" 
-                    value={`${formateado.semestre}°`} 
+                  <InfoField
+                    label="Período Académico"
+                    value={formateado.periodo || 'N/A'}
                   />
-                  <InfoField 
-                    label="Período Académico" 
-                    value={formateado.periodo || 'N/A'} 
-                  />
-                  <InfoField 
-                    label="Año de Ingreso" 
-                    value={formateado.anioIngreso || 'N/A'} 
-                  />
-                </div>
-              </div>
-
-              {/* Información del Sistema */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <i className="pi pi-cog text-teal-600"></i>
-                  Información del Sistema
-                </h3>
-                <div className="space-y-3">
-                  <InfoField 
-                    label="ID de Estudiante" 
-                    value={estudiante.estudiante?.id_estudiante || estudiante.id_estudiante || formateado.id || 'N/A'} 
-                  />
-                  <InfoField 
-                    label="ID de Usuario" 
-                    value={usuario.id_usuario || 'N/A'} 
-                  />
-                  <InfoField 
-                    label="Rol" 
-                    value={usuario.rol || 'Estudiante'} 
-                  />
-                  <InfoField 
-                    label="Fecha de Registro" 
-                    value={usuario.created_at 
-                      ? new Date(usuario.created_at).toLocaleString('es-ES')
-                      : estudiante.estudiante?.created_at 
-                        ? new Date(estudiante.estudiante.created_at).toLocaleString('es-ES')
-                        : formateado.fechaCreacion 
-                          ? new Date(formateado.fechaCreacion).toLocaleString('es-ES')
-                          : 'N/A'
-                    } 
-                  />
-                  <InfoField 
-                    label="Última Actualización" 
-                    value={usuario.updated_at 
-                      ? new Date(usuario.updated_at).toLocaleString('es-ES')
-                      : estudiante.estudiante?.updated_at 
-                        ? new Date(estudiante.estudiante.updated_at).toLocaleString('es-ES')
-                        : formateado.fechaActualizacion 
-                          ? new Date(formateado.fechaActualizacion).toLocaleString('es-ES')
-                          : 'N/A'
-                    } 
+                  <InfoField
+                    label="Año de Ingreso"
+                    value={formateado.anioIngreso || 'N/A'}
                   />
                 </div>
               </div>
             </div>
-
-            {/* Información Adicional */}
-            {usuario.biografia && (
-              <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <i className="pi pi-file-edit text-teal-600"></i>
-                  Biografía
-                </h3>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{usuario.biografia}</p>
-              </div>
-            )}
           </main>
         </div>
       </div>

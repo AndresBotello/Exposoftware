@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import EventosService from "../../Services/EventosService";
 import * as AuthService from "../../Services/AuthService";
-//import getEventoById from "../../Services/EventosPublicService";
 import AssistanceService from "../../services/AssistanceService";
-import ProjectRatingForm from "./ProjectRatingForm";
 
 export default function AsistenciaForm() {
     const [email, setEmail] = useState("");
@@ -30,7 +28,7 @@ export default function AsistenciaForm() {
                 const response = await EventosService.obtenerEventoPorId(idEvento);
                 setEvento(response || []);
 
-                // Si viene del login y debe ir a rating, obtener email y registrar asistencia
+                // Si viene del login, obtener email y registrar asistencia automáticamente
                 if (stepParam === 'rating') {
                     const userData = AuthService.getUserData();
                     if (userData?.correo) {
@@ -40,8 +38,7 @@ export default function AsistenciaForm() {
                             await AssistanceService.registrarAsistencia(idEvento, userData.correo);
                             setAsistenciaRegistrada(true);
                         } catch (err) {
-                            // Mostrar form de calificación de todas formas
-                            setAsistenciaRegistrada(true);
+                            // En caso de error, mostrar el formulario
                         }
                     }
                 }
@@ -94,49 +91,33 @@ export default function AsistenciaForm() {
         }
     };
 
-    const handleCalificacionCompleta = (cantidad) => {
-        setTimeout(() => {
-            navigate("/");
-        }, 2000);
-    };
 
-    const eventoEnCurso = evento && (evento.estado === 'en_curso' || evento.status === 'en_curso');
-
-    // Si la asistencia fue registrada
+    // Si la asistencia fue registrada, mostrar mensaje de confirmación
     if (asistenciaRegistrada) {
-        // Solo mostrar calificaciones si el evento está en_curso
-        if (eventoEnCurso) {
-            return (
-                <ProjectRatingForm
-                    idEvento={idEvento}
-                    email={email}
-                    onComplete={handleCalificacionCompleta}
-                />
-            );
-        } else {
-            // Evento no está en_curso, mostrar mensaje de confirmación
-            return (
-                <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-blue-50 px-4">
-                    <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 w-full max-w-md text-center">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-6">
-                            <i className="pi pi-check-circle text-green-600 text-2xl"></i>
-                        </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                            ¡Asistencia Registrada!
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            Gracias por participar en el evento. Tu asistencia ha sido registrada correctamente.
-                        </p>
-                        <button
-                            onClick={() => navigate("/")}
-                            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                        >
-                            Ir a Inicio
-                        </button>
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-blue-50 px-4">
+                <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 w-full max-w-md text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-6">
+                        <i className="pi pi-check-circle text-green-600 text-2xl"></i>
                     </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        ¡Asistencia Registrada!
+                    </h2>
+                    <p className="text-gray-600 mb-2">
+                        Tu asistencia ha sido registrada correctamente a las {new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}.
+                    </p>
+                    <p className="text-gray-600 mb-6">
+                        Evento: <span className="font-semibold">{evento.nombre_evento}</span>
+                    </p>
+                    <button
+                        onClick={() => navigate("/")}
+                        className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    >
+                        Ir a Inicio
+                    </button>
                 </div>
-            );
-        }
+            </div>
+        );
     }
 
     return (

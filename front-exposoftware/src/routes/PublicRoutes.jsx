@@ -8,6 +8,7 @@ import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import AsistenciaForm from "../pages/public/AttendanceForm.jsx";
 import InvitedPage from "../pages/Public/InvitedPage";
+import ProjectCalificacion from "../pages/ProjectCalificacion";
 
 /**
  * PublicRoutes - Rutas accesibles sin autenticación
@@ -43,7 +44,10 @@ export default function PublicRoutes() {
 
       {/* ✅ Registro de asistencia (accesible públicamente) */}
       <Route path="asistencia/registrar/:id_evento" element={<AsistenciaForm />} />
-      
+
+      {/* ⭐ Calificación de proyectos por QR (accesible públicamente) */}
+      <Route path="proyectos/:id_proyecto/calificar" element={<ProjectCalificacion />} />
+
       {/* Ruta por defecto - redirige al home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

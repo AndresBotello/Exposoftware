@@ -70,7 +70,6 @@ export default function AttendanceTable({
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID Usuario</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nombre Completo</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Correo Electrónico</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha y Hora</th>
@@ -81,12 +80,11 @@ export default function AttendanceTable({
               currentItems.map((person, index) => (
                 <tr key={person.id_asistencia || index} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-4 text-sm text-gray-900 font-medium">{indexOfFirstItem + index + 1}</td>
-                  <td className="px-4 py-4 text-sm text-gray-900 font-mono">{person.id_usuario}</td>
                   <td className="px-4 py-4 text-sm text-gray-900">{person.nombre_completo}</td>
                   <td className="px-4 py-4 text-sm text-gray-600">{person.correo}</td>
                   <td className="px-4 py-4 text-sm text-gray-600">
                     {(() => {
-                      const { fecha, hora } = formatearFechaHora(person.fecha_registro);
+                      const { fecha, hora } = formatearFechaHora(person.fecha_asistencia);
                       return (
                         <div className="flex flex-col">
                           <span>{fecha}</span>
@@ -99,7 +97,7 @@ export default function AttendanceTable({
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="px-4 py-12 text-center">
+                <td colSpan="4" className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                       <i className="pi pi-users text-gray-400 text-3xl"></i>

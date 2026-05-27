@@ -3,9 +3,12 @@ import { useStudentProjects } from "../../hooks/Teacher/useStudentProjects";
 import { ProjectDetailsModal, GradeModal, ProjectActionModal } from "../../components/Teacher/ProjectModals";
 import { TeacherHeader, TeacherSidebar } from "../../components/Teacher/TeacherLayout";
 import ProjectCard from "../../components/ProjectCard";
+import QRCalificacionModal from "./QRCalificacionModal";
 
 export default function StudentProjects() {
   const [activeSection, setActiveSection] = useState("assigned");
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedProjectForQR, setSelectedProjectForQR] = useState(null);
 
   const {
     user,
@@ -77,6 +80,16 @@ export default function StudentProjects() {
     displayTitle = "Proyectos para Aprobar";
     displayFiltered = projectsForApproval; // No filtering for approval projects
   }
+
+  const handleOpenQRModal = (project) => {
+    setSelectedProjectForQR(project);
+    setShowQRModal(true);
+  };
+
+  const handleCloseQRModal = () => {
+    setShowQRModal(false);
+    setSelectedProjectForQR(null);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -405,14 +418,23 @@ export default function StudentProjects() {
                           proyecto={project}
                           onViewDetails={() => handleViewDetails(project)}
                         />
-                        {/* Botón Gestionar sobrepuesto */}
-                        <button
-                          onClick={() => handleOpenActionModal(project)}
-                          className="absolute top-4 right-4 z-10 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium shadow-lg"
-                          title="Gestionar proyecto"
-                        >
-                          <i className="pi pi-cog"></i>
-                        </button>
+                        {/* Botones sobrepuestos */}
+                        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                          <button
+                            onClick={() => handleOpenQRModal(project)}
+                            className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium shadow-lg"
+                            title="Generar QR de calificación"
+                          >
+                            <i className="pi pi-qrcode"></i>
+                          </button>
+                          <button
+                            onClick={() => handleOpenActionModal(project)}
+                            className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium shadow-lg"
+                            title="Gestionar proyecto"
+                          >
+                            <i className="pi pi-cog"></i>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -596,6 +618,14 @@ export default function StudentProjects() {
                                 <span className="hidden md:inline">Ver</span>
                               </button>
                               <button
+                                onClick={() => handleOpenQRModal(project)}
+                                className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors text-sm font-medium"
+                                title="Generar QR de calificación"
+                              >
+                                <i className="pi pi-qrcode"></i>
+                                <span className="hidden md:inline">QR</span>
+                              </button>
+                              <button
                                 onClick={() => handleOpenActionModal(project)}
                                 className="flex items-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
                                 title="Gestionar proyecto (calificar, aprobar, rechazar)"
@@ -670,6 +700,13 @@ export default function StudentProjects() {
         onClose={handleCloseActionModal}
         calificacionPopular={projectCalificacionPopular}
         loadingCalificacionPopular={loadingCalificacionPopular}
+      />
+
+      <QRCalificacionModal
+        isOpen={showQRModal}
+        projectId={selectedProjectForQR?.id_proyecto}
+        projectName={selectedProjectForQR?.titulo_proyecto}
+        onClose={handleCloseQRModal}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Tag } from 'primereact/tag';
 import { ProgressSpinner } from 'primereact/progressspinner';
+import { useState } from 'react';
 
 const TIPOS_ACTIVIDAD = {
   1: { label: 'Exposoftware', severity: 'success' },
@@ -12,21 +13,22 @@ const TIPOS_ACTIVIDAD = {
   4: { label: 'Conferencia', severity: 'info' },
 };
 
-const ESTADOS_CALIFICACION = {
-  pendiente: { severity: 'warning', icon: 'pi-clock' },
-  aprobado: { severity: 'success', icon: 'pi-check-circle' },
-  reprobado: { severity: 'danger', icon: 'pi-times-circle' },
+const ESTADOS = {
+  pendiente: { severity: 'warning', icon: 'pi-clock', label: 'Pendiente' },
+  aprobado: { severity: 'success', icon: 'pi-check-circle', label: 'Aprobado' },
+  calificado: { severity: 'info', icon: 'pi-star-fill', label: 'Calificado' },
 };
 
 export default function ProyectosTable({ proyectos, loading, globalFilter, setGlobalFilter, cargarProyectos, onVerDetalles }) {
+  const [estadoFilter, setEstadoFilter] = useState('');
   const tipoActividadTemplate = (rowData) => {
     const tipo = TIPOS_ACTIVIDAD[rowData.tipo_actividad] || { label: 'Desconocido', severity: 'secondary' };
     return <Tag value={tipo.label} severity={tipo.severity} />;
   };
 
-  const estadoCalificacionTemplate = (rowData) => {
-    const estado = ESTADOS_CALIFICACION[rowData.estado_calificacion] || ESTADOS_CALIFICACION['pendiente'];
-    return <Tag value={rowData.estado_calificacion || 'pendiente'} severity={estado.severity} icon={`pi ${estado.icon}`} />;
+  const estadoTemplate = (rowData) => {
+    const estado = ESTADOS[rowData.estado] || ESTADOS['pendiente'];
+    return <Tag value={estado.label} severity={estado.severity} icon={`pi ${estado.icon}`} />;
   };
 
   const calificacionTemplate = (rowData) => {
@@ -55,25 +57,43 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
   );
 
   const header = (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-2">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
-          <i className="pi pi-briefcase text-lg text-white"></i>
+    <div className="flex flex-col gap-4 p-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
+            <i className="pi pi-briefcase text-lg text-white"></i>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Proyectos</h2>
+            <p className="text-xs text-gray-500">Gestión y visualización de proyectos</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Proyectos</h2>
-          <p className="text-xs text-gray-500">Gestión y visualización de proyectos</p>
+        <div className="flex gap-2 flex-wrap">
+          <span className="p-input-icon-left w-full md:w-auto">
+            <i className="pi pi-search" />
+            <InputText value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} placeholder="Buscar proyectos..." className="w-full" />
+          </span>
+          <Button icon="pi pi-refresh" rounded outlined severity="secondary" tooltip="Actualizar lista" tooltipOptions={{ position: 'top' }} onClick={cargarProyectos} />
         </div>
       </div>
       <div className="flex gap-2 flex-wrap">
-        <span className="p-input-icon-left w-full md:w-auto">
-          <i className="pi pi-search" />
-          <InputText value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} placeholder="Buscar proyectos..." className="w-full" />
-        </span>
-        <Button icon="pi pi-refresh" rounded outlined severity="secondary" tooltip="Actualizar lista" tooltipOptions={{ position: 'top' }} onClick={cargarProyectos} />
+        <select
+          value={estadoFilter}
+          onChange={(e) => setEstadoFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+        >
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="aprobado">Aprobado</option>
+          <option value="calificado">Calificado</option>
+        </select>
       </div>
     </div>
   );
+
+  const filteredProyectos = estadoFilter
+    ? proyectos.filter(p => p.estado === estadoFilter)
+    : proyectos;
 
   const statCards = [
     {
@@ -85,23 +105,23 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
     },
     {
       label: 'Pendientes',
-      value: proyectos.filter(p => p.estado_calificacion === 'pendiente').length,
+      value: proyectos.filter(p => p.estado === 'pendiente').length,
       bgGradient: 'from-amber-500 to-amber-600',
       icon: 'pi-clock',
       textColor: 'text-white'
     },
     {
       label: 'Aprobados',
-      value: proyectos.filter(p => p.estado_calificacion === 'aprobado').length,
+      value: proyectos.filter(p => p.estado === 'aprobado').length,
       bgGradient: 'from-green-500 to-green-600',
       icon: 'pi-check-circle',
       textColor: 'text-white'
     },
     {
-      label: 'Reprobados',
-      value: proyectos.filter(p => p.estado_calificacion === 'reprobado').length,
-      bgGradient: 'from-red-500 to-red-600',
-      icon: 'pi-times-circle',
+      label: 'Calificados',
+      value: proyectos.filter(p => p.estado === 'calificado').length,
+      bgGradient: 'from-blue-500 to-blue-600',
+      icon: 'pi-star-fill',
       textColor: 'text-white'
     },
   ];
@@ -132,31 +152,31 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
               <p className="text-sm text-gray-500 mt-4">Cargando proyectos...</p>
             </div>
           </div>
-        ) : proyectos.length === 0 ? (
+        ) : filteredProyectos.length === 0 ? (
           <div className="text-center py-16 px-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
               <i className="pi pi-inbox text-3xl text-gray-400"></i>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay proyectos</h3>
-            <p className="text-gray-600">Aún no se ha registrado ningún proyecto en el sistema</p>
+            <p className="text-gray-600">{estadoFilter ? 'No hay proyectos con este estado' : 'Aún no se ha registrado ningún proyecto en el sistema'}</p>
           </div>
         ) : (
           <DataTable
-            value={proyectos} paginator rows={10} rowsPerPageOptions={[5, 10, 25, 50]}
+            value={filteredProyectos} paginator rows={10} rowsPerPageOptions={[5, 10, 25, 50]}
             header={header} globalFilter={globalFilter}
-            globalFilterFields={['titulo_proyecto', 'titulo', 'tipo_actividad', 'estado_calificacion', 'id_docente.nombre', 'nombre_linea', 'nombre_area', 'codigo_materia']}
+            globalFilterFields={['titulo_proyecto', 'titulo', 'id_tipo_actividad', 'estado', 'nombre_docente', 'nombre_linea', 'nombre_area', 'nombre_materia']}
             filterDisplay="menu"
-            stripedRows sortField="fecha_creacion" sortOrder={-1} responsiveLayout="scroll"
+            stripedRows sortField="created_at" sortOrder={-1} responsiveLayout="scroll"
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} proyectos"
             size="small"
             className="p-datatable-striped"
-            rowClassName={(rowData) => rowData.estado_calificacion === 'aprobado' ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'}
+            rowClassName={(rowData) => rowData.estado === 'aprobado' ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'}
           >
             <Column field="titulo_proyecto" header="Nombre del Proyecto" body={nombreTemplate} sortable style={{ minWidth: '280px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
-            <Column field="tipo_actividad" header="Tipo" body={tipoActividadTemplate} sortable style={{ minWidth: '140px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
+            <Column field="id_tipo_actividad" header="Tipo" body={tipoActividadTemplate} sortable style={{ minWidth: '140px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
             <Column field="calificacion" header="Calificación" body={calificacionTemplate} sortable style={{ minWidth: '120px', textAlign: 'center' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600', textAlign: 'center' }} />
-            <Column field="estado_calificacion" header="Estado" body={estadoCalificacionTemplate} sortable style={{ minWidth: '130px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
+            <Column field="estado" header="Estado" body={estadoTemplate} sortable style={{ minWidth: '130px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
             <Column header="Acciones" body={accionesTemplate} exportable={false} style={{ minWidth: '80px', textAlign: 'center' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600', textAlign: 'center' }} />
           </DataTable>
         )}

@@ -104,8 +104,8 @@ export default function EventsAttendance() {
     }
     const asistenciasPorHora = {};
     registeredPeople.forEach(persona => {
-      if (persona.fecha_registro) {
-        const hora = new Date(persona.fecha_registro).getHours();
+      if (persona.fecha_asistencia) {
+        const hora = new Date(persona.fecha_asistencia).getHours();
         const horaFormateada = `${hora.toString().padStart(2, '0')}:00`;
         asistenciasPorHora[horaFormateada] = (asistenciasPorHora[horaFormateada] || 0) + 1;
       }
@@ -134,7 +134,7 @@ export default function EventsAttendance() {
     if (!registeredPeople || registeredPeople.length === 0) { alert('No hay datos para exportar'); return; }
     const eventoInfo = eventos.find(e => e.id_evento === eventoSeleccionado);
     const data = registeredPeople.map(persona => {
-      const fechaRegistro = persona.fecha_registro ? new Date(persona.fecha_registro) : null;
+      const fechaRegistro = persona.fecha_asistencia ? new Date(persona.fecha_asistencia) : null;
       return {
         'ID Usuario': persona.id_usuario,
         'Nombre Completo': persona.nombre_completo,

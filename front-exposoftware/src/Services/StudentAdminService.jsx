@@ -357,10 +357,7 @@ export const formatearEstudiante = (data, programas = []) => {
 
   return {
     id: estudiante.id_estudiante,
-    nombreCompleto: usuario.nombre_completo ||
-                   `${usuario.primer_nombre || ''} ${usuario.segundo_nombre || ''} ${usuario.primer_apellido || ''} ${usuario.segundo_apellido || ''}`.trim() ||
-                   `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim() ||
-                   'Sin nombre',
+    nombreCompleto: `${usuario.p_nombre || ''} ${usuario.p_apellido || ''}`.trim() || 'Sin nombre',
     identificacion: usuario.identificacion || 'N/A',
     email: usuario.correo || usuario.email || 'N/A',
     telefono: usuario.telefono || 'N/A',
@@ -371,10 +368,10 @@ export const formatearEstudiante = (data, programas = []) => {
     anioIngreso: estudiante.anio_ingreso,
     estado: usuario.activo !== undefined ? (usuario.activo ? 'Activo' : 'Inactivo') :
             estudiante.activo !== undefined ? (estudiante.activo ? 'Activo' : 'Inactivo') :
-            'Inactivo', // Default a Inactivo si no hay campo activo
+            'Inactivo',
     estadoBool: usuario.activo !== undefined ? usuario.activo :
                 estudiante.activo !== undefined ? estudiante.activo :
-                false, // Default a false si no hay campo activo
+                false,
     fechaCreacion: estudiante.fecha_creacion,
     fechaActualizacion: estudiante.fecha_actualizacion
   };

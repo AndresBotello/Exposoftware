@@ -1,5 +1,4 @@
 import { AlertCircle, CheckCircle } from "lucide-react";
-import pensum from "../../../assets/pensum_ingenieria_sistemas.json";
 
 function InformacionEstudiante({
   formData,
@@ -9,11 +8,6 @@ function InformacionEstudiante({
   successFields,
   getInputClassName,
 }) {
-  // Materias del semestre seleccionado
-  const semestre = parseInt(formData.semestre);
-  const materiasSemestre = semestre
-    ? pensum.materias.filter((m) => m.periodo === semestre)
-    : [];
 
   return (
     <>
@@ -51,10 +45,10 @@ function InformacionEstudiante({
         <label className="block font-medium text-gray-700 mb-1">Programa</label>
         <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-green-800 font-medium text-sm">
           <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-          {pensum.programa}
+          Ingeniería de Sistemas
         </div>
         {/* Campo oculto para que formData.programa lleve el valor */}
-        <input type="hidden" name="programa" value={pensum.codigo} />
+        <input type="hidden" name="programa" value="5095" />
       </div>
 
       {/* Semestre */}
@@ -77,36 +71,6 @@ function InformacionEstudiante({
         {errors.semestre && (
           <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
             <AlertCircle size={14} /> {errors.semestre}
-          </p>
-        )}
-      </div>
-
-      {/* Materia — filtrada por semestre */}
-      <div>
-        <label className="block font-medium text-gray-700 mb-1">Materia *</label>
-        <select
-          name="materia"
-          value={formData.materia || ""}
-          onChange={handleChange}
-          disabled={cargando || !formData.semestre}
-          className={getInputClassName("materia")}
-        >
-          <option value="">
-            {!formData.semestre
-              ? "Primero selecciona el semestre"
-              : materiasSemestre.length === 0
-              ? "Sin materias para este semestre"
-              : "Selecciona una Materia"}
-          </option>
-          {materiasSemestre.map((m) => (
-            <option key={m.codigo_materia} value={m.codigo_materia}>
-              {m.nombre_materia}
-            </option>
-          ))}
-        </select>
-        {errors.materia && (
-          <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-            <AlertCircle size={14} /> {errors.materia}
           </p>
         )}
       </div>

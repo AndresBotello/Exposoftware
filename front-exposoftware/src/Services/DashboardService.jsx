@@ -126,12 +126,12 @@ class DashboardService {
         API_ENDPOINTS.PROYECTOS,
         this.getAuthConfig()
       );
-      
-      const proyectos = Array.isArray(response.data) 
-        ? response.data 
+
+      const proyectos = Array.isArray(response.data)
+        ? response.data
         : response.data?.data || response.data?.proyectos || [];
-      
-      
+
+
       // Mapeo de tipo_actividad a nombres descriptivos
       const tiposActividad = {
         1: 'Exposoftware',
@@ -139,7 +139,7 @@ class DashboardService {
         3: 'Taller',
         4: 'Conferencia'
       };
-      
+
       // Contar proyectos por tipo
       const conteo = proyectos.reduce((acc, proyecto) => {
         const tipo = proyecto.tipo_actividad || 1;
@@ -147,12 +147,57 @@ class DashboardService {
         acc[nombreTipo] = (acc[nombreTipo] || 0) + 1;
         return acc;
       }, {});
-      
+
       // Convertir a formato para la gráfica
       const labels = Object.keys(conteo);
       const valores = Object.values(conteo);
-      
-      
+
+
+      return {
+        labels,
+        valores,
+        total: proyectos.length,
+        proyectos: proyectos.slice(0, 5) // Los 5 más recientes para mostrar en lista
+      };
+    } catch (error) {
+      return {
+        labels: [],
+        valores: [],
+        total: 0,
+        proyectos: []
+      };
+    }
+  }
+
+  /**
+   * Obtener proyectos agrupados por línea de investigación
+   * @returns {Promise<Object>} - Proyectos agrupados por línea
+   */
+  static async getProyectosPorLineaInvestigacion() {
+    try {
+      const response = await axios.get(
+        API_ENDPOINTS.PROYECTOS,
+        this.getAuthConfig()
+      );
+
+      const proyectos = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || response.data?.proyectos || [];
+
+      // Contar proyectos por línea de investigación
+      const conteo = proyectos.reduce((acc, proyecto) => {
+        const linea = proyecto.id_linea_investigacion?.nombre ||
+                     proyecto.linea_investigacion?.nombre ||
+                     proyecto.nombre_linea ||
+                     'Sin línea definida';
+        acc[linea] = (acc[linea] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Convertir a formato para la gráfica
+      const labels = Object.keys(conteo);
+      const valores = Object.values(conteo);
+
       return {
         labels,
         valores,
@@ -175,25 +220,25 @@ class DashboardService {
    */
   static async getEstadisticasCompletas() {
     try {
-      const [totalProyectos, totalEstudiantes, totalProfesores, proyectosPorTipo] = await Promise.all([
+      const [totalProyectos, totalEstudiantes, totalProfesores, proyectosPorLinea] = await Promise.all([
         this.getTotalProyectos(),
         this.getTotalEstudiantes(),
         this.getTotalProfesores(),
-        this.getProyectosPorTipo()
+        this.getProyectosPorLineaInvestigacion()
       ]);
 
       return {
         totalProyectos,
         totalEstudiantes,
         totalProfesores,
-        proyectosPorTipo
+        proyectosPorLinea
       };
     } catch (error) {
       return {
         totalProyectos: 0,
         totalEstudiantes: 0,
         totalProfesores: 0,
-        proyectosPorTipo: {
+        proyectosPorLinea: {
           labels: [],
           valores: [],
           total: 0,

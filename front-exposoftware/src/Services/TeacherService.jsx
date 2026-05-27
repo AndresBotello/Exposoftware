@@ -590,10 +590,10 @@ export const calificarProyecto = async (proyectId, calificacion, comentario = ''
   try {
     const headers = AuthService.getAuthHeaders();
 
-    const url = `${API_ENDPOINTS.PROYECTO_BY_ID(proyectId)}/calificar_asistente`;
+    const url = API_ENDPOINTS.PROYECTO_CALIFICACION(proyectId);
 
     const response = await fetch(url, {
-      method: 'POST',
+      method: 'PUT',
       headers: {
         ...headers,
         'Content-Type': 'application/json',
@@ -879,7 +879,7 @@ export const getUsersInfo = async (userIds) => {
 
 /**
  * Obtener calificación popular de un proyecto
- * GET /api/v1/proyectos/{id}/calificacion_popular
+ * GET /api/v1/proyectos/{id}/calificacion-popular
  * Devuelve promedio ponderado, total de votos y desglose por rol
  * @param {string} projectId - ID del proyecto
  * @returns {Promise<Object>} Datos de calificación popular
@@ -890,11 +890,13 @@ export const obtenerCalificacionPopular = async (projectId) => {
       throw new Error("El ID del proyecto es obligatorio");
     }
 
+    const headers = AuthService.getAuthHeaders();
+    const url = `${API_ENDPOINTS.PROYECTOS}/${projectId}/calificacion-popular`;
 
-    const response = await fetch(`/api/v1/proyectos/${projectId}/calificacion_popular`, {
+    const response = await fetch(url, {
       method: 'GET',
       credentials: 'include',
-      headers: AuthService.getAuthHeaders()
+      headers: headers
     });
 
     if (response.ok) {
@@ -911,6 +913,47 @@ export const obtenerCalificacionPopular = async (projectId) => {
       throw new Error(`Error al obtener calificación popular: ${response.statusText}`);
     }
   } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Calificar un proyecto como asistente (voto popular)
+ * POST /api/v1/proyectos/{id_proyecto}/calificar-asistente
+ * @param {string} proyectId - ID del proyecto
+ * @param {number} calificacion - Calificación del proyecto (0-5)
+ * @param {string} comentario - Comentario opcional
+ * @returns {Promise<Object>} Respuesta del servidor
+ */
+export const calificarProyectoAsistente = async (proyectId, calificacion, comentario = '') => {
+  try {
+    const headers = AuthService.getAuthHeaders();
+
+    const url = `${API_ENDPOINTS.PROYECTOS}/${proyectId}/calificar-asistente`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        calificacion: parseFloat(calificacion),
+        comentario: comentario || ''
+      }),
+      credentials: 'include'
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      const data = result.data || result;
+      return data;
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || 'Error al calificar proyecto');
+    }
+  } catch (error) {
+    console.error(`❌ Error calificando proyecto:`, error);
     throw error;
   }
 };

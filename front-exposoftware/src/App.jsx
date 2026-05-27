@@ -56,6 +56,11 @@ function NavbarWrapper() {
     "/home-dinamico",
   ];
 
+  // Rutas dinámicas donde el Navbar debe estar oculto
+  const hideDynamicNavbarPatterns = [
+    "/proyectos/", // /proyectos/:id_proyecto/calificar
+  ];
+
   /**
    * Verificar si el Navbar debe estar oculto
    */
@@ -65,9 +70,16 @@ function NavbarWrapper() {
       return true;
     }
 
-    // Verificar patrones dinámicos (como /admin/estudiantes/:id)
+    // Verificar patrones dinámicos
     if (location.pathname.startsWith("/admin/estudiantes/")) {
       return true;
+    }
+
+    // Verificar patrones de rutas públicas dinámicas
+    for (const pattern of hideDynamicNavbarPatterns) {
+      if (location.pathname.startsWith(pattern)) {
+        return true;
+      }
     }
 
     return false;

@@ -35,23 +35,16 @@ export const obtenerFacultades = async () => {
 /**
  * Crear una nueva facultad en el backend
  * @param {Object} datosFacultad - Datos de la facultad
- * @param {string} datosFacultad.id_facultad - ID único de la facultad (ej: "FAC_ING")
  * @param {string} datosFacultad.nombre_facultad - Nombre de la facultad (ej: "Ingenierías y Tecnologías")
  * @returns {Promise<Object>} Datos de la facultad creada
  */
 export const crearFacultad = async (datosFacultad) => {
-  // Validaciones básicas
-  if (!datosFacultad.id_facultad || !datosFacultad.id_facultad.trim()) {
-    throw new Error("El ID de la facultad es obligatorio");
-  }
-
   if (!datosFacultad.nombre_facultad || !datosFacultad.nombre_facultad.trim()) {
     throw new Error("El nombre de la facultad es obligatorio");
   }
 
-  // Estructura del payload según el endpoint
+  // Estructura del payload - solo enviar nombre_facultad
   const payload = {
-    id_facultad: datosFacultad.id_facultad.trim(),
     nombre_facultad: datosFacultad.nombre_facultad.trim()
   };
 
@@ -102,7 +95,7 @@ export const crearFacultad = async (datosFacultad) => {
  */
 export const actualizarFacultad = async (idFacultad, datosFacultad) => {
   // Validaciones
-  if (!idFacultad || !idFacultad.trim()) {
+  if (!idFacultad) {
     throw new Error("El ID de la facultad es obligatorio");
   }
 
@@ -153,7 +146,7 @@ export const actualizarFacultad = async (idFacultad, datosFacultad) => {
  * @returns {Promise<Object>} Confirmación de eliminación
  */
 export const eliminarFacultad = async (idFacultad) => {
-  if (!idFacultad || !idFacultad.trim()) {
+  if (!idFacultad) {
     throw new Error("El ID de la facultad es obligatorio");
   }
 

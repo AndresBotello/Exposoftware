@@ -352,3 +352,41 @@ export const eliminarProyecto = async (projectId) => {
     throw error;
   }
 };
+
+/**
+ * Generar código QR para calificar un proyecto
+ * POST /api/v1/proyectos/{id_proyecto}/generar-qr
+ * @param {string} projectId - ID del proyecto
+ * @param {string} urlFront - URL base del frontend (opcional, por default toma la actual)
+ * @returns {Promise<Object>} QR base64 y datos
+ */
+export const generarQRCalificacion = async (projectId, urlFront = null) => {
+  try {
+    console.log(`📱 Generando QR de calificación para proyecto ${projectId}...`);
+
+    // Si no se proporciona urlFront, usar la actual
+    const baseUrl = urlFront || window.location.origin;
+
+    const url = new URL(`${API_ENDPOINTS.PROYECTOS}/${projectId}/generar-qr`, window.location.origin);
+    url.searchParams.append('url_front', baseUrl);
+
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      credentials: 'include',
+      headers: getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || errorData.detail || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log(`✅ QR de calificación generado para proyecto ${projectId}:`, data);
+
+    return data.data || data;
+  } catch (error) {
+    console.error(`❌ Error generando QR de calificación:`, error);
+    throw error;
+  }
+};

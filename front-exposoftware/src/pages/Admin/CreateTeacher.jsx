@@ -401,67 +401,22 @@ export default function CreateTeacher() {
         show={showEditModal}
         onSave={handleSaveEdit}
         onCancel={handleCancelEdit}
-        // Listas dinámicas
-        municipios={municipios}
-        opcionesPaises={opcionesPaises}
-        departamentos={departamentosCatalogo}
         programas={programas}
         loadingProgramas={loadingProgramas}
-        // Estados del formulario - Usuario
-        tipoDocumento={tipoDocumento}
-        setTipoDocumento={setTipoDocumento}
         identificacion={identificacion}
         setIdentificacion={setIdentificacion}
-        // Nombres y apellidos separados
         primerNombre={primerNombre}
         setPrimerNombre={setPrimerNombre}
-        segundoNombre={segundoNombre}
-        setSegundoNombre={setSegundoNombre}
         primerApellido={primerApellido}
         setPrimerApellido={setPrimerApellido}
-        segundoApellido={segundoApellido}
-        setSegundoApellido={setSegundoApellido}
-        genero={genero}
-        setGenero={setGenero}
-        identidadSexual={identidadSexual}
-        setIdentidadSexual={setIdentidadSexual}
-        fechaNacimiento={fechaNacimiento}
-        setFechaNacimiento={setFechaNacimiento}
-        nacionalidad={nacionalidad}
-        setNacionalidad={setNacionalidad}
-        pais={pais}
-        setPais={setPais}
-        departamento={departamento}
-        setDepartamento={setDepartamento}
-        municipio={municipio}
-        setMunicipio={setMunicipio}
-        ciudadResidencia={ciudadResidencia}
-        setCiudadResidencia={setCiudadResidencia}
-        tipoVia={tipoVia}
-        setTipoVia={setTipoVia}
-        numeroVia={numeroVia}
-        setNumeroVia={setNumeroVia}
-        numeroCruce={numeroCruce}
-        setNumeroCruce={setNumeroCruce}
-        numeroPlaca={numeroPlaca}
-        setNumeroPlaca={setNumeroPlaca}
-        complemento={complemento}
-        setComplemento={setComplemento}
-        direccionResidencia={direccionResidencia}
-        setDireccionResidencia={setDireccionResidencia}
         telefono={telefono}
         setTelefono={setTelefono}
         correo={correo}
         setCorreo={setCorreo}
-        contraseña={contraseña}
-        setContraseña={setContraseña}
-        // Estados del formulario - Docente
         categoriaDocente={categoriaDocente}
         setCategoriaDocente={setCategoriaDocente}
         codigoPrograma={codigoPrograma}
         setCodigoPrograma={setCodigoPrograma}
-        activo={activo}
-        setActivo={setActivo}
       />
     </div>
   );

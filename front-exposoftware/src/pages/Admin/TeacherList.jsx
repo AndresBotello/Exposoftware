@@ -81,7 +81,7 @@ export default function TeacherList({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {profesor?.usuario?.nombre_completo || profesor?.usuario?.nombres || profesor?.nombres || 'N/A'}
+                      {profesor?.usuario ? `${profesor.usuario.p_nombre || ''} ${profesor.usuario.p_apellido || ''}`.trim() : 'N/A'}
                     </div>
                   </td>
                   <td className="px-6 py-4">

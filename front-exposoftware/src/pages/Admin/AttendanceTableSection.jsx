@@ -38,7 +38,7 @@ export default function AttendanceTableSection({
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                {["#", "ID Usuario", "Nombre Completo", "Correo Electrónico", "Fecha y Hora"].map(col => (
+                {["#", "Nombre Completo", "Correo Electrónico", "Fecha y Hora"].map(col => (
                   <th key={col} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">{col}</th>
                 ))}
               </tr>
@@ -48,13 +48,12 @@ export default function AttendanceTableSection({
                 currentItems.map((person, index) => (
                   <tr key={person.id_asistencia} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-4 text-sm text-gray-900 font-medium">{indexOfFirstItem + index + 1}</td>
-                    <td className="px-4 py-4 text-sm text-gray-900 font-mono">{person.id_usuario}</td>
                     <td className="px-4 py-4 text-sm text-gray-900">{person.nombre_completo}</td>
                     <td className="px-4 py-4 text-sm text-gray-600">{person.correo}</td>
                     <td className="px-4 py-4 text-sm text-gray-600">
                       <div className="flex flex-col">
                         {(() => {
-                          const { fecha, hora } = formatearFechaHora(person.fecha_registro);
+                          const { fecha, hora } = formatearFechaHora(person.fecha_asistencia);
                           return (<><span>{fecha}</span><span className="text-xs text-gray-500">{hora}</span></>);
                         })()}
                       </div>
@@ -63,7 +62,7 @@ export default function AttendanceTableSection({
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-4 py-12 text-center">
+                  <td colSpan="4" className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                         <i className="pi pi-users text-gray-400 text-3xl"></i>

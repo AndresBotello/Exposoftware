@@ -16,7 +16,7 @@ export default function AdminDashboard() {
     totalProyectos: 0,
     totalEstudiantes: 0,
     totalProfesores: 0,
-    proyectosPorTipo: {
+    proyectosPorLinea: {
       labels: [],
       valores: [],
       total: 0,
@@ -80,13 +80,13 @@ export default function AdminDashboard() {
   };
 
   const exportarReporteCompleto = () => {
-    const tiposData = estadisticas.proyectosPorTipo?.labels?.map((label, index) => ({
+    const lineasData = estadisticas.proyectosPorLinea?.labels?.map((label, index) => ({
       name: label,
-      value: estadisticas.proyectosPorTipo?.valores?.[index] || 0
+      value: estadisticas.proyectosPorLinea?.valores?.[index] || 0
     })) || [];
 
     ReportGenerator.exportarReporteCompleto({
-      userInfo: { 
+      userInfo: {
         name: getUserName(),
         role: 'Administrador'
       },
@@ -94,11 +94,11 @@ export default function AdminDashboard() {
         totalProyectos: estadisticas.totalProyectos,
         totalEstudiantes: estadisticas.totalEstudiantes,
         totalProfesores: estadisticas.totalProfesores,
-        proyectosPorTipo: tiposData
+        proyectosPorLinea: lineasData
       },
-      chartIds: ['proyectos-tipo-chart'],
-      chartTitles: ['Proyectos por Tipo de Actividad'],
-      chartData: [tiposData],
+      chartIds: ['proyectos-linea-chart'],
+      chartTitles: ['Proyectos por Línea de Investigación'],
+      chartData: [lineasData],
       institutionName: 'Universidad Popular del Cesar',
       eventName: 'Expo-software 2025'
     });
@@ -117,15 +117,17 @@ export default function AdminDashboard() {
 
   // Configuración de la gráfica de dona (donut chart)
   const chartData = {
-    labels: estadisticas.proyectosPorTipo?.labels || [],
+    labels: estadisticas.proyectosPorLinea?.labels || [],
     datasets: [
       {
-        data: estadisticas.proyectosPorTipo?.valores || [],
+        data: estadisticas.proyectosPorLinea?.valores || [],
         backgroundColor: [
-          '#10B981', // Verde - Exposoftware
-          '#F59E0B', // Amarillo - Ponencia  
-          '#EF4444', // Rojo - Taller
-          '#3B82F6'  // Azul - Conferencia
+          '#10B981', // Verde
+          '#F59E0B', // Amarillo
+          '#EF4444', // Rojo
+          '#3B82F6', // Azul
+          '#8B5CF6', // Púrpura
+          '#EC4899'  // Rosa
         ],
         borderColor: '#ffffff',
         borderWidth: 2
@@ -352,7 +354,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Proyectos por Tipo de Actividad */}
+            {/* Proyectos por Línea de Investigación */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -361,16 +363,16 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Proyectos por Tipo de Actividad
+                      Proyectos por Línea de Investigación
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Distribución de {estadisticas.proyectosPorTipo?.total || 0} proyectos registrados
+                      Distribución de {estadisticas.proyectosPorLinea?.total || 0} proyectos registrados
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => exportarGraficaComoImagen('proyectos-tipo-chart', 'Proyectos_por_Tipo')}
+                    onClick={() => exportarGraficaComoImagen('proyectos-linea-chart', 'Proyectos_por_Linea')}
                     className="p-2 bg-teal-50 hover:bg-teal-100 text-teal-600 rounded-lg transition-colors duration-200"
                     title="Exportar como imagen"
                   >
@@ -378,11 +380,11 @@ export default function AdminDashboard() {
                   </button>
                   <button
                     onClick={() => {
-                      const tiposData = estadisticas.proyectosPorTipo?.labels?.map((label, index) => ({
+                      const lineasData = estadisticas.proyectosPorLinea?.labels?.map((label, index) => ({
                         name: label,
-                        value: estadisticas.proyectosPorTipo?.valores?.[index] || 0
+                        value: estadisticas.proyectosPorLinea?.valores?.[index] || 0
                       })) || [];
-                      exportarGraficaComoPDF('proyectos-tipo-chart', 'Proyectos por Tipo de Actividad', tiposData);
+                      exportarGraficaComoPDF('proyectos-linea-chart', 'Proyectos por Línea de Investigación', lineasData);
                     }}
                     className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors duration-200"
                     title="Exportar como PDF"
@@ -399,11 +401,11 @@ export default function AdminDashboard() {
                     <p className="text-sm text-gray-500 mt-4">Cargando datos de proyectos...</p>
                   </div>
                 </div>
-              ) : estadisticas.proyectosPorTipo?.total > 0 ? (
+              ) : estadisticas.proyectosPorLinea?.total > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Gráfica Circular */}
                   <div className="flex items-center justify-center">
-                    <div id="proyectos-tipo-chart" style={{ width: '100%', maxWidth: '350px', height: '350px' }}>
+                    <div id="proyectos-linea-chart" style={{ width: '100%', maxWidth: '350px', height: '350px' }}>
                       <Chart type="doughnut" data={chartData} options={chartOptions} />
                     </div>
                   </div>
@@ -414,39 +416,30 @@ export default function AdminDashboard() {
                       Proyectos Recientes
                     </h4>
                     <div className="space-y-3">
-                      {estadisticas.proyectosPorTipo?.proyectos.slice(0, 5).map((proyecto, index) => {
-                        const nombreProyecto = proyecto.titulo_proyecto || 
-                                              proyecto.titulo_proyecto || 
-                                              proyecto.titulo_proyecto || 
+                      {estadisticas.proyectosPorLinea?.proyectos.slice(0, 5).map((proyecto, index) => {
+                        const nombreProyecto = proyecto.titulo_proyecto ||
+                                              proyecto.titulo_proyecto ||
+                                              proyecto.titulo_proyecto ||
                                               'Proyecto sin nombre';
+                        const nombreLinea = proyecto.id_linea_investigacion?.nombre ||
+                                           proyecto.linea_investigacion?.nombre ||
+                                           proyecto.nombre_linea ||
+                                           'Sin línea definida';
                         return (
-                          <div 
+                          <div
                             key={proyecto.id_proyecto || index}
                             className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                           >
                             <div className="flex-shrink-0 mt-1">
-                              <div className={`w-2 h-2 rounded-full ${
-                                proyecto.tipo_actividad === 1 ? 'bg-green-500' :
-                                proyecto.tipo_actividad === 2 ? 'bg-yellow-500' :
-                                proyecto.tipo_actividad === 3 ? 'bg-red-500' :
-                                'bg-blue-500'
-                              }`}></div>
+                              <div className="w-2 h-2 rounded-full bg-teal-500"></div>
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate" title={nombreProyecto}>
                                 {nombreProyecto}
                               </p>
                               <div className="flex items-center gap-2 mt-1">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                  proyecto.tipo_actividad === 1 ? 'bg-green-100 text-green-800' :
-                                  proyecto.tipo_actividad === 2 ? 'bg-yellow-100 text-yellow-800' :
-                                  proyecto.tipo_actividad === 3 ? 'bg-red-100 text-red-800' :
-                                  'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {proyecto.tipo_actividad === 1 ? 'Exposoftware' :
-                                   proyecto.tipo_actividad === 2 ? 'Ponencia' :
-                                   proyecto.tipo_actividad === 3 ? 'Taller' :
-                                   'Conferencia'}
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800">
+                                  {nombreLinea}
                                 </span>
                                 {proyecto.calificacion && (
                                   <span className="text-xs text-gray-500">
@@ -459,11 +452,11 @@ export default function AdminDashboard() {
                         );
                       })}
                     </div>
-                    
-                    {estadisticas.proyectosPorTipo?.total > 5 && (
+
+                    {estadisticas.proyectosPorLinea?.total > 5 && (
                       <div className="mt-4 text-center">
-                        <Link 
-                          to="/admin/proyectos" 
+                        <Link
+                          to="/admin/proyectos"
                           className="inline-flex items-center gap-2 text-sm font-medium text-teal-600 hover:text-teal-700"
                         >
                           Ver todos los proyectos

@@ -59,12 +59,17 @@ class AssistanceService {
    */
   static async registrarAsistencia(idEvento, correoUsuario) {
     try {
+      const ahora = new Date();
+      const hora = ahora.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
       const response = await fetch(API_ENDPOINTS.REGISTRAR_ASISTENCIA(idEvento), {
         credentials: 'include',
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ correo_usuario: correoUsuario })
+        body: JSON.stringify({
+          correo_usuario: correoUsuario,
+          hora_asistencia: hora
+        })
       });
 
       const data = await response.json();

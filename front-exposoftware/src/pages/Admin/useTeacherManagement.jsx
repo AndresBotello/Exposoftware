@@ -283,41 +283,21 @@ export function useTeacherManagement() {
 
   // Iniciar edición
   const handleEdit = (profesor) => {
-    
+
     setEditingId(profesor.docente?.id_docente || profesor.id);
-    
+
     // Los datos están separados en objetos 'usuario' y 'docente'
     const datosUsuario = profesor.usuario || {};
     const datosDocente = profesor.docente || profesor;
-    
+
     setTipoDocumento(datosUsuario.tipo_documento || "");
     setIdentificacion(datosUsuario.identificacion || "");
-    
-    // El backend retorna 'nombre_completo', separarlo en primer y segundo nombre
-    const nombreCompleto = datosUsuario.nombre_completo || "";
-    const nombresArray = nombreCompleto.split(" ");
-    const primerNom = nombresArray[0] || "";
-    const segundoNom = nombresArray.slice(1).join(" ") || "";
-    
-    // Para apellidos, intentar separarlos si están en el nombre completo
-    // Asumiendo formato: "Nombre1 Nombre2 Apellido1 Apellido2"
-    const partesNombre = nombreCompleto.split(" ");
-    let primerApellido = "";
-    let segundoApellido = "";
-    
-    if (partesNombre.length >= 3) {
-      // Últimas dos partes son apellidos
-      segundoApellido = partesNombre.pop();
-      primerApellido = partesNombre.pop();
-    } else if (partesNombre.length === 2) {
-      // Solo un apellido
-      primerApellido = partesNombre[1];
-    }
-    
-    setPrimerNombre(primerNom);
-    setSegundoNombre(segundoNom);
-    setPrimerApellido(primerApellido);
-    setSegundoApellido(segundoApellido);
+
+    // El backend retorna p_nombre y p_apellido separados
+    setPrimerNombre(datosUsuario.p_nombre || "");
+    setSegundoNombre("");
+    setPrimerApellido(datosUsuario.p_apellido || "");
+    setSegundoApellido("");
     
     setGenero(datosUsuario.sexo || datosUsuario.genero || "");
     setIdentidadSexual(datosUsuario.identidad_sexual || "");

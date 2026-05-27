@@ -40,7 +40,6 @@ export default function CrearFacultades() {
   };
 
   // Estados para crear facultad
-  const [idFacultad, setIdFacultad] = useState("");
   const [nombreFacultad, setNombreFacultad] = useState("");
   const [cargando, setCargando] = useState(false);
 
@@ -76,36 +75,25 @@ export default function CrearFacultades() {
   const handleCrearFacultad = async (e) => {
     e.preventDefault();
 
-    if (!idFacultad.trim() || !nombreFacultad.trim()) {
-      alert("Por favor completa todos los campos");
+    if (!nombreFacultad.trim()) {
+      alert("Por favor ingresa el nombre de la facultad");
       return;
     }
 
-    // Validar formato de id_facultad (solo A-Z, 0-9, _)
-    if (!/^[A-Z0-9_]{3,10}$/.test(idFacultad.toUpperCase())) {
-      alert("ID Facultad: debe tener 3-10 caracteres y solo contener A-Z, 0-9, _");
+    // Validar formato de nombre_facultad (letras, números y espacios)
+    if (!/^[A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-&]{2,150}$/.test(nombreFacultad)) {
+      alert("Nombre Facultad: debe tener 2-150 caracteres y contener letras, números, espacios y guiones");
       return;
     }
-
-    // Validar formato de nombre_facultad (solo letras y espacios)
-    if (!/^[A-Za-záéíóúÁÉÍÓÚñÑ\s]{2,100}$/.test(nombreFacultad)) {
-      alert("Nombre Facultad: debe tener 2-100 caracteres y solo contener letras y espacios");
-      return;
-    }
-
-    const payload = {
-      id_facultad: idFacultad.toUpperCase(),
-      nombre_facultad: nombreFacultad.trim()
-    };
-
 
     setCargando(true);
     try {
-      await FacultadService.crearFacultad(payload);
+      await FacultadService.crearFacultad({
+        nombre_facultad: nombreFacultad.trim()
+      });
       alert("✅ Facultad creada exitosamente");
-      
+
       // Limpiar formulario
-      setIdFacultad("");
       setNombreFacultad("");
 
       // Recargar lista de facultades
@@ -233,42 +221,21 @@ export default function CrearFacultades() {
               </div>
 
               <form onSubmit={handleCrearFacultad} className="space-y-6 max-w-2xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* ID Facultad */}
-                  <div>
-                    <label htmlFor="idFacultad" className="block text-sm font-medium text-gray-700 mb-2">
-                      ID Facultad <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="idFacultad"
-                      value={idFacultad}
-                      onChange={(e) => setIdFacultad(e.target.value.toUpperCase())}
-                      placeholder="Ej: FAC_ING"
-                      maxLength="10"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all uppercase"
-                      required
-                    />
-                    <p className="mt-1 text-xs text-gray-500">3-10 caracteres: A-Z, 0-9, _</p>
-                  </div>
-
-                  {/* Nombre Facultad */}
-                  <div>
-                    <label htmlFor="nombreFacultad" className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre Facultad <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="nombreFacultad"
-                      value={nombreFacultad}
-                      onChange={(e) => setNombreFacultad(e.target.value)}
-                      placeholder="Ej: Ingenierías y Tecnologías"
-                      maxLength="100"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                      required
-                    />
-                    <p className="mt-1 text-xs text-gray-500">2-100 caracteres: letras y espacios</p>
-                  </div>
+                <div>
+                  <label htmlFor="nombreFacultad" className="block text-sm font-medium text-gray-700 mb-2">
+                    Nombre Facultad <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="nombreFacultad"
+                    value={nombreFacultad}
+                    onChange={(e) => setNombreFacultad(e.target.value)}
+                    placeholder="Ej: Ingenierías y Tecnologías"
+                    maxLength="150"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">2-150 caracteres: letras, números, espacios y guiones</p>
                 </div>
 
                 <div className="pt-4">

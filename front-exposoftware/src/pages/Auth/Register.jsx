@@ -60,7 +60,6 @@ function RegisterPage() {
     programa: "5095",
     facultad: "",
     semestre: "",
-    materia: "",
     sector: "",
     intitucionOrigen: "",
     nombreEmpresa: "",
