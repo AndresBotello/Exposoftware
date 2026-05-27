@@ -48,11 +48,12 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
 
     // SOLUCIÓN: No seguir el redirect automáticamente (redirect: 'manual')
     // Esto evita que fetch() intente acceder a Cloudinary con CORS
-    // El navegador NO puede usar credentials con wildcard CORS de Cloudinary
+    // IMPORTANTE: Sí enviamos credentials para autenticar con el backend
     const response = await fetch(
       API_ENDPOINTS.CERTIFICADO_DESCARGAR(idCertificado),
       {
         method: 'GET',
+        credentials: 'include',  // Enviar cookies de sesión
         redirect: 'manual'  // Detener en el redirect, no seguirlo
       }
     );
