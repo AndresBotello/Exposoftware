@@ -46,67 +46,69 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
   try {
     console.log('📥 Descargando certificado:', idCertificado);
 
-    // Paso 1: Obtener el certificado del backend
-    // Usar credentials: 'include' para enviar la sesión en despliegue (cross-origin)
+    // Obtener el certificado del backend
+    // IMPORTANTE: No enviamos credentials porque el endpoint redirige a Cloudinary
+    // que usa CORS wildcard (*), incompatible con credentials mode
     const response = await fetch(
       API_ENDPOINTS.CERTIFICADO_DESCARGAR(idCertificado),
       {
-        method: 'GET',
-        credentials: 'include'
+        method: 'GET'
       }
     );
 
     console.log('📡 Status de respuesta:', response.status);
     console.log('📋 Content-Type:', response.headers.get('content-type'));
 
-    // Manejar respuesta
-    if (response.ok) {
-      // Verificar si es un PDF directo o una redirección a Cloudinary
-      const contentType = response.headers.get('content-type') || '';
-
-      if (contentType.includes('application/pdf')) {
-        // El servidor devolvió el archivo PDF directamente
-        const blob = await response.blob();
-        console.log('✅ Certificado obtenido (PDF directo):');
-        console.log('   - Tamaño:', blob.size, 'bytes');
-        console.log('   - Tipo MIME:', blob.type);
-
-        descargarBlob(blob, nombreArchivo);
-        return { success: true, message: 'Certificado descargado exitosamente' };
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
+      } else if (response.status === 403) {
+        throw new Error('No tienes permiso para descargar este certificado.');
+      } else if (response.status === 404) {
+        throw new Error('El certificado no fue encontrado.');
       } else {
-        // El servidor redirigió a Cloudinary, obtenemos la URL final
-        const blob = await response.blob();
-        const urlCloudinary = response.url;
+        throw new Error(`Error al descargar certificado: ${response.status}`);
+      }
+    }
 
-        console.log('✅ URL de Cloudinary obtenida:', urlCloudinary);
-        console.log('   - Descargando desde Cloudinary sin credenciales...');
+    const contentType = response.headers.get('content-type') || '';
 
-        // Paso 2: Descargar directamente desde Cloudinary SIN usar fetch (evita CORS)
-        // Usar window.location para que el navegador descargue el archivo normalmente
-        const link = document.createElement('a');
-        link.href = urlCloudinary;
-        link.download = nombreArchivo;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    // Caso 1: Backend devuelve JSON con URL de Cloudinary
+    if (contentType.includes('application/json')) {
+      console.log('📋 Respuesta JSON detectada');
+      const data = await response.json();
 
-        console.log('✅ Descarga iniciada desde Cloudinary');
+      if (data.url) {
+        console.log('✅ URL de Cloudinary obtenida desde JSON:', data.url);
+        // Abrir en nueva ventana para que el navegador descargue sin CORS
+        abrirDescargaEnNuevaVentana(data.url, nombreArchivo);
         return { success: true, message: 'Certificado descargado exitosamente' };
       }
-    } else if (response.status === 401) {
-      throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
-    } else if (response.status === 403) {
-      throw new Error('No tienes permiso para descargar este certificado.');
-    } else if (response.status === 404) {
-      throw new Error('El certificado no fue encontrado.');
-    } else {
-      throw new Error(`Error al descargar certificado: ${response.status}`);
     }
+
+    // Caso 2: Backend devuelve PDF directo
+    if (contentType.includes('application/pdf')) {
+      console.log('✅ Certificado obtenido (PDF directo)');
+      const blob = await response.blob();
+      console.log('   - Tamaño:', blob.size, 'bytes');
+      console.log('   - Tipo MIME:', blob.type);
+
+      descargarBlob(blob, nombreArchivo);
+      return { success: true, message: 'Certificado descargado exitosamente' };
+    }
+
+    // Caso 3: Response.url contiene la URL redirigida (último recurso)
+    if (response.url && response.url.includes('cloudinary')) {
+      console.log('✅ URL final redirigida detectada:', response.url);
+      abrirDescargaEnNuevaVentana(response.url, nombreArchivo);
+      return { success: true, message: 'Certificado descargado exitosamente' };
+    }
+
+    throw new Error('No se pudo obtener el certificado: formato de respuesta desconocido');
+
   } catch (error) {
     console.error('❌ Error descargando certificado:', error);
 
-    // Proporcionar mensajes de error más específicos
     if (error.message.includes('Failed to fetch')) {
       throw new Error('Error de conexión. Verifica tu conexión a internet e intenta de nuevo.');
     } else if (error.message.includes('CORS')) {
@@ -115,6 +117,21 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
 
     throw error;
   }
+};
+
+/**
+ * Abrir descarga en nueva ventana (evita problemas CORS)
+ */
+const abrirDescargaEnNuevaVentana = (url, nombreArchivo) => {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nombreArchivo;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  console.log('✅ Descarga iniciada:', nombreArchivo);
 };
 
 /**
