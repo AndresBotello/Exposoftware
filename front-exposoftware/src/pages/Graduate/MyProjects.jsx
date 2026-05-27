@@ -12,8 +12,8 @@ export default function GraduateMyProjects() {
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [error, setError] = useState(null);
   const [eventoInfo, setEventoInfo] = useState(null);
-  const [miPerfil, setMiPerfil] = useState(null); 
-  const { user, getFullName, getInitials, logout, loading } = useAuth();
+  const [miPerfil, setMiPerfil] = useState(null);
+  const { user, getFullName, getInitials, logout, loading, getGraduateProfile } = useAuth();
   const navigate = useNavigate();
 
   // Cargar proyectos del egresado al montar el componente
@@ -27,14 +27,16 @@ export default function GraduateMyProjects() {
       try {
         setLoadingProjects(true);
         setError(null);
-        
-        // 1. Obtener datos completos del usuario desde /api/v1/auth/me
-        console.log('📋 Obteniendo datos completos del usuario...');
-        const perfilCompleto = await import("../../Services/GraduateService").then(
-          module => module.obtenerMiPerfilEgresado()
-        );
+
+        // 1. Obtener datos completos del usuario desde el contexto (ya fue cargado en Dashboard)
+        console.log('📋 Obteniendo datos del usuario desde contexto...');
+        const perfilCompleto = getGraduateProfile();
+
+        if (!perfilCompleto) {
+          throw new Error('No se pudo obtener el perfil del egresado');
+        }
         setMiPerfil(perfilCompleto);
-        
+
         // 2. Extraer el ID correcto (preferir id_egresado, luego identificacion)
         const idEgresado = perfilCompleto.id_egresado || perfilCompleto.identificacion;
         

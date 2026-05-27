@@ -9,7 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 
 export default function GraduateDashboard() {
   const navigate = useNavigate();
-  const { user, getFullName, getInitials, logout, loading } = useAuth();
+  const { user, getFullName, getInitials, logout, loading, setGraduateProfile } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [perfil, setPerfil] = useState(null);
   const [loadingPerfil, setLoadingPerfil] = useState(true);
@@ -70,6 +70,8 @@ export default function GraduateDashboard() {
         // Usar SIEMPRE la función correcta que valida token y procesa datos
         const datos = await GraduateService.obtenerMiPerfilEgresado();
         setPerfil(datos);
+        // Guardar en el contexto para acceso desde otras páginas
+        setGraduateProfile(datos);
         console.log('✅ Perfil completo del egresado cargado:', datos);
       } catch (error) {
         console.error('❌ Error cargando perfil:', error);

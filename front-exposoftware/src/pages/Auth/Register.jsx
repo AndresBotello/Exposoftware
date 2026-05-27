@@ -12,13 +12,13 @@ import {
   handleSubmit as handleSubmitUtil,
   getInputClassName as getInputClassNameUtil,
 } from "./Register/formHandlers";
-import RoleSections from "./RoleSections/RoleSections";
 import { API_ENDPOINTS } from "../../utils/constants";
 import BackgroundCarousel from "./Register/BackgroundCarousel";
 import MessageAlerts from "./Register/MessageAlerts";
 import PersonalInfoSection from "./Register/PersonalInfoSection";
 import IdentificationSection from "./Register/IdentificationSection";
 import CredentialsSection from "./Register/CredentialsSection";
+import InformacionEstudiante from "./RoleSections/InformacionEstudiante";
 
 function RegisterPage() {
   const [errors, setErrors] = useState({});
@@ -31,7 +31,7 @@ function RegisterPage() {
   const [cargando, setCargando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState("");
   const [mensajeError, setMensajeError] = useState("");
-  const [rol, setrol] = useState("");
+  const rol = "estudiante";
 
   // Estados para términos y condiciones
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -53,7 +53,7 @@ function RegisterPage() {
     nacionalidad: "",
     paisNacimiento: "",
     direccionResidencia: "",
-    rol: "",
+    rol: "estudiante",
     tipoDocumento: "",
     numeroDocumento: "",
     correo: "",
@@ -109,44 +109,6 @@ function RegisterPage() {
     }
   }, [formData.departamentoResidencia]);
 
-  // Limpiar campos específicos según el rol
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      correo: "",
-      programa: "5095",
-      facultad: "",
-      semestre: "",
-      materia: "",
-      sector: "",
-      nombreEmpresa: "",
-      periodo: "",
-      titulado: "",
-      tituloObtenido: "",
-      fechaIngreso: "",
-      fechaFinalizacion: "",
-      intitucionOrigen: "",
-    }));
-
-    const camposRol = [
-      "correo", "semestre", "materia",
-      "sector", "nombreEmpresa", "periodo", "titulado", "tituloObtenido",
-      "fechaIngreso", "fechaFinalizacion", "intitucionOrigen"
-    ];
-
-    setErrors((prev) => {
-      const newErrors = { ...prev };
-      camposRol.forEach(campo => delete newErrors[campo]);
-      return newErrors;
-    });
-
-    setSuccessFields((prev) => {
-      const newSuccess = { ...prev };
-      camposRol.forEach(campo => delete newSuccess[campo]);
-      return newSuccess;
-    });
-  }, [rol]);
-
   // Desactivar Departamento y Municipio si el país no es Colombia (COL)
   useEffect(() => {
     if (formData.nacionalidad !== "COL") {
@@ -161,10 +123,7 @@ function RegisterPage() {
 
   // Handlers
   const handleChange = (e) => {
-    handleChangeUtil(e, formData, setFormData, setErrors, setSuccessFields, rol, setrol);
-    if (e.target.name === "rol") {
-      setrol(e.target.value);
-    }
+    handleChangeUtil(e, formData, setFormData, setErrors, setSuccessFields, rol);
   };
 
   const handleSelectChange = (name, option) => {
@@ -237,11 +196,9 @@ function RegisterPage() {
             handleChange={handleChange}
             getInputClassName={getInputClassName}
             cargando={cargando}
-            rol={rol}
           />
 
-          <RoleSections
-            rol={rol}
+          <InformacionEstudiante
             formData={formData}
             errors={errors}
             handleChange={handleChange}

@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from '../utils/constants';
+import * as AuthService from './AuthService';
 
 // Definición de sectores disponibles
 const SECTORES = [
@@ -19,9 +20,10 @@ const obtenerNombreSector = (idSector) => {
 
 /**
  * Obtener token de autenticación
+ * Busca en localStorage (usuarios reales) y sessionStorage (invitados)
  */
 const getAuthToken = () => {
-  return localStorage.getItem('auth_token');
+  return AuthService.getToken();
 };
 
 /**
@@ -77,65 +79,49 @@ export const obtenerInformacionUsuario = async () => {
 
 /**
  * Obtener perfil del invitado autenticado
- * Usa el token del usuario para obtener TODA su información desde /api/v1/auth/me
+ * Usa las cookies de sesión para obtener la información desde /api/v1/invitados/mi-perfil
  */
 export const obtenerMiPerfilInvitado = async () => {
   try {
-    console.log('👤 Obteniendo información completa del usuario invitado desde /api/v1/auth/me...');
-    
-    // Validar que existe el token
+    console.log('👤 Obteniendo información completa del usuario invitado desde /api/v1/invitados/mi-perfil...');
+
     const token = getAuthToken();
-    if (!token) {
-      throw new Error('No hay token de autenticación. Por favor inicie sesión nuevamente.');
-    }
+    const headers = getAuthHeaders();
+    console.log('🔐 Token disponible:', !!token);
+    console.log('📤 Headers siendo enviados:', headers);
 
-    console.log('🔑 Token encontrado, validando con el backend...');
-
-    // Obtener TODA la información del usuario autenticado usando su token
-    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+    const response = await fetch(API_ENDPOINTS.INVITADO_MI_PERFIL, {
       credentials: 'include',
       method: 'GET',
-      headers: getAuthHeaders()
+      headers: headers
     });
 
-    console.log('📡 Respuesta /api/v1/auth/me - Status:', response.status);
+    console.log('📡 Respuesta /api/v1/invitados/mi-perfil - Status:', response.status);
+    console.log('📄 Response body:', await response.clone().text());
 
     if (!response.ok) {
       if (response.status === 401) {
-        localStorage.removeItem('auth_token');
         throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
       }
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.detail || 'Error al validar usuario');
+      throw new Error(errorData.message || errorData.detail || `Error al obtener perfil (${response.status})`);
     }
 
     const userData = await response.json();
-    console.log('✅ Información completa del usuario obtenida desde /api/v1/auth/me:', userData);
+    console.log('✅ Información completa del usuario obtenida desde /api/v1/invitados/mi-perfil:', userData);
     console.log('📊 Estructura completa de data:', JSON.stringify(userData, null, 2));
-    
-    // La respuesta tiene formato: { status, message, data, code }
-    if (userData.data) {
-      console.log('📦 userData.data:', userData.data);
-      console.log('👤 userData.data.usuario:', userData.data.usuario);
-      
-      // Validar que el usuario tiene rol de Invitado
-      const usuario = userData.data.usuario || userData.data;
-      if (usuario.rol !== 'Invitado') {
-        throw new Error(`Usuario no es invitado. Rol actual: ${usuario.rol}`);
-      }
 
-      console.log('✅ Usuario validado como Invitado');
-      
+    // La respuesta tiene formato: { status, message, data: { invitado, usuario }, code }
+    if (userData.data && userData.data.invitado && userData.data.usuario) {
+      console.log('📦 userData.data.invitado:', userData.data.invitado);
+      console.log('👤 userData.data.usuario:', userData.data.usuario);
+      console.log('✅ Perfil de invitado validado');
+
       // Procesar y retornar todos los datos del invitado
       return procesarDatosInvitado(userData.data);
     }
-    
-    // Si no viene en data, usar directamente
-    if (userData.rol !== 'Invitado') {
-      throw new Error(`Usuario no es invitado. Rol actual: ${userData.rol}`);
-    }
 
-    return procesarDatosInvitado(userData);
+    throw new Error('Respuesta inválida del servidor: estructura de datos no esperada');
     
   } catch (error) {
     console.error('❌ Error obteniendo perfil del invitado:', error);
@@ -215,6 +201,7 @@ export const actualizarPerfilInvitado = async (guestId, datosInvitado) => {
 
 /**
  * Procesa los datos del invitado del backend al formato del frontend
+ * Estructura esperada: { invitado: {...}, usuario: {...} }
  */
 const procesarDatosInvitado = (perfil) => {
   if (!perfil) {
@@ -224,100 +211,45 @@ const procesarDatosInvitado = (perfil) => {
 
   console.log('🔄 PERFIL COMPLETO RECIBIDO PARA PROCESAR:', perfil);
   console.log('🔍 usuario:', perfil.usuario);
-  console.log('🔍 datos_rol:', perfil.datos_rol);
+  console.log('🔍 invitado:', perfil.invitado);
 
-  // Extraer datos del usuario y datos_rol
-  const usuario = perfil.usuario || perfil;
-  const datosRol = perfil.datos_rol || perfil;
-  
+  // Extraer datos del usuario e invitado
+  const usuario = perfil.usuario || {};
+  const invitado = perfil.invitado || {};
+
   console.log('👤 Datos del usuario:', usuario);
-  console.log('🎓 Datos del rol (invitado):', datosRol);
+  console.log('🎓 Datos del invitado:', invitado);
 
-  // Procesar nombres
-  let primer_nombre = usuario.primer_nombre || '';
-  let segundo_nombre = usuario.segundo_nombre || '';
-  let primer_apellido = usuario.primer_apellido || '';
-  let segundo_apellido = usuario.segundo_apellido || '';
-  
-  if (!primer_nombre && !primer_apellido && usuario.nombre_completo) {
-    console.log('⚠️ Dividiendo nombre_completo...');
-    const nombreCompleto = usuario.nombre_completo.trim();
-    const partes = nombreCompleto.split(/\s+/);
-    
-    if (partes.length >= 4) {
-      primer_nombre = partes[0];
-      segundo_nombre = partes[1];
-      primer_apellido = partes[2];
-      segundo_apellido = partes[3];
-    } else if (partes.length === 3) {
-      primer_nombre = partes[0];
-      segundo_nombre = partes[1];
-      primer_apellido = partes[2];
-    } else if (partes.length === 2) {
-      primer_nombre = partes[0];
-      primer_apellido = partes[1];
-    } else if (partes.length === 1) {
-      primer_nombre = partes[0];
-    }
-  }
+  // Procesar nombres (p_nombre, p_apellido)
+  const p_nombre = usuario.p_nombre || '';
+  const p_apellido = usuario.p_apellido || '';
 
   const datosProcesados = {
     // IDs
-    id_invitado: datosRol.id_invitado || '',
+    id_invitado: invitado.id_invitado || '',
     id_usuario: usuario.id_usuario || '',
-    id_sector: datosRol.id_sector || '',
-    
-    // Sector con nombre
-    sector_nombre: obtenerNombreSector(datosRol.id_sector),
-    
-    // Información personal (desde usuario)
-    tipo_documento: usuario.tipo_documento || '',
+    id_sector: invitado.id_sector || '',
+
+    // Información personal
     identificacion: usuario.identificacion || '',
-    primer_nombre: primer_nombre,
-    segundo_nombre: segundo_nombre,
-    primer_apellido: primer_apellido,
-    segundo_apellido: segundo_apellido,
-    
-    // Datos combinados para compatibilidad
-    nombres: `${primer_nombre} ${segundo_nombre}`.trim(),
-    apellidos: `${primer_apellido} ${segundo_apellido}`.trim(),
-    nombre_completo: usuario.nombre_completo || `${primer_nombre} ${segundo_nombre} ${primer_apellido} ${segundo_apellido}`.trim().replace(/\s+/g, ' '),
-    
-    // Información demográfica (desde usuario)
-    sexo: usuario.sexo || '',
-    genero: usuario.genero || usuario.sexo || '',
-    identidad_sexual: usuario.identidad_sexual || '',
-    fecha_nacimiento: usuario.fecha_nacimiento ? usuario.fecha_nacimiento.split('T')[0] : '', // Solo fecha
-    nacionalidad: usuario.nacionalidad || '',
-    
-    // Ubicación (desde usuario)
-    pais: usuario.pais || usuario.pais_residencia || '',
-    pais_residencia: usuario.pais_residencia || usuario.pais || '',
-    departamento: usuario.departamento || '',
-    municipio: usuario.municipio || '',
-    ciudad: usuario.ciudad || usuario.ciudad_residencia || '',
-    ciudad_residencia: usuario.ciudad_residencia || usuario.ciudad || '',
-    direccion_residencia: usuario.direccion_residencia || '',
-    
+    p_nombre: p_nombre,
+    p_apellido: p_apellido,
+    nombres: p_nombre,
+    apellidos: p_apellido,
+
     // Contacto
     telefono: usuario.telefono || '',
     correo: usuario.correo || '',
-    email: usuario.correo || '',
-    
-    // Información de empresa (desde datos_rol)
-    nombre_empresa: datosRol.nombre_empresa || '',
-    institucion_origen: datosRol.institucion_origen || '',
-    
-    // Rol
-    rol: usuario.rol || 'Invitado',
-    
+
+    // Información de empresa
+    nombre_empresa: invitado.nombre_empresa || '',
+    es_profesor_extranjero: invitado.es_profesor_extranjero || false,
+
     // Sistema
     activo: usuario.activo !== undefined ? usuario.activo : true,
-    created_at: usuario.created_at || '',
-    updated_at: usuario.updated_at || '',
-    
+
     // Iniciales para avatar
-    iniciales: getIniciales(primer_nombre, primer_apellido)
+    iniciales: getIniciales(p_nombre, p_apellido)
   };
 
   console.log('✅ DATOS PROCESADOS FINALES:', datosProcesados);
@@ -335,34 +267,20 @@ const getIniciales = (primerNombre, primerApellido) => {
 
 /**
  * Prepara los datos del frontend para enviar al backend
+ * Solo envía los campos que el backend acepta
  */
 const prepararDatosParaBackend = (datosInvitado) => {
   console.log('📦 Preparando datos para backend:', datosInvitado);
-  
-  // Estructura plana según el backend
+
   const payload = {
-    tipo_documento: datosInvitado.tipo_documento,
-    identificacion: datosInvitado.identificacion,
-    primer_nombre: datosInvitado.primer_nombre,
-    segundo_nombre: datosInvitado.segundo_nombre || '',
-    primer_apellido: datosInvitado.primer_apellido,
-    segundo_apellido: datosInvitado.segundo_apellido || '',
-    sexo: datosInvitado.sexo || datosInvitado.genero,
-    identidad_sexual: datosInvitado.identidad_sexual || '',
-    fecha_nacimiento: datosInvitado.fecha_nacimiento,
-    nacionalidad: datosInvitado.nacionalidad,
-    pais_residencia: datosInvitado.pais_residencia || datosInvitado.pais,
-    departamento: datosInvitado.departamento,
-    municipio: datosInvitado.municipio,
-    ciudad_residencia: datosInvitado.ciudad_residencia || datosInvitado.ciudad,
-    direccion_residencia: datosInvitado.direccion_residencia,
-    telefono: datosInvitado.telefono,
-    correo: datosInvitado.correo || datosInvitado.email,
-    id_sector: datosInvitado.id_sector,
-    nombre_empresa: datosInvitado.nombre_empresa,
-    institucion_origen: datosInvitado.institucion_origen || ''
+    p_nombre: datosInvitado.p_nombre || '',
+    p_apellido: datosInvitado.p_apellido || '',
+    telefono: datosInvitado.telefono || '',
+    nombre_empresa: datosInvitado.nombre_empresa || '',
+    id_sector: datosInvitado.id_sector || '',
+    es_profesor_extranjero: datosInvitado.es_profesor_extranjero || false
   };
-  
+
   console.log('✅ Payload preparado:', payload);
   return payload;
 };

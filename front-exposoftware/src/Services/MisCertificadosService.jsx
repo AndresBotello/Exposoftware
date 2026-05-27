@@ -41,24 +41,35 @@ export const obtenerMisCertificados = async () => {
  * GET /api/v1/certificados/mis-certificados/{id_certificado}/descargar
  * @param {string} idCertificado - ID del certificado a descargar
  * @param {string} nombreArchivo - Nombre del archivo a descargar
+ * @param {string} urlCloudinary - (Opcional) URL de Cloudinary directa
  */
-export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'certificado.pdf') => {
+export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'certificado.pdf', urlCloudinary = null) => {
   try {
     console.log('📥 Descargando certificado:', idCertificado);
 
-    // SOLUCIÓN: No seguir el redirect automáticamente (redirect: 'manual')
-    // Esto evita que fetch() intente acceder a Cloudinary con CORS
-    // NO enviamos credentials porque:
-    // - El endpoint solo redirige a Cloudinary (no valida especial)
-    // - Sin credenciales evitamos problemas CORS (status 0)
-    // - El backend debe permitir este endpoint públicamente
-    const response = await fetch(
-      API_ENDPOINTS.CERTIFICADO_DESCARGAR(idCertificado),
-      {
+    // Si ya tenemos la URL de Cloudinary, usarla directamente
+    if (urlCloudinary) {
+      console.log('🔗 URL de Cloudinary directa:', urlCloudinary);
+      const blob = await fetch(urlCloudinary).then(r => r.blob());
+      descargarBlob(blob, nombreArchivo);
+      return { success: true, message: 'Certificado descargado exitosamente' };
+    }
+
+    const url = API_ENDPOINTS.CERTIFICADO_DESCARGAR(idCertificado);
+    console.log('🔗 URL endpoint:', url);
+
+    // El endpoint es público (sin autenticación)
+    // redirect: 'manual' detiene en 302 para capturar URL de Cloudinary
+    let response;
+    try {
+      response = await fetch(url, {
         method: 'GET',
-        redirect: 'manual'  // Detener en el redirect, no seguirlo
-      }
-    );
+        redirect: 'manual'          // Capturar 302, no seguir a Cloudinary
+      });
+    } catch (fetchError) {
+      console.error('❌ Error en fetch:', fetchError.message);
+      throw new Error(`Error de conexión: ${fetchError.message}`);
+    }
 
     console.log('📡 Status de respuesta:', response.status);
     console.log('📋 Content-Type:', response.headers.get('content-type'));
@@ -68,9 +79,14 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
       const urlCloudinary = response.headers.get('location');
       if (urlCloudinary) {
         console.log('✅ Redirect detectado:', urlCloudinary);
-        // Abrir en nueva ventana evita CORS (no es fetch)
-        abrirDescargaEnNuevaVentana(urlCloudinary, nombreArchivo);
-        return { success: true, message: 'Certificado descargado exitosamente' };
+        // Fetch a Cloudinary SIN credentials (wildcard CORS funciona sin credentials)
+        const cloudinaryResponse = await fetch(urlCloudinary);
+        if (cloudinaryResponse.ok) {
+          const blob = await cloudinaryResponse.blob();
+          console.log('   - Tamaño:', blob.size, 'bytes');
+          descargarBlob(blob, nombreArchivo);
+          return { success: true, message: 'Certificado descargado exitosamente' };
+        }
       }
     }
 
@@ -92,8 +108,12 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
         const data = await response.json();
         if (data.url) {
           console.log('✅ URL de Cloudinary en JSON:', data.url);
-          abrirDescargaEnNuevaVentana(data.url, nombreArchivo);
-          return { success: true, message: 'Certificado descargado exitosamente' };
+          const cloudinaryResponse = await fetch(data.url);
+          if (cloudinaryResponse.ok) {
+            const blob = await cloudinaryResponse.blob();
+            descargarBlob(blob, nombreArchivo);
+            return { success: true, message: 'Certificado descargado exitosamente' };
+          }
         }
       }
     }
@@ -122,21 +142,6 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
 
     throw error;
   }
-};
-
-/**
- * Abrir descarga en nueva ventana (evita problemas CORS)
- * Usa window.open() en lugar de element.click() porque funciona mejor con redirects
- */
-const abrirDescargaEnNuevaVentana = (url, nombreArchivo) => {
-  console.log('🔗 Abriendo URL en nueva ventana:', url);
-  console.log('📥 Nombre del archivo:', nombreArchivo);
-
-  // window.open() permite que el navegador maneje la descarga normalmente
-  // sin problemas de CORS o restricciones de fetch
-  window.open(url, '_blank');
-
-  console.log('✅ Descarga iniciada:', nombreArchivo);
 };
 
 /**

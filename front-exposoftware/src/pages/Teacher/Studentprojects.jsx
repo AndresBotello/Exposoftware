@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useStudentProjects } from "../../hooks/Teacher/useStudentProjects";
 import { ProjectDetailsModal, GradeModal, ProjectActionModal } from "../../components/Teacher/ProjectModals";
 import { TeacherHeader, TeacherSidebar } from "../../components/Teacher/TeacherLayout";
+import ProjectCard from "../../components/ProjectCard";
 
 export default function StudentProjects() {
   const [activeSection, setActiveSection] = useState("assigned");
@@ -397,172 +398,21 @@ export default function StudentProjects() {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {displayFiltered.map((project) => (
-                      <div
-                        key={project.id_proyecto}
-                        className="group bg-white rounded-xl border border-gray-200 hover:border-emerald-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
-                      >
-                        {/* Header con gradiente */}
-                        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <h3
-                                className="text-lg font-bold truncate mb-1"
-                                title={project.titulo_proyecto}
-                              >
-                                {project.titulo_proyecto || "Sin título"}
-                              </h3>
-                              <div className="flex items-center gap-2 text-emerald-100 text-sm">
-                                <i className="pi pi-calendar text-xs"></i>
-                                <span>
-                                  {project.fecha_subida
-                                    ? new Date(project.fecha_subida).toLocaleDateString("es-ES")
-                                    : project.created_at
-                                    ? new Date(project.created_at).toLocaleDateString("es-ES")
-                                    : project.fecha_creacion
-                                    ? new Date(project.fecha_creacion).toLocaleDateString("es-ES")
-                                    : "Fecha no disponible"}
-                                </span>
-                              </div>
-                            </div>
-                            <div
-                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                project.estado === "rechazado"
-                                  ? "bg-red-500 text-white"
-                                  : project.estado === "aprobado" || project.calificacion >= 3.0
-                                  ? "bg-green-500 text-white"
-                                  : project.calificacion < 3.0 &&
-                                    project.calificacion !== null
-                                  ? "bg-red-500 text-white"
-                                  : project.activo
-                                  ? "bg-yellow-500 text-white"
-                                  : "bg-gray-500 text-white"
-                              }`}
-                            >
-                              {project.estado === "rechazado"
-                                ? "Rechazado"
-                                : project.estado === "aprobado" || project.calificacion >= 3.0
-                                ? "Aprobado"
-                                : project.calificacion < 3.0 &&
-                                  project.calificacion !== null
-                                ? "Reprobado"
-                                : project.activo
-                                ? "Pendiente"
-                                : "Inactivo"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Contenido principal */}
-                        <div className="p-5">
-                          <div className="space-y-3 mb-4">
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                                  <i className="pi pi-users text-emerald-600 text-sm"></i>
-                                </div>
-                                <span className="font-medium text-gray-600">
-                                  {project.integrantes?.length || project.id_estudiantes?.length || 0} estudiante(s)
-                                </span>
-                              </div>
-                              {project.integrantes && project.integrantes.length > 0 && (
-                                <div className="ml-10 space-y-1">
-                                  {project.integrantes.map((integrante, idx) => (
-                                    <div key={idx} className="text-xs text-gray-600 flex items-center gap-1">
-                                      <span className={`w-1.5 h-1.5 rounded-full ${integrante.es_lider ? 'bg-yellow-500' : 'bg-gray-400'}`}></span>
-                                      <span className="truncate" title={integrante.nombre_completo || integrante.nombre}>
-                                        {integrante.nombre_completo || integrante.nombre || "Sin nombre"}
-                                        {integrante.es_lider && " (Líder)"}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <i className="pi pi-book text-blue-600 text-sm"></i>
-                                </div>
-                                <span>
-                                  {project.nombre_materia || project.codigo_materia || "Sin materia"} - Grupo{" "}
-                                  {project.nombre_grupo || "N/A"}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                                {(() => {
-                                  const tipo = project.tipo_actividad || project.id_tipo_actividad;
-                                  return tipo === 1
-                                    ? "📚 Proyecto"
-                                    : tipo === 2
-                                    ? "🛠️ Taller"
-                                    : tipo === 3
-                                    ? "🎤 Ponencia"
-                                    : tipo === 4
-                                    ? "🎭 Conferencia"
-                                    : "❓ No especificado";
-                                })()}
-                              </span>
-                            </div>
-                          </div>
-
-                          {(project.codigo_linea || project.codigo_sublinea) && (
-                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                              <p className="text-xs text-gray-500 mb-1">
-                                Línea de investigación
-                              </p>
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {getLineaName(project.codigo_linea) || "No asignada"}
-                              </p>
-                              {project.codigo_sublinea && (
-                                <p className="text-xs text-gray-600 mt-1 truncate">
-                                  {getSublineaName(project.codigo_sublinea)}
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {project.calificacion && (
-                            <div className="mb-4 flex items-center justify-center">
-                              <div
-                                className={`px-4 py-2 rounded-lg font-bold text-lg ${
-                                  project.calificacion >= 3.0
-                                    ? "bg-green-100 text-green-800"
-                                    : project.calificacion < 3.0
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-gray-100 text-gray-800"
-                                }`}
-                              >
-                                <i className="pi pi-pencil text-yellow-500"></i>{" "}
-                                {project.calificacion}/5.0
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex gap-2 pt-3 border-t border-gray-100">
-                            <button
-                              onClick={() => handleViewDetails(project)}
-                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors text-sm font-medium"
-                            >
-                              <i className="pi pi-eye"></i>
-                              <span className="hidden sm:inline">Ver detalles</span>
-                            </button>
-                            <button
-                              onClick={() => handleOpenActionModal(project)}
-                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
-                            >
-                              <i className="pi pi-cog"></i>
-                              <span className="hidden sm:inline">Gestionar</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"></div>
+                      <div key={project.id_proyecto} className="relative">
+                        <ProjectCard
+                          proyecto={project}
+                          onViewDetails={() => handleViewDetails(project)}
+                        />
+                        {/* Botón Gestionar sobrepuesto */}
+                        <button
+                          onClick={() => handleOpenActionModal(project)}
+                          className="absolute top-4 right-4 z-10 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium shadow-lg"
+                          title="Gestionar proyecto"
+                        >
+                          <i className="pi pi-cog"></i>
+                        </button>
                       </div>
                     ))}
                   </div>

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { getUsersInfo } from "../../Services/TeacherService";
 
 export function ProjectDetailsModal({
   show,
@@ -12,43 +11,31 @@ export function ProjectDetailsModal({
   calificacionPopular,
   loadingCalificacionPopular,
 }) {
-  const [studentNames, setStudentNames] = useState({});
-  const [loadingStudents, setLoadingStudents] = useState(false);
-
-  useEffect(() => {
-    if (show && project && project.id_estudiantes && project.id_estudiantes.length > 0) {
-      setLoadingStudents(true);
-      // Extraer IDs de estudiantes
-      const studentIds = project.id_estudiantes
-        .map(est => est.id_usuario || est.id)
-        .filter(Boolean);
-
-      if (studentIds.length > 0) {
-        getUsersInfo(studentIds)
-          .then((users) => {
-            const namesMap = {};
-            users.forEach((user, idx) => {
-              if (user) {
-                const id = studentIds[idx];
-                const nombre = user.p_nombre && user.p_apellido
-                  ? `${user.p_nombre} ${user.p_apellido}`
-                  : user.nombre || user.nombre_completo || `Estudiante ${idx + 1}`;
-                namesMap[id] = nombre;
-              }
-            });
-            setStudentNames(namesMap);
-          })
-          .catch((err) => {
-            console.error("Error cargando nombres de estudiantes:", err);
-          })
-          .finally(() => {
-            setLoadingStudents(false);
-          });
-      } else {
-        setLoadingStudents(false);
-      }
+  const obtenerNombreEstudiante = (estudiante) => {
+    if (typeof estudiante === 'string') return estudiante;
+    if (estudiante?.nombre) return estudiante.nombre;
+    if (estudiante?.nombre_completo) return estudiante.nombre_completo;
+    if (estudiante?.p_nombre && estudiante?.p_apellido) {
+      return `${estudiante.p_nombre} ${estudiante.p_apellido}`;
     }
-  }, [show, project]);
+    if (estudiante?.usuario?.p_nombre && estudiante?.usuario?.p_apellido) {
+      return `${estudiante.usuario.p_nombre} ${estudiante.usuario.p_apellido}`;
+    }
+    return 'Estudiante';
+  };
+
+  const obtenerNombreDocente = (docente) => {
+    if (typeof docente === 'string') return docente;
+    if (docente?.nombre) return docente.nombre;
+    if (docente?.nombre_completo) return docente.nombre_completo;
+    if (docente?.p_nombre && docente?.p_apellido) {
+      return `${docente.p_nombre} ${docente.p_apellido}`;
+    }
+    if (docente?.usuario?.p_nombre && docente?.usuario?.p_apellido) {
+      return `${docente.usuario.p_nombre} ${docente.usuario.p_apellido}`;
+    }
+    return 'Docente';
+  };
 
   if (!show || !project) return null;
 
@@ -199,7 +186,7 @@ export function ProjectDetailsModal({
             </div>
           </div>
 
-          {/* Participantes */}
+          {/* Estudiantes Participantes */}
           <div>
             <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <i className="pi pi-users text-emerald-600"></i>
@@ -209,8 +196,7 @@ export function ProjectDetailsModal({
               <div className="space-y-2">
                 {project.id_estudiantes.map((estudiante, idx) => {
                   const esLider = typeof estudiante === "object" && estudiante.es_lider;
-                  const estudianteId = estudiante.id_usuario || estudiante.id;
-                  const nombreEstudiante = studentNames[estudianteId] || `Estudiante ${idx + 1}`;
+                  const nombreEstudiante = obtenerNombreEstudiante(estudiante);
                   return (
                     <div
                       key={idx}
@@ -229,9 +215,6 @@ export function ProjectDetailsModal({
                           </p>
                         )}
                       </div>
-                      {loadingStudents && !studentNames[estudianteId] && (
-                        <div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-                      )}
                     </div>
                   );
                 })}
@@ -243,21 +226,54 @@ export function ProjectDetailsModal({
             )}
           </div>
 
+          {/* Docentes Responsables */}
+          {project.id_docente && (
+            <div>
+              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <i className="pi pi-briefcase text-blue-600"></i>
+                Docentes Responsables
+              </h5>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i className="pi pi-user text-blue-600 text-sm"></i>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      {obtenerNombreDocente(project.id_docente)}
+                    </p>
+                    <p className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded inline-block mt-1">
+                      Docente Principal
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Documento del Proyecto */}
-          {project.archivo_pdf || project.url_cloudinary ? (
+          {project.url_preview_png || project.archivo_pdf || project.url_cloudinary ? (
             <div>
               <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <i className="pi pi-file-pdf text-emerald-600"></i>
                 Documento del Proyecto
               </h5>
               <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                <iframe
-                  src={project.archivo_pdf || project.url_cloudinary}
-                  title="Vista previa PDF"
-                  width="100%"
-                  height="500"
-                  style={{ border: 'none' }}
-                />
+                {project.url_preview_png ? (
+                  <img
+                    src={project.url_preview_png}
+                    alt="Vista previa PDF"
+                    className="w-full h-auto object-contain max-h-96"
+                  />
+                ) : (
+                  <iframe
+                    src={project.archivo_pdf || project.url_cloudinary}
+                    title="Vista previa PDF"
+                    width="100%"
+                    height="500"
+                    style={{ border: 'none' }}
+                  />
+                )}
               </div>
               <div className="mt-4 flex items-center gap-3">
                 <a

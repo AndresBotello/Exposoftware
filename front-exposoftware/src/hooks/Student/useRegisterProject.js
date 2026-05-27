@@ -109,7 +109,7 @@ export function useRegisterProject() {
         let todosLosGruposData = [];
         try {
           console.log('📥 Cargando todos los grupos...');
-          const response = await fetch(`${API_ENDPOINTS.API_BASE_URL || 'https://exposoftware.duckdns.org'}/api/v1/admin/grupos`, {
+          const response = await fetch(`/api/v1/admin/grupos`, {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
             credentials: 'include'
@@ -296,8 +296,7 @@ export function useRegisterProject() {
     }
 
     try {
-      const apiBase = API_ENDPOINTS.API_BASE_URL || 'https://exposoftware.duckdns.org';
-      const response = await fetch(`${apiBase}/api/v1/usuarios/buscar?q=${encodeURIComponent(termino)}`, {
+      const response = await fetch(`/api/v1/usuarios/buscar?q=${encodeURIComponent(termino)}`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
         credentials: 'include'

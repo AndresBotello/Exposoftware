@@ -8,7 +8,8 @@ export default function ProjectDetailsModal({
   onClose,
   onDownloadCertificado,
   onDownloadTodosCertificados,
-  token
+  token,
+  onOpenAddMember
 }) {
   const [investigacionNames, setInvestigacionNames] = useState({
     linea: selectedProject?.nombre_linea || null,
@@ -292,14 +293,22 @@ export default function ProjectDetailsModal({
                 <i className="pi pi-file-pdf text-emerald-600"></i>
                 Documento del Proyecto
               </h5>
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <iframe
-                  src={selectedProject.url_cloudinary}
-                  title="Vista previa PDF"
-                  width="100%"
-                  height="400"
-                  style={{ border: 'none' }}
-                />
+              <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                {selectedProject.url_preview_png ? (
+                  <img
+                    src={selectedProject.url_preview_png}
+                    alt="Vista previa PDF"
+                    className="w-full h-auto object-contain max-h-96"
+                  />
+                ) : (
+                  <iframe
+                    src={selectedProject.url_cloudinary}
+                    title="Vista previa PDF"
+                    width="100%"
+                    height="400"
+                    style={{ border: 'none' }}
+                  />
+                )}
               </div>
               <div className="mt-3">
                 <a
@@ -339,7 +348,18 @@ export default function ProjectDetailsModal({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between gap-3">
+          <div>
+            {onOpenAddMember && (
+              <button
+                onClick={onOpenAddMember}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center gap-2"
+              >
+                <i className="pi pi-user-plus"></i>
+                Agregar Integrante
+              </button>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"

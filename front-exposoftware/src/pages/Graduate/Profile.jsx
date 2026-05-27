@@ -11,7 +11,7 @@ import GraduateProfileForm from "./GraduateProfileForm";
 
 export default function GraduateProfile() {
   const navigate = useNavigate();
-  const { user, getFullName, getInitials, logout, loading } = useAuth();
+  const { user, getFullName, getInitials, logout, loading, getGraduateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [loadingPerfil, setLoadingPerfil] = useState(true);
@@ -36,61 +36,59 @@ export default function GraduateProfile() {
     confirmPassword: ""
   });
 
+  const [nombrePrograma, setNombrePrograma] = useState('');
+
   const [formData, setFormData] = useState({
+    // IDs
+    id_egresado: '',
+    id_usuario: '',
+
     // Información personal
-    tipo_documento: 'CC',
     identificacion: '',
     primer_nombre: '',
-    segundo_nombre: '',
     primer_apellido: '',
-    segundo_apellido: '',
-    sexo: '',
-    identidad_sexual: '',
-    fecha_nacimiento: '',
-    
+    nombre_completo: '',
+
     // Contacto
     correo: '',
     telefono: '',
-    
-    // Ubicación
-    nacionalidad: 'Colombiana',
-    pais_residencia: 'Colombia',
-    departamento: '',
-    municipio: '',
-    ciudad_residencia: '',
-    direccion_residencia: '',
-    
+
     // Datos académicos
-    id_facultad: '',
-    nombre_facultad: '',
     codigo_programa: '',
-    programa_academico: '',
     anio_graduacion: new Date().getFullYear(),
-    titulo_obtenido: '',
-    titulado: true
+    titulado: false,
+
+    // Sistema
+    activo: true
   });
 
   // Cargar perfil al montar
   useEffect(() => {
     const cargarPerfil = async () => {
-      if (!user) {
-        console.log('⏳ Esperando datos del usuario...');
-        return;
-      }
-
       try {
         setLoadingPerfil(true);
         setError(null);
-        console.log('📋 Cargando perfil del egresado desde backend...');
-        
-        const datos = await GraduateService.obtenerMiPerfilEgresado();
-        console.log('✅ Perfil cargado:', datos);
-        
+        console.log('📋 Cargando perfil del egresado desde contexto...');
+
+        // Obtener perfil del contexto (ya fue cargado en Dashboard)
+        const datos = getGraduateProfile();
+
+        if (!datos) {
+          throw new Error('No se pudo obtener el perfil del egresado');
+        }
+        console.log('✅ Perfil cargado desde contexto:', datos);
+
         setFormData(datos);
+
+        // Obtener nombre del programa
+        if (datos.codigo_programa) {
+          const nombre = await GraduateService.obtenerNombrePrograma(datos.codigo_programa);
+          setNombrePrograma(nombre);
+        }
       } catch (err) {
         console.error('❌ Error al cargar perfil:', err);
         setError('No se pudo cargar el perfil. Por favor intente nuevamente.');
-        
+
         // Si falla, usar datos básicos del contexto
         if (user) {
           setFormData(prev => ({
@@ -135,8 +133,8 @@ export default function GraduateProfile() {
     try {
       setCargandoFacultades(true);
       console.log('📚 Cargando facultades desde API...');
-      
-      const response = await fetch(`${API_ENDPOINTS.FACULTADES_PUBLICO}`, {
+
+      const response = await fetch(API_ENDPOINTS.PUBLIC_FACULTADES, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -443,17 +441,8 @@ export default function GraduateProfile() {
                   <GraduateProfileForm
                     formData={formData}
                     isEditing={isEditing}
-                    opcionesPaises={opcionesPaises}
-                    ciudadesResidencia={ciudadesResidencia}
-                    municipios={municipios}
-                    colombiaData={colombia}
-                    facultades={facultades}
-                    programas={programas}
-                    cargandoFacultades={cargandoFacultades}
-                    cargandoProgramas={cargandoProgramas}
                     handleChange={handleChange}
-                    handleFacultadChange={handleFacultadChange}
-                    handleProgramaChange={handleProgramaChange}
+                    nombrePrograma={nombrePrograma}
                   />
 
                   {/* Seguridad */}

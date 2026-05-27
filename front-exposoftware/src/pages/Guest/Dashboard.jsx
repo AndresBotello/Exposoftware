@@ -11,7 +11,7 @@ import ReportGenerator from "../../components/ReportGenerator";
 import ProjectsGrid from "../../components/ProjectsGrid";
 
 export default function GuestDashboard() {
-  const { logout, user } = useAuth();
+  const { logout, user, setGuestProfile } = useAuth();
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -37,9 +37,22 @@ export default function GuestDashboard() {
       setError(null);
       const datos = await obtenerMiPerfilInvitado();
       setPerfil(datos);
+
+      // Guardar en el contexto de autenticación para acceso desde otras páginas
+      setGuestProfile(datos);
+
+      console.log('✅ Perfil del invitado cargado exitosamente:', datos);
+      console.log('📦 Perfil guardado en AuthContext para otras páginas');
     } catch (err) {
       console.error('❌ Error cargando perfil:', err);
       setError(err.message);
+      // Si no hay token o falla la autenticación, redirigir al login
+      if (err.message.includes('token') || err.message.includes('Sesión')) {
+        console.log('🔐 Redirigiendo al login - se requiere autenticación');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      }
     } finally {
       setCargando(false);
     }

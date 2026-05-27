@@ -1,24 +1,19 @@
-import axios from 'axios';
 import { API_ENDPOINTS } from '../utils/constants';
+import * as AuthService from './AuthService';
+
+const getAuthHeaders = () => {
+  const token = AuthService.getToken();
+  console.log('🔐 Token disponible:', !!token, token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
 
 /**
  * Servicio para gestionar certificados
  */
 class CertificadosService {
-  /**
-   * Obtener la configuración de autenticación
-   */
-  getAuthConfig() {
-    const token = localStorage.getItem('auth_token');
-    return {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      withCredentials: true // Enviar cookies para mantener sesión
-    };
-  }
-
   /**
    * Obtener listado de lotes de certificados
    * GET /api/v1/admin/reportes/certificados/lotes
@@ -26,153 +21,129 @@ class CertificadosService {
   async obtenerLotesCertificados() {
     try {
       console.log('🔍 Obteniendo lotes de certificados...');
-      const response = await axios.get(
-        API_ENDPOINTS.ADMIN_CERTIFICADOS_LOTES,
-        this.getAuthConfig()
+      const response = await fetch(
+        API_ENDPOINTS.ADMIN_LOTES_CERTIFICADOS,
+        {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'include'
+        }
       );
-      
-      console.log('✅ Lotes obtenidos:', response.data);
-      return response.data;
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Lotes obtenidos:', data);
+      return data;
     } catch (error) {
-      console.error('❌ Error al obtener lotes de certificados:', error.response?.data || error.message);
+      console.error('❌ Error al obtener lotes de certificados:', error.message);
       throw error;
     }
   }
 
   /**
-   * Enviar certificados por correo electrónico a los estudiantes del lote
+   * Enviar certificados por correo electrónico a los estudiantes del proyecto
    * POST /api/v1/admin/reportes/certificados/enviar-por-correo
-   * @param {string} id_lote - ID del lote de certificados
+   * @param {string} id_proyecto - ID del proyecto cuyos certificados se descargan desde Cloudinary
    * @param {string} asunto - Asunto del correo electrónico
    * @param {string} mensaje_personalizado - Mensaje personalizado del correo
    */
-  async enviarCertificadosPorCorreo(id_lote, asunto, mensaje_personalizado) {
+  async enviarCertificadosPorCorreo(id_proyecto, asunto, mensaje_personalizado) {
     try {
-      console.log('📧 Enviando certificados por correo...', { id_lote, asunto });
-      
+      console.log('📧 Enviando certificados por correo...', { id_proyecto, asunto });
+
       const payload = {
-        id_lote: id_lote,
+        id_proyecto: id_proyecto,
         asunto: asunto,
         mensaje_personalizado: mensaje_personalizado
       };
 
-      const response = await axios.post(
-        API_ENDPOINTS.ADMIN_CERTIFICADOS_ENVIAR_CORREO,
-        payload,
-        this.getAuthConfig()
+      const response = await fetch(
+        API_ENDPOINTS.ADMIN_ENVIAR_CERTIFICADOS,
+        {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        }
       );
-      
-      console.log('✅ Certificados enviados:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Error al enviar certificados:', error.response?.data || error.message);
-      
-      // Manejar errores específicos
-      if (error.response) {
-        const { status, data } = error.response;
-        
-        // Error 400 - Bad Request
-        if (status === 400) {
-          const errorMsg = data?.mensaje || data?.detail || 'Solicitud inválida';
-          throw new Error(errorMsg);
-        }
-        
-        // Error 404 - Lote no encontrado
-        if (status === 404) {
-          throw new Error('El lote de certificados no existe');
-        }
-        
-        // Error 500 - Error del servidor
-        if (status === 500) {
-          throw new Error('Error interno del servidor al enviar los certificados');
-        }
-        
-        // Otros errores
-        throw new Error(data?.detail || data?.mensaje || `Error ${status}: No se pudieron enviar los certificados`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.detail || errorData.mensaje || `Error ${response.status}: ${response.statusText}`;
+        throw new Error(errorMsg);
       }
-      
+
+      const data = await response.json();
+      console.log('✅ Certificados enviados:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error al enviar certificados:', error.message);
       throw error;
     }
   }
 
   /**
-   * Descargar certificados de un lote en formato ZIP
-   * GET /api/v1/admin/reportes/certificados/descargar/{id_lote}
-   * @param {string} id_lote - ID del lote de certificados
+   * Descargar certificados de un proyecto en formato ZIP
+   * GET /api/v1/admin/reportes/certificados/descargar-zip/{id_proyecto}
+   * @param {string} id_proyecto - ID del proyecto cuyos certificados descargar
    */
-  async descargarLoteCertificados(id_lote) {
+  async descargarLoteCertificados(id_proyecto) {
     try {
-      console.log('📥 Descargando lote de certificados...', id_lote);
-      
-      const token = localStorage.getItem('auth_token');
-      const response = await axios.get(
-        API_ENDPOINTS.ADMIN_CERTIFICADOS_DESCARGAR(id_lote),
+      console.log('📥 Descargando certificados del proyecto...', id_proyecto);
+
+      const response = await fetch(
+        API_ENDPOINTS.ADMIN_DESCARGAR_CERTIFICADOS_ZIP(id_proyecto),
         {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          responseType: 'blob', // Importante para archivos binarios
-          validateStatus: function (status) {
-            // Aceptar solo 200, rechazar otros
-            return status === 200;
-          }
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'include'
         }
       );
-      
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.detail || `Error ${response.status}: ${response.statusText}`;
+        throw new Error(errorMsg);
+      }
+
       // Verificar si realmente es un archivo ZIP
-      const contentType = response.headers['content-type'];
+      const contentType = response.headers.get('content-type');
       console.log('📦 Content-Type recibido:', contentType);
-      
+
       if (contentType && !contentType.includes('application/zip') && !contentType.includes('application/octet-stream')) {
         throw new Error(`Tipo de archivo inesperado: ${contentType}. Se esperaba un archivo ZIP.`);
       }
-      
+
       // Crear un enlace temporal para descargar el archivo
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      
+
       // Obtener el nombre del archivo desde los headers o usar uno por defecto
-      const contentDisposition = response.headers['content-disposition'];
-      let fileName = `certificados_lote_${id_lote}.zip`;
-      
+      const contentDisposition = response.headers.get('content-disposition');
+      let fileName = `certificados_proyecto_${id_proyecto}.zip`;
+
       if (contentDisposition) {
         const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
         if (fileNameMatch && fileNameMatch[1]) {
           fileName = fileNameMatch[1].replace(/['"]/g, '');
         }
       }
-      
+
       link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       console.log('✅ Certificados descargados:', fileName);
       return { success: true, fileName };
     } catch (error) {
-      console.error('❌ Error al descargar certificados:', error);
-      
-      // Manejar errores específicos
-      if (error.response) {
-        const { status, data } = error.response;
-        
-        // Si el error viene como blob, convertirlo a texto
-        if (data instanceof Blob) {
-          try {
-            const text = await data.text();
-            const errorData = JSON.parse(text);
-            console.error('📄 Error del servidor:', errorData);
-            throw new Error(errorData.detail || `Error ${status}: ${errorData.message || 'Error al descargar certificados'}`);
-          } catch (parseError) {
-            throw new Error(`Error ${status}: No se pudo descargar el lote de certificados. Verifica que el lote existe.`);
-          }
-        }
-        
-        throw new Error(data?.detail || `Error ${status}: No se pudo descargar el lote de certificados`);
-      }
-      
+      console.error('❌ Error al descargar certificados:', error.message);
       throw error;
     }
   }
@@ -181,22 +152,42 @@ class CertificadosService {
    * Generar certificados por proyecto
    * POST /api/v1/admin/reportes/certificados/generar-por-proyecto
    * @param {string} id_proyecto - ID del proyecto
-   * @param {string} formato_salida - Formato del certificado ('pdf' o 'png')
+   * @param {boolean} incluir_calificacion - Incluir calificación en el certificado
+   * @param {string} director_evento - Nombre del director del evento
+   * @param {string} coordinador_general - Nombre del coordinador general
    */
-  async generarCertificadosPorProyecto(id_proyecto, formato_salida = 'pdf') {
+  async generarCertificadosPorProyecto(id_proyecto, incluir_calificacion = false, director_evento = '', coordinador_general = '') {
     try {
-      console.log('📄 Generando certificados por proyecto...', { id_proyecto, formato_salida });
-      
-      const response = await axios.post(
-        API_ENDPOINTS.ADMIN_CERTIFICADOS_POR_PROYECTO,
-        { id_proyecto, formato_salida },
-        this.getAuthConfig()
+      console.log('📄 Generando certificados por proyecto...', { id_proyecto, incluir_calificacion, director_evento, coordinador_general });
+
+      const payload = {
+        id_proyecto,
+        incluir_calificacion,
+        director_evento,
+        coordinador_general
+      };
+
+      const response = await fetch(
+        API_ENDPOINTS.ADMIN_GENERAR_CERTIFICADO_POR_PROYECTO,
+        {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        }
       );
-      
-      console.log('✅ Certificados generados:', response.data);
-      return response.data;
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.detail || errorData.mensaje || `Error ${response.status}: ${response.statusText}`;
+        throw new Error(errorMsg);
+      }
+
+      const data = await response.json();
+      console.log('✅ Certificados generados:', data);
+      return data;
     } catch (error) {
-      console.error('❌ Error al generar certificados:', error.response?.data || error.message);
+      console.error('❌ Error al generar certificados:', error.message);
       throw error;
     }
   }
@@ -211,17 +202,34 @@ class CertificadosService {
   async generarCertificadoIndividual(id_estudiante, id_proyecto, formato_salida = 'pdf') {
     try {
       console.log('📄 Generando certificado individual...', { id_estudiante, id_proyecto, formato_salida });
-      
-      const response = await axios.post(
-        API_ENDPOINTS.ADMIN_CERTIFICADOS_INDIVIDUAL,
-        { id_estudiante, id_proyecto, formato_salida },
-        this.getAuthConfig()
+
+      const payload = {
+        id_estudiante,
+        id_proyecto,
+        formato_salida
+      };
+
+      const response = await fetch(
+        API_ENDPOINTS.ADMIN_GENERAR_CERTIFICADO_INDIVIDUAL,
+        {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        }
       );
-      
-      console.log('✅ Certificado individual generado:', response.data);
-      return response.data;
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.detail || errorData.mensaje || `Error ${response.status}: ${response.statusText}`;
+        throw new Error(errorMsg);
+      }
+
+      const data = await response.json();
+      console.log('✅ Certificado individual generado:', data);
+      return data;
     } catch (error) {
-      console.error('❌ Error al generar certificado individual:', error.response?.data || error.message);
+      console.error('❌ Error al generar certificado individual:', error.message);
       throw error;
     }
   }

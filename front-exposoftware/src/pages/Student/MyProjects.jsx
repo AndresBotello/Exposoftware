@@ -10,6 +10,8 @@ import StudentSidebar from "../../components/Student/StudentSidebar";
 import StudentLayout from "../../components/Student/StudentLayout";
 import ProjectCard from "../../components/ProjectCard";
 import ProjectDetailsModal from "../../components/ProjectDetailsModal";
+import AddMemberModal from "../../components/Student/AddMemberModal";
+import * as MisCertificadosService from "../../Services/MisCertificadosService";
 import * as CertificadoService from "../../Services/CertificadoService";
 
 export default function MyProjects() {
@@ -18,6 +20,7 @@ export default function MyProjects() {
   const [error, setError] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [eventoInfo, setEventoInfo] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
   const { user, getFullName, getInitials, logout, loading } = useAuth();
@@ -123,23 +126,57 @@ export default function MyProjects() {
     setEventoInfo(null);
   };
 
+  const handleMemberAdded = async () => {
+    // Recargar los proyectos para actualizar la lista de integrantes
+    const idEstudiante = user?.id_estudiante || user?.id_usuario;
+    if (idEstudiante) {
+      try {
+        let misProyectos = await ProjectsService.obtenerMisProyectos(idEstudiante);
+        setProjects(misProyectos);
+      } catch (err) {
+        console.error('Error recargando proyectos:', err);
+      }
+    }
+  };
+
   const handleDescargarCertificado = async (proyecto) => {
-    if (!user?.id_estudiante || !proyecto?.id_proyecto) {
-      alert('❌ Error: No se encontró la información necesaria.');
+    if (!proyecto?.id_proyecto) {
+      alert('❌ Error: No se encontró el ID del proyecto.');
       return;
     }
 
     try {
-      const nombreProyecto = proyecto.titulo_proyecto || 'Proyecto';
-      await CertificadoService.generarYDescargarCertificado(
-        user.id_estudiante,
-        proyecto.id_proyecto,
-        nombreProyecto
+      console.log('📋 Buscando certificados del usuario...');
+
+      // Obtener lista de certificados del usuario
+      const certificados = await MisCertificadosService.obtenerMisCertificados();
+
+      // Buscar el certificado del proyecto actual
+      const certificadoDelProyecto = certificados.find(
+        cert => cert.id_proyecto === proyecto.id_proyecto || cert.proyecto_id === proyecto.id_proyecto
       );
+
+      if (!certificadoDelProyecto) {
+        alert('⚠️ No hay certificado disponible para este proyecto. Es posible que aún no haya sido generado.');
+        return;
+      }
+
+      console.log('✅ Certificado encontrado:', certificadoDelProyecto);
+
+      // Descargar el certificado
+      const nombreProyecto = proyecto.titulo_proyecto || 'Proyecto';
+      const nombreArchivo = `Certificado_${nombreProyecto.replace(/\s+/g, '_')}.pdf`;
+
+      await MisCertificadosService.descargarMiCertificado(
+        certificadoDelProyecto.id_certificado || certificadoDelProyecto.id,
+        nombreArchivo,
+        certificadoDelProyecto.url_cloudinary  // Pasar URL directa de Cloudinary
+      );
+
       console.log('✅ Certificado descargado exitosamente');
     } catch (error) {
       console.error('❌ Error al descargar certificado:', error);
-      throw error;
+      alert('❌ ' + (error.message || 'Error al descargar el certificado'));
     }
   };
 
@@ -150,21 +187,37 @@ export default function MyProjects() {
     }
 
     try {
-      const nombreProyecto = proyecto.titulo_proyecto || 'Proyecto';
-      await CertificadoService.generarYDescargarCertificadosPorProyecto(
-        proyecto.id_proyecto,
-        nombreProyecto,
-        {
-          id_evento: proyecto.id_evento || null,
-          incluir_calificacion: false,
-          coordinador_general: "Juan Yaneth",
-          formato_salida: "zip"
+      console.log('📋 Obteniendo todos los certificados del usuario...');
+
+      // Obtener lista de certificados del usuario
+      const certificados = await MisCertificadosService.obtenerMisCertificados();
+
+      if (certificados.length === 0) {
+        alert('⚠️ No hay certificados disponibles para descargar.');
+        return;
+      }
+
+      console.log('✅ Certificados encontrados:', certificados.length);
+
+      // Descargar todos los certificados en bucle
+      for (const certificado of certificados) {
+        try {
+          const nombreArchivo = `Certificado_${certificado.proyecto_titulo || certificado.nombre_proyecto || 'Proyecto'}.pdf`;
+          await MisCertificadosService.descargarMiCertificado(
+            certificado.id_certificado || certificado.id,
+            nombreArchivo
+          );
+          console.log('✅ Descargado:', nombreArchivo);
+        } catch (err) {
+          console.warn('⚠️ Error descargando certificado individual:', err);
+          // Continuar con el siguiente
         }
-      );
-      console.log('✅ Certificados descargados exitosamente');
+      }
+
+      console.log('✅ Descarga de certificados completada');
     } catch (error) {
-      console.error('❌ Error al descargar certificados:', error);
-      throw error;
+      console.error('❌ Error al obtener certificados:', error);
+      alert('❌ ' + (error.message || 'Error al obtener los certificados'));
     }
   };
 
@@ -645,7 +698,17 @@ export default function MyProjects() {
         onDownloadCertificado={handleDescargarCertificado}
         onDownloadTodosCertificados={handleDescargarTodosCertificados}
         token={localStorage.getItem('auth_token')}
+        onOpenAddMember={() => setShowAddMemberModal(true)}
       />
+
+      {selectedProject && (
+        <AddMemberModal
+          project={selectedProject}
+          onClose={() => setShowAddMemberModal(false)}
+          onMemberAdded={handleMemberAdded}
+          isOpen={showAddMemberModal}
+        />
+      )}
     </div>
   );
 }

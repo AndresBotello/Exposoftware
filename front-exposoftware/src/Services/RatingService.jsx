@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from '../utils/constants';
+import { API_ENDPOINTS, API_BASE_URL } from '../utils/constants';
 
 class RatingService {
   /**
@@ -13,7 +13,7 @@ class RatingService {
       console.log('⭐ Calificando proyecto:', { id_proyecto, calificacion });
 
       const response = await fetch(
-        `${API_ENDPOINTS.API_BASE_URL || ''}/api/v1/proyectos/${id_proyecto}/calificar-asistente`,
+        `${API_BASE_URL}/api/v1/proyectos/${id_proyecto}/calificar-asistente`,
         {
           method: 'POST',
           headers: {

@@ -67,7 +67,14 @@ export default function CertificadosList({
     const yaEnviado = rowData.estado === 'enviado';
 
     return (
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          icon="pi pi-download"
+          className="p-button-rounded p-button-sm p-button-success"
+          tooltip="Descargar certificados"
+          tooltipOptions={{ position: 'top' }}
+          onClick={() => onDescargar(rowData)}
+        />
         <Button
           icon="pi pi-envelope"
           className={`p-button-rounded p-button-sm ${yaEnviado ? 'p-button-secondary' : 'p-button-info'}`}
@@ -80,13 +87,14 @@ export default function CertificadosList({
   };
 
   const proyectoTemplate = (rowData) => {
-    const nombreProyecto = rowData.proyecto?.nombre_proyecto || rowData.nombre_proyecto || 'Sin nombre';
+    const nombreProyecto =
+      rowData.titulo_proyecto ||
+      rowData.proyecto?.nombre_proyecto ||
+      rowData.nombre_proyecto ||
+      'Sin nombre';
     return (
-      <div className="text-sm">
-        <div className="font-medium text-gray-900">{nombreProyecto}</div>
-        <div className="text-xs text-gray-500 truncate" style={{maxWidth: '200px'}}>
-          ID: {rowData.id_proyecto}
-        </div>
+      <div className="text-sm font-medium text-gray-900">
+        {nombreProyecto}
       </div>
     );
   };
@@ -106,41 +114,57 @@ export default function CertificadosList({
   return (
     <>
       {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <div className="bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg p-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-teal-100 text-xs">Total Lotes</p>
-              <p className="text-2xl font-bold">{lotes.length}</p>
+              <p className="text-teal-100 text-xs font-semibold uppercase tracking-wide">Total Lotes</p>
+              <p className="text-3xl font-bold mt-1">{lotes.length}</p>
             </div>
-            <i className="pi pi-folder text-3xl opacity-50"></i>
+            <i className="pi pi-folder text-4xl opacity-40"></i>
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-3">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-xs">Total Certificados</p>
-              <p className="text-2xl font-bold">
+              <p className="text-blue-100 text-xs font-semibold uppercase tracking-wide">Total Certificados</p>
+              <p className="text-3xl font-bold mt-1">
                 {lotes.reduce((sum, lote) => sum + (lote.cantidad_certificados || 0), 0)}
               </p>
             </div>
-            <i className="pi pi-file text-3xl opacity-50"></i>
+            <i className="pi pi-file text-4xl opacity-40"></i>
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-3">
+        <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-xs">Último Lote</p>
-              <p className="text-sm font-semibold">
+              <p className="text-green-100 text-xs font-semibold uppercase tracking-wide">Lotes Enviados</p>
+              <p className="text-3xl font-bold mt-1">
+                {lotes.filter(l => l.estado === 'enviado').length}
+              </p>
+            </div>
+            <i className="pi pi-send text-4xl opacity-40"></i>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-xs font-semibold uppercase tracking-wide">Último Lote</p>
+              <p className="text-sm font-semibold mt-2">
                 {lotes.length > 0
-                  ? new Date(lotes[0].fecha_generacion).toLocaleDateString('es-CO')
+                  ? new Date(lotes[0].fecha_generacion).toLocaleDateString('es-CO', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })
                   : '-'
                 }
               </p>
             </div>
-            <i className="pi pi-calendar text-3xl opacity-50"></i>
+            <i className="pi pi-calendar text-4xl opacity-40"></i>
           </div>
         </div>
       </div>
@@ -151,19 +175,26 @@ export default function CertificadosList({
           <ProgressSpinner />
         </div>
       ) : lotes.length === 0 ? (
-        <div className="text-center py-12">
-          <i className="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+        <div className="text-center py-16 bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-200 rounded-full mb-4">
+            <i className="pi pi-file-pdf text-4xl text-gray-500"></i>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-700 mb-2">
             No hay lotes de certificados
           </h3>
-          <p className="text-gray-500 mb-4">
-            Los certificados se generan automáticamente cuando se registran proyectos
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Aún no se ha generado ningún lote de certificados. Usa el formulario superior para generar certificados por proyecto.
           </p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-            <p className="text-sm text-blue-800">
-              <i className="pi pi-info-circle mr-2"></i>
-              Para generar certificados, primero debes tener proyectos registrados en el sistema
+          <div className="bg-blue-50 border border-blue-300 rounded-lg p-6 max-w-md mx-auto">
+            <p className="text-sm text-blue-900 font-medium mb-2">
+              <i className="pi pi-lightbulb mr-2"></i>
+              Pasos para generar certificados:
             </p>
+            <ol className="text-sm text-blue-800 text-left space-y-1">
+              <li>1. Selecciona un proyecto en la sección superior</li>
+              <li>2. Completa los datos del director y coordinador</li>
+              <li>3. Haz clic en "Generar Certificados"</li>
+            </ol>
           </div>
         </div>
       ) : (
@@ -200,19 +231,25 @@ export default function CertificadosList({
             ></div>
           </div>
 
-          <div ref={tableRef}>
+          <div ref={tableRef} className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
             <DataTable
               value={lotes}
               paginator
-              rows={15}
-              rowsPerPageOptions={[10, 15, 25, 50]}
-              className="p-datatable-sm custom-datatable"
+              rows={10}
+              rowsPerPageOptions={[5, 10, 15, 25]}
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+              currentPageReportTemplate="{first} a {last} de {totalRecords} lotes"
+              className="p-datatable-striped custom-datatable"
               emptyMessage="No hay lotes de certificados disponibles"
               sortMode="multiple"
               stripedRows
               size="small"
               scrollable
-              scrollHeight="500px"
+              scrollHeight="600px"
+              responsiveLayout="scroll"
+              rowClassName={(rowData) =>
+                rowData.estado === 'enviado' ? 'bg-green-50 hover:bg-green-100' : ''
+              }
               onScroll={(e) => {
                 const topScrollbar = topScrollbarRef.current;
                 if (topScrollbar) {
@@ -221,57 +258,56 @@ export default function CertificadosList({
               }}
             >
               <Column
-                field="id_lote"
-                header="ID Lote"
-                sortable
-                style={{ minWidth: '180px', fontSize: '0.875rem' }}
-                bodyStyle={{ padding: '0.5rem' }}
-              />
-              <Column
-                field="proyecto.nombre_proyecto"
+                field="titulo_proyecto"
                 header="Proyecto"
                 body={proyectoTemplate}
                 sortable
-                style={{ minWidth: '200px' }}
-                bodyStyle={{ padding: '0.5rem' }}
+                style={{ minWidth: '220px' }}
+                bodyStyle={{ padding: '0.75rem' }}
+                headerStyle={{ backgroundColor: '#f0f9ff', fontWeight: '600' }}
               />
               <Column
-                field="evento.nombre_evento"
+                field="nombre_evento"
                 header="Evento"
                 body={eventoTemplate}
                 sortable
-                style={{ minWidth: '180px' }}
-                bodyStyle={{ padding: '0.5rem' }}
+                style={{ minWidth: '200px' }}
+                bodyStyle={{ padding: '0.75rem' }}
+                headerStyle={{ backgroundColor: '#f0f9ff', fontWeight: '600' }}
               />
               <Column
                 field="cantidad_certificados"
-                header="Cant."
+                header="Certificados"
                 body={cantidadTemplate}
                 sortable
-                style={{ minWidth: '80px' }}
-                bodyStyle={{ padding: '0.5rem' }}
+                style={{ minWidth: '120px', textAlign: 'center' }}
+                bodyStyle={{ padding: '0.75rem', textAlign: 'center' }}
+                headerStyle={{ backgroundColor: '#f0f9ff', fontWeight: '600', textAlign: 'center' }}
               />
               <Column
                 field="estado"
                 header="Estado"
                 body={estadoTemplate}
                 sortable
-                style={{ minWidth: '120px' }}
-                bodyStyle={{ padding: '0.5rem' }}
+                style={{ minWidth: '130px' }}
+                bodyStyle={{ padding: '0.75rem' }}
+                headerStyle={{ backgroundColor: '#f0f9ff', fontWeight: '600' }}
               />
               <Column
                 field="fecha_generacion"
-                header="Fecha"
+                header="Fecha de Generación"
                 body={fechaTemplate}
                 sortable
-                style={{ minWidth: '140px', fontSize: '0.875rem' }}
-                bodyStyle={{ padding: '0.5rem' }}
+                style={{ minWidth: '160px' }}
+                bodyStyle={{ padding: '0.75rem', fontSize: '0.875rem' }}
+                headerStyle={{ backgroundColor: '#f0f9ff', fontWeight: '600' }}
               />
               <Column
                 header="Acciones"
                 body={accionesTemplate}
-                style={{ minWidth: '120px' }}
-                bodyStyle={{ padding: '0.5rem' }}
+                style={{ minWidth: '140px', textAlign: 'center' }}
+                bodyStyle={{ padding: '0.75rem', textAlign: 'center' }}
+                headerStyle={{ backgroundColor: '#f0f9ff', fontWeight: '600', textAlign: 'center' }}
               />
             </DataTable>
           </div>

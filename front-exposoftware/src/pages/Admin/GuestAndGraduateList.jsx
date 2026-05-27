@@ -89,8 +89,8 @@ export default function GuestAndGraduateList({
                 </td>
               </tr>
             ) : (
-              usuariosFiltrados.map((usuario) => (
-                <tr key={usuario.id} className="border-b hover:bg-gray-50">
+              usuariosFiltrados.map((usuario, idx) => (
+                <tr key={usuario.id || idx} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3">
                     {usuario.usuario?.p_nombre} {usuario.usuario?.p_apellido}
                   </td>
@@ -98,12 +98,12 @@ export default function GuestAndGraduateList({
                   <td className="px-4 py-3">{usuario.usuario?.telefono}</td>
                   <td className="px-4 py-3">
                     {userType === 'invitado'
-                      ? usuario.perfil?.nombre_empresa
-                      : usuario.perfil?.codigo_programa}
+                      ? usuario.invitado?.nombre_empresa
+                      : usuario.egresado?.codigo_programa}
                   </td>
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => handleDelete(usuario.id)}
+                      onClick={() => handleDelete(userType === 'invitado' ? usuario.invitado?.id_invitado : usuario.egresado?.id_egresado)}
                       className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition"
                     >
                       Desactivar

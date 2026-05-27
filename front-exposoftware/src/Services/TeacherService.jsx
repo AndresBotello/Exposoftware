@@ -1015,7 +1015,7 @@ export const obtenerCalificacionPopular = async (projectId) => {
 
     console.log(`📊 Obteniendo calificación popular del proyecto ${projectId}...`);
 
-    const response = await fetch(`${API_ENDPOINTS.API_BASE_URL || 'https://exposoftware.duckdns.org'}/api/v1/proyectos/${projectId}/calificacion_popular`, {
+    const response = await fetch(`/api/v1/proyectos/${projectId}/calificacion_popular`, {
       method: 'GET',
       credentials: 'include',
       headers: AuthService.getAuthHeaders()

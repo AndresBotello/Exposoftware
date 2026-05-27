@@ -253,6 +253,40 @@ export const AuthProvider = ({ children }) => {
     return user.correo || '';
   };
 
+  // Guardar perfil completo del invitado (para acceso desde otras páginas)
+  const setGuestProfile = (perfilData) => {
+    if (perfilData) {
+      // Guardar en localStorage para persistencia
+      localStorage.setItem('guest_profile', JSON.stringify(perfilData));
+      // Actualizar el estado del usuario con los datos completos del perfil
+      setUser(prev => ({ ...prev, ...perfilData }));
+      console.log('✅ Perfil del invitado guardado en AuthContext');
+    }
+  };
+
+  // Obtener perfil del invitado desde localStorage
+  const getGuestProfile = () => {
+    const stored = localStorage.getItem('guest_profile');
+    return stored ? JSON.parse(stored) : null;
+  };
+
+  // Guardar perfil completo del egresado (para acceso desde otras páginas)
+  const setGraduateProfile = (perfilData) => {
+    if (perfilData) {
+      // Guardar en localStorage para persistencia
+      localStorage.setItem('graduate_profile', JSON.stringify(perfilData));
+      // Actualizar el estado del usuario con los datos completos del perfil
+      setUser(prev => ({ ...prev, ...perfilData }));
+      console.log('✅ Perfil del egresado guardado en AuthContext');
+    }
+  };
+
+  // Obtener perfil del egresado desde localStorage
+  const getGraduateProfile = () => {
+    const stored = localStorage.getItem('graduate_profile');
+    return stored ? JSON.parse(stored) : null;
+  };
+
   // Obtener iniciales del usuario
   const getInitials = () => {
     if (user?.iniciales) return user.iniciales;
@@ -309,6 +343,10 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     getFullName,
     getInitials,
+    setGuestProfile,
+    getGuestProfile,
+    setGraduateProfile,
+    getGraduateProfile,
   };
 
   return (

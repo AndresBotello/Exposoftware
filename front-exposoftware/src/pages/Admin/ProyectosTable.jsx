@@ -46,7 +46,6 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
     return (
       <div className="flex flex-col gap-1">
         <span className="font-medium text-gray-900">{nombre}</span>
-        {rowData.id_proyecto && <span className="text-xs text-gray-500">ID: {rowData.id_proyecto}</span>}
       </div>
     );
   };
@@ -56,47 +55,76 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
   );
 
   const header = (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div className="flex items-center gap-2">
-        <i className="pi pi-briefcase text-2xl text-teal-600"></i>
-        <h2 className="text-xl font-bold text-gray-900">Gestión de Proyectos</h2>
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-2">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
+          <i className="pi pi-briefcase text-lg text-white"></i>
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Proyectos</h2>
+          <p className="text-xs text-gray-500">Gestión y visualización de proyectos</p>
+        </div>
       </div>
-      <div className="flex gap-2">
-        <span className="p-input-icon-left">
+      <div className="flex gap-2 flex-wrap">
+        <span className="p-input-icon-left w-full md:w-auto">
           <i className="pi pi-search" />
-          <InputText value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} placeholder="Buscar proyectos..." className="w-full md:w-80" />
+          <InputText value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} placeholder="Buscar proyectos..." className="w-full" />
         </span>
-        <Button icon="pi pi-refresh" rounded outlined tooltip="Actualizar lista" tooltipOptions={{ position: 'top' }} onClick={cargarProyectos} />
+        <Button icon="pi pi-refresh" rounded outlined severity="secondary" tooltip="Actualizar lista" tooltipOptions={{ position: 'top' }} onClick={cargarProyectos} />
       </div>
     </div>
   );
 
   const statCards = [
-    { label: 'Total Proyectos', value: proyectos.length, color: 'teal', icon: 'pi-briefcase', textColor: 'text-gray-900' },
-    { label: 'Pendientes', value: proyectos.filter(p => p.estado_calificacion === 'pendiente').length, color: 'yellow', icon: 'pi-clock', textColor: 'text-yellow-600' },
-    { label: 'Aprobados', value: proyectos.filter(p => p.estado_calificacion === 'aprobado').length, color: 'green', icon: 'pi-check-circle', textColor: 'text-green-600' },
-    { label: 'Reprobados', value: proyectos.filter(p => p.estado_calificacion === 'reprobado').length, color: 'red', icon: 'pi-times-circle', textColor: 'text-red-600' },
+    {
+      label: 'Total Proyectos',
+      value: proyectos.length,
+      bgGradient: 'from-teal-500 to-teal-600',
+      icon: 'pi-briefcase',
+      textColor: 'text-white'
+    },
+    {
+      label: 'Pendientes',
+      value: proyectos.filter(p => p.estado_calificacion === 'pendiente').length,
+      bgGradient: 'from-amber-500 to-amber-600',
+      icon: 'pi-clock',
+      textColor: 'text-white'
+    },
+    {
+      label: 'Aprobados',
+      value: proyectos.filter(p => p.estado_calificacion === 'aprobado').length,
+      bgGradient: 'from-green-500 to-green-600',
+      icon: 'pi-check-circle',
+      textColor: 'text-white'
+    },
+    {
+      label: 'Reprobados',
+      value: proyectos.filter(p => p.estado_calificacion === 'reprobado').length,
+      bgGradient: 'from-red-500 to-red-600',
+      icon: 'pi-times-circle',
+      textColor: 'text-white'
+    },
   ];
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {statCards.map(({ label, value, color, icon, textColor }) => (
-          <div key={label} className="bg-white rounded-lg border border-gray-200 p-4">
+        {statCards.map(({ label, value, bgGradient, icon, textColor }) => (
+          <div key={label} className={`bg-gradient-to-br ${bgGradient} rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">{label}</p>
-                <p className={`text-2xl font-bold ${textColor}`}>{value}</p>
+                <p className="text-sm font-semibold text-white opacity-90">{label}</p>
+                <p className={`text-3xl font-bold ${textColor} mt-2`}>{value}</p>
               </div>
-              <div className={`w-10 h-10 bg-${color}-100 rounded-full flex items-center justify-center`}>
-                <i className={`pi ${icon} text-${color}-600`}></i>
+              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i className={`pi ${icon} text-xl text-white`}></i>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -104,21 +132,32 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
               <p className="text-sm text-gray-500 mt-4">Cargando proyectos...</p>
             </div>
           </div>
+        ) : proyectos.length === 0 ? (
+          <div className="text-center py-16 px-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+              <i className="pi pi-inbox text-3xl text-gray-400"></i>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay proyectos</h3>
+            <p className="text-gray-600">Aún no se ha registrado ningún proyecto en el sistema</p>
+          </div>
         ) : (
           <DataTable
             value={proyectos} paginator rows={10} rowsPerPageOptions={[5, 10, 25, 50]}
             header={header} globalFilter={globalFilter}
-            globalFilterFields={['titulo_proyecto', 'titulo', 'id_proyecto', 'tipo_actividad', 'estado_calificacion', 'id_docente.nombre', 'nombre_linea', 'nombre_area', 'codigo_materia']}
-            filterDisplay="menu" emptyMessage="No se encontraron proyectos"
+            globalFilterFields={['titulo_proyecto', 'titulo', 'tipo_actividad', 'estado_calificacion', 'id_docente.nombre', 'nombre_linea', 'nombre_area', 'codigo_materia']}
+            filterDisplay="menu"
             stripedRows sortField="fecha_creacion" sortOrder={-1} responsiveLayout="scroll"
-            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} proyectos"
+            size="small"
+            className="p-datatable-striped"
+            rowClassName={(rowData) => rowData.estado_calificacion === 'aprobado' ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'}
           >
-            <Column field="titulo_proyecto" header="Nombre del Proyecto" body={nombreTemplate} sortable style={{ minWidth: '250px' }} />
-            <Column field="tipo_actividad" header="Tipo" body={tipoActividadTemplate} sortable style={{ minWidth: '150px' }} />
-            <Column field="calificacion" header="Calificación" body={calificacionTemplate} sortable style={{ minWidth: '130px' }} />
-            <Column field="estado_calificacion" header="Estado" body={estadoCalificacionTemplate} sortable style={{ minWidth: '150px' }} />
-            <Column header="Acciones" body={accionesTemplate} exportable={false} style={{ minWidth: '100px' }} />
+            <Column field="titulo_proyecto" header="Nombre del Proyecto" body={nombreTemplate} sortable style={{ minWidth: '280px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
+            <Column field="tipo_actividad" header="Tipo" body={tipoActividadTemplate} sortable style={{ minWidth: '140px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
+            <Column field="calificacion" header="Calificación" body={calificacionTemplate} sortable style={{ minWidth: '120px', textAlign: 'center' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600', textAlign: 'center' }} />
+            <Column field="estado_calificacion" header="Estado" body={estadoCalificacionTemplate} sortable style={{ minWidth: '130px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
+            <Column header="Acciones" body={accionesTemplate} exportable={false} style={{ minWidth: '80px', textAlign: 'center' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600', textAlign: 'center' }} />
           </DataTable>
         )}
       </div>

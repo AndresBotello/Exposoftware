@@ -16,30 +16,6 @@ const IdentificationSection = ({
         </h2>
       </div>
 
-      <div className="lg:col-span-2">
-        <label className="block font-medium text-gray-700 mb-1">
-          Selecciona Perfil *
-        </label>
-        <select
-          name="rol"
-          value={formData.rol}
-          onChange={handleChange}
-          disabled={cargando}
-          className={getInputClassName("rol")}
-        >
-          <option value="">Selecciona Perfil</option>
-          <option value="estudiante">Estudiante</option>
-          <option value="invitado">Invitado</option>
-          <option value="egresado">Egresado</option>
-        </select>
-        {errors.rol && (
-          <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-            <AlertCircle size={14} />
-            {errors.rol}
-          </p>
-        )}
-      </div>
-
       <div>
         <label className="block font-medium text-gray-700 mb-1">
           Tipo de Documento *

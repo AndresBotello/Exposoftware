@@ -115,3 +115,77 @@ export const getEventosMap = async () => {
     return new Map(); // Retornar mapa vacío en caso de error
   }
 };
+
+/**
+ * 🎪 Obtener eventos que estén en curso
+ * @returns {Promise<Array>} Lista de eventos en_curso
+ */
+export const getEventosEnCurso = async () => {
+  try {
+    console.log('🎪 Obteniendo eventos en curso...');
+    const eventos = await getAllEventos();
+
+    console.log(`📊 Total eventos obtenidos: ${eventos.length}`);
+
+    const eventosEnCurso = eventos.filter(evento => {
+      const estado = evento.estado || evento.status;
+      return estado && (estado.toLowerCase() === 'en_curso' || estado.toLowerCase() === 'en curso');
+    });
+
+    console.log(`✅ ${eventosEnCurso.length} eventos en curso encontrados`);
+    eventosEnCurso.forEach((e, idx) => {
+      console.log(`   [${idx}] ${e.nombre_evento || e.nombre} (ID: ${e.id_evento || e.id})`);
+    });
+    return eventosEnCurso;
+  } catch (error) {
+    console.error('❌ Error obteniendo eventos en curso:', error);
+    throw error;
+  }
+};
+
+/**
+ * 📚 Obtener proyectos de un evento específico
+ * GET /api/v1/proyectos/evento/{id_evento}
+ * @param {string} idEvento - ID del evento
+ * @returns {Promise<Array>} Lista de proyectos del evento
+ */
+export const getProyectosEventoAprobados = async (idEvento) => {
+  try {
+    console.log(`📚 Obteniendo proyectos aprobados del evento: ${idEvento}`);
+
+    const response = await fetch(API_ENDPOINTS.PROYECTOS_BY_EVENTO(idEvento), {
+      credentials: 'include',
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log(`✅ Proyectos del evento obtenidos:`, result);
+
+    // Extraer el array de proyectos
+    let proyectos = result.data || result;
+    if (!Array.isArray(proyectos)) {
+      proyectos = [];
+    }
+
+    console.log(`📊 Total proyectos devueltos por backend: ${proyectos.length}`);
+
+    // Mostrar estado de cada proyecto
+    proyectos.forEach((p, idx) => {
+      const estado = p.estado || p.status || 'SIN ESTADO';
+      console.log(`   [${idx}] ${p.nombre_proyecto || p.titulo_proyecto} - Estado: "${estado}"`);
+    });
+
+    console.log(`📊 ${proyectos.length} proyectos totales devueltos`);
+    return proyectos;
+  } catch (error) {
+    console.error(`❌ Error obteniendo proyectos del evento ${idEvento}:`, error);
+    throw error;
+  }
+};

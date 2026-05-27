@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { obtenerMiPerfilInvitado, actualizarPerfilInvitado } from "../../Services/GuestService";
+import { actualizarPerfilInvitado } from "../../Services/GuestService";
 import { SECTORES } from "../../data/sectores";
-import colombiaData from "../../assets/colombia-json-master/colombia.json";
 import logo from "../../assets/Logo-unicesar.png";
 
 export default function GuestProfile() {
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user, getGuestProfile } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -16,27 +15,16 @@ export default function GuestProfile() {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
   const [perfil, setPerfil] = useState(null);
-  
+
   const [formData, setFormData] = useState({
-    tipo_documento: '',
     identificacion: '',
-    primer_nombre: '',
-    segundo_nombre: '',
-    primer_apellido: '',
-    segundo_apellido: '',
-    sexo: '',
-    identidad_sexual: '',
-    fecha_nacimiento: '',
-    nacionalidad: '',
-    pais_residencia: '',
-    departamento: '',
-    municipio: '',
-    ciudad_residencia: '',
-    direccion_residencia: '',
-    telefono: '',
+    p_nombre: '',
+    p_apellido: '',
     correo: '',
+    telefono: '',
+    nombre_empresa: '',
     id_sector: '',
-    nombre_empresa: ''
+    es_profesor_extranjero: false
   });
 
   const [passwordForm, setPasswordForm] = useState({
@@ -45,76 +33,37 @@ export default function GuestProfile() {
     confirmPassword: ""
   });
 
-  // Estados para selectores en cascada
-  const [departamentos, setDepartamentos] = useState([]);
-  const [municipios, setMunicipios] = useState([]);
-
   useEffect(() => {
     cargarPerfil();
-    // Inicializar lista de departamentos
-    setDepartamentos(colombiaData);
   }, []);
-
-  // Función para actualizar municipios cuando cambia el departamento
-  const actualizarMunicipios = (departamentoNombre) => {
-    if (departamentoNombre) {
-      const departamento = colombiaData.find(dep => dep.departamento === departamentoNombre);
-      if (departamento) {
-        setMunicipios(departamento.ciudades);
-      } else {
-        setMunicipios([]);
-      }
-    } else {
-      setMunicipios([]);
-    }
-  };
-
-  // Función para obtener el departamento por nombre de municipio
-  const obtenerDepartamentoPorMunicipio = (municipioNombre) => {
-    if (municipioNombre) {
-      return colombiaData.find(dep => 
-        dep.ciudades.includes(municipioNombre)
-      );
-    }
-    return null;
-  };
 
   const cargarPerfil = async () => {
     try {
       setCargando(true);
       setError(null);
-      const datos = await obtenerMiPerfilInvitado();
+
+      // Obtener perfil del contexto (ya fue cargado en Dashboard)
+      const datos = getGuestProfile();
+
+      if (!datos) {
+        throw new Error('No se pudo obtener el perfil del invitado');
+      }
+
       setPerfil(datos);
-      
+
       // Cargar datos en el formulario
       setFormData({
-        tipo_documento: datos.tipo_documento || '',
         identificacion: datos.identificacion || '',
-        primer_nombre: datos.primer_nombre || '',
-        segundo_nombre: datos.segundo_nombre || '',
-        primer_apellido: datos.primer_apellido || '',
-        segundo_apellido: datos.segundo_apellido || '',
-        sexo: datos.sexo || '',
-        identidad_sexual: datos.identidad_sexual || '',
-        fecha_nacimiento: datos.fecha_nacimiento || '',
-        nacionalidad: datos.nacionalidad || '',
-        pais_residencia: datos.pais_residencia || 'Colombia', // Default Colombia
-        departamento: datos.departamento || '',
-        municipio: datos.municipio || '',
-        ciudad_residencia: datos.ciudad_residencia || '',
-        direccion_residencia: datos.direccion_residencia || '',
-        telefono: datos.telefono || '',
+        p_nombre: datos.p_nombre || '',
+        p_apellido: datos.p_apellido || '',
         correo: datos.correo || '',
+        telefono: datos.telefono || '',
+        nombre_empresa: datos.nombre_empresa || '',
         id_sector: datos.id_sector || '',
-        nombre_empresa: datos.nombre_empresa || ''
+        es_profesor_extranjero: datos.es_profesor_extranjero || false
       });
-      
-      // Inicializar municipios si hay departamento
-      if (datos.departamento) {
-        actualizarMunicipios(datos.departamento);
-      }
-      
-      console.log('✅ Perfil cargado en Profile:', datos);
+
+      console.log('✅ Perfil cargado desde contexto en Profile:', datos);
     } catch (err) {
       console.error('❌ Error cargando perfil:', err);
       setError(err.message);
@@ -130,25 +79,7 @@ export default function GuestProfile() {
     }
   };
 
-  // Catálogos
   const sectores = SECTORES;
-
-  const tiposDocumento = [
-    { id: "CC", nombre: "Cédula de Ciudadanía" },
-    { id: "TI", nombre: "Tarjeta de Identidad" },
-    { id: "CE", nombre: "Cédula de Extranjería" },
-    { id: "PAS", nombre: "Pasaporte" }
-  ];
-
-  const generos = ["Hombre", "Mujer", "Hermafrodita"];
-  
-  const identidadesSexuales = [
-    "Heterosexual",
-    "Homosexual",
-    "Bisexual",
-    "Otro",
-    "Prefiero no decir"
-  ];
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -156,34 +87,17 @@ export default function GuestProfile() {
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Restaurar datos originales
     if (perfil) {
       setFormData({
-        tipo_documento: perfil.tipo_documento || '',
         identificacion: perfil.identificacion || '',
-        primer_nombre: perfil.primer_nombre || '',
-        segundo_nombre: perfil.segundo_nombre || '',
-        primer_apellido: perfil.primer_apellido || '',
-        segundo_apellido: perfil.segundo_apellido || '',
-        sexo: perfil.sexo || '',
-        identidad_sexual: perfil.identidad_sexual || '',
-        fecha_nacimiento: perfil.fecha_nacimiento || '',
-        nacionalidad: perfil.nacionalidad || '',
-        pais_residencia: perfil.pais_residencia || 'Colombia',
-        departamento: perfil.departamento || '',
-        municipio: perfil.municipio || '',
-        ciudad_residencia: perfil.ciudad_residencia || '',
-        direccion_residencia: perfil.direccion_residencia || '',
-        telefono: perfil.telefono || '',
+        p_nombre: perfil.p_nombre || '',
+        p_apellido: perfil.p_apellido || '',
         correo: perfil.correo || '',
+        telefono: perfil.telefono || '',
+        nombre_empresa: perfil.nombre_empresa || '',
         id_sector: perfil.id_sector || '',
-        nombre_empresa: perfil.nombre_empresa || ''
+        es_profesor_extranjero: perfil.es_profesor_extranjero || false
       });
-      
-      // Restaurar municipios
-      if (perfil.departamento) {
-        actualizarMunicipios(perfil.departamento);
-      }
     }
   };
 
@@ -211,32 +125,10 @@ export default function GuestProfile() {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
-    }));
-  };
-
-  // Función para manejar cambios en el departamento
-  const handleDepartamentoChange = (e) => {
-    const departamentoSeleccionado = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      departamento: departamentoSeleccionado,
-      municipio: '', // Limpiar municipio cuando cambia departamento
-      ciudad_residencia: '' // Limpiar ciudad cuando cambia departamento
-    }));
-    actualizarMunicipios(departamentoSeleccionado);
-  };
-
-  // Función para manejar cambios en el municipio
-  const handleMunicipioChange = (e) => {
-    const municipioSeleccionado = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      municipio: municipioSeleccionado,
-      ciudad_residencia: municipioSeleccionado // Ciudad = Municipio en Colombia
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -287,14 +179,9 @@ export default function GuestProfile() {
     handleClosePasswordModal();
   };
 
-  // Datos del invitado para mostrar en el sidebar
   const invitadoData = perfil || {
-    id_invitado: "Cargando...",
-    nombres: formData.primer_nombre || "Invitado",
-    apellidos: formData.primer_apellido || "Usuario",
-    nombre_empresa: formData.nombre_empresa || "Cargando...",
-    id_sector: formData.id_sector || "...",
-    sector_nombre: sectores.find(s => s.id.toString() === formData.id_sector)?.nombre || "No especificado",
+    nombres: formData.p_nombre || "Invitado",
+    apellidos: formData.p_apellido || "Usuario",
     correo: formData.correo || "",
     rol: user?.rol || "Invitado"
   };
@@ -426,338 +313,122 @@ export default function GuestProfile() {
                   </div>
 
                   <div className="space-y-4">
-                    {/* Información Personal Básica */}
-                    <div className="border-b pb-4">
-                      <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    {/* Información Personal */}
+                    <div className="border-b pb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <i className="pi pi-user text-green-600"></i>
-                        Información Personal Básica
+                        Información Personal
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Primer Nombre
+                            Primer Nombre <span className="text-red-500">*</span>
                           </label>
-                          <input 
+                          <input
                             type="text"
-                            name="primer_nombre"
-                            value={formData.primer_nombre}
+                            name="p_nombre"
+                            value={formData.p_nombre}
                             onChange={handleInputChange}
-                            maxLength={30}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
                             disabled={!isEditing}
                           />
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Segundo Nombre
+                            Primer Apellido <span className="text-red-500">*</span>
                           </label>
-                          <input 
+                          <input
                             type="text"
-                            name="segundo_nombre"
-                            value={formData.segundo_nombre}
+                            name="p_apellido"
+                            value={formData.p_apellido}
                             onChange={handleInputChange}
-                            maxLength={30}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
                             disabled={!isEditing}
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Primer Apellido
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium mb-1">
+                            <span className="text-red-600">Identificación (No editable)</span>
                           </label>
-                          <input 
-                            type="text"
-                            name="primer_apellido"
-                            value={formData.primer_apellido}
-                            onChange={handleInputChange}
-                            maxLength={30}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Segundo Apellido
-                          </label>
-                          <input 
-                            type="text"
-                            name="segundo_apellido"
-                            value={formData.segundo_apellido}
-                            onChange={handleInputChange}
-                            maxLength={30}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tipo de Documento
-                          </label>
-                          <select
-                            name="tipo_documento"
-                            value={formData.tipo_documento}
-                            onChange={handleInputChange}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
-                          >
-                            {tiposDocumento.map(tipo => (
-                              <option key={tipo.id} value={tipo.id}>
-                                {tipo.nombre}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Número de Identificación ❌
-                          </label>
-                          <input 
+                          <input
                             type="text"
                             value={formData.identificacion}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-100"
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
                             disabled
-                            readOnly
-                          />
-                          <p className="text-xs text-gray-500 mt-1">No se puede editar</p>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Género
-                          </label>
-                          <select
-                            name="sexo"
-                            value={formData.sexo}
-                            onChange={handleInputChange}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
-                          >
-                            {generos.map(gen => (
-                              <option key={gen} value={gen}>{gen}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Identidad Sexual
-                          </label>
-                          <select
-                            name="identidad_sexual"
-                            value={formData.identidad_sexual}
-                            onChange={handleInputChange}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
-                          >
-                            {identidadesSexuales.map(id => (
-                              <option key={id} value={id}>{id}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Fecha de Nacimiento
-                          </label>
-                          <input 
-                            type="date"
-                            name="fecha_nacimiento"
-                            value={formData.fecha_nacimiento}
-                            onChange={handleInputChange}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nacionalidad
-                          </label>
-                          <input 
-                            type="text"
-                            name="nacionalidad"
-                            value={formData.nacionalidad}
-                            onChange={handleInputChange}
-                            maxLength={25}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* Información de Contacto */}
-                    <div className="border-b pb-4">
-                      <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <div className="border-b pb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <i className="pi pi-phone text-green-600"></i>
                         Información de Contacto
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Correo Electrónico ❌
+                            Correo Electrónico <span className="text-red-500">*</span>
                           </label>
-                          <input 
+                          <input
                             type="email"
+                            name="correo"
                             value={formData.correo}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-100"
-                            disabled
-                            readOnly
+                            onChange={handleInputChange}
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
+                            disabled={!isEditing}
                           />
-                          <p className="text-xs text-gray-500 mt-1">No se puede editar</p>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Teléfono
+                            Teléfono <span className="text-red-500">*</span>
                           </label>
-                          <input 
+                          <input
                             type="tel"
                             name="telefono"
                             value={formData.telefono}
                             onChange={handleInputChange}
-                            maxLength={15}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
                             disabled={!isEditing}
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Información de Residencia */}
-                    <div className="border-b pb-4">
-                      <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <i className="pi pi-map-marker text-green-600"></i>
-                        Información de Residencia
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Dirección de Residencia
-                          </label>
-                          <input 
-                            type="text"
-                            name="direccion_residencia"
-                            value={formData.direccion_residencia}
-                            onChange={handleInputChange}
-                            maxLength={50}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            País
-                          </label>
-                          <select
-                            name="pais_residencia"
-                            value={formData.pais_residencia}
-                            onChange={handleInputChange}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
-                          >
-                            <option value="">Seleccionar país</option>
-                            <option value="Colombia">Colombia</option>
-                            {/* Aquí puedes agregar más países si es necesario */}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Departamento
-                          </label>
-                          <select
-                            name="departamento"
-                            value={formData.departamento}
-                            onChange={handleDepartamentoChange}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing}
-                          >
-                            <option value="">Seleccionar departamento</option>
-                            {departamentos.map(depto => (
-                              <option key={depto.id} value={depto.departamento}>
-                                {depto.departamento}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Municipio
-                          </label>
-                          <select
-                            name="municipio"
-                            value={formData.municipio}
-                            onChange={handleMunicipioChange}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
-                            disabled={!isEditing || !formData.departamento}
-                          >
-                            <option value="">
-                              {formData.departamento ? 'Seleccionar municipio' : 'Primero selecciona departamento'}
-                            </option>
-                            {municipios.map(municipio => (
-                              <option key={municipio} value={municipio}>
-                                {municipio}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Ciudad
-                          </label>
-                          <input 
-                            type="text"
-                            value={formData.ciudad_residencia}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-100"
-                            disabled
-                            readOnly
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Se establece automáticamente con el municipio</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Información de Empresa/Organización */}
-                    <div className="border-b pb-4">
-                      <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    {/* Información de Empresa */}
+                    <div className="border-b pb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <i className="pi pi-building text-green-600"></i>
-                        Información de Empresa/Organización
+                        Información de Empresa
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nombre de Empresa/Institución
+                            Nombre de Empresa <span className="text-red-500">*</span>
                           </label>
-                          <input 
+                          <input
                             type="text"
                             name="nombre_empresa"
                             value={formData.nombre_empresa}
                             onChange={handleInputChange}
-                            maxLength={40}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
                             disabled={!isEditing}
                           />
-                          <p className="text-xs text-gray-500 mt-1">Máximo 40 caracteres</p>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Sector
+                            Sector <span className="text-red-500">*</span>
                           </label>
                           <select
                             name="id_sector"
                             value={formData.id_sector}
                             onChange={handleInputChange}
-                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'bg-white focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 ${isEditing ? 'focus:outline-none focus:ring-2 focus:ring-green-500' : 'bg-gray-100'}`}
                             disabled={!isEditing}
                           >
                             <option value="">Seleccionar sector</option>
@@ -769,46 +440,20 @@ export default function GuestProfile() {
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Rol en el Sistema
+                        <div className="md:col-span-2">
+                          <label className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              name="es_profesor_extranjero"
+                              checked={formData.es_profesor_extranjero}
+                              onChange={handleInputChange}
+                              className={`w-4 h-4 text-green-600 rounded ${isEditing ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                              disabled={!isEditing}
+                            />
+                            <span className="text-sm font-medium text-gray-700">
+                              Es profesor extranjero
+                            </span>
                           </label>
-                          <input 
-                            type="text"
-                            value={invitadoData.rol}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-100"
-                            disabled
-                            readOnly
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Seguridad */}
-                    <div className="pb-4">
-                      <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <i className="pi pi-lock text-green-600"></i>
-                        Seguridad
-                      </h3>
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Contraseña
-                          </label>
-                          <input 
-                            type="password" 
-                            defaultValue="********" 
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-100"
-                            disabled
-                          />
-                        </div>
-                        <div className="shrink-0">
-                          <button 
-                            onClick={handleOpenPasswordModal}
-                            className="mt-6 inline-flex items-center px-4 py-2 border border-green-600 text-green-600 rounded-lg text-sm hover:bg-green-50 transition-colors"
-                          >
-                            Cambiar Contraseña
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -816,14 +461,14 @@ export default function GuestProfile() {
                     {/* Botones de acción */}
                     {isEditing && (
                       <div className="pt-4 flex gap-3">
-                        <button 
+                        <button
                           onClick={handleSave}
                           disabled={guardando}
                           className="flex-1 bg-green-700 text-white py-3 rounded-lg font-semibold hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {guardando ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
-                        <button 
+                        <button
                           onClick={handleCancel}
                           disabled={guardando}
                           className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

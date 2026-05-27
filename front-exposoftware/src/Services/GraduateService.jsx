@@ -20,66 +20,51 @@ const getAuthHeaders = () => {
 
 /**
  * Obtener perfil del egresado autenticado
- * Usa el token del usuario para obtener TODA su información desde /api/v1/auth/me
+ * GET /api/v1/egresados/mi-perfil
+ * Usa cookies de sesión para obtener la información del egresado autenticado
  */
 export const obtenerMiPerfilEgresado = async () => {
   try {
-    console.log('👨‍🎓 Obteniendo información completa del usuario egresado desde /api/v1/auth/me...');
-    
-    // Validar que existe el token
+    console.log('👨‍🎓 Obteniendo perfil del egresado desde /api/v1/egresados/mi-perfil...');
+
     const token = getAuthToken();
-    if (!token) {
-      throw new Error('No hay token de autenticación. Por favor inicie sesión nuevamente.');
-    }
+    const headers = getAuthHeaders();
+    console.log('🔐 Token disponible:', !!token);
+    console.log('📤 Headers siendo enviados:', headers);
 
-    console.log('🔑 Token encontrado, validando con el backend...');
-
-    // Obtener TODA la información del usuario autenticado usando su token
-    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+    const response = await fetch(`${API_ENDPOINTS.API_BASE_URL || ''}/api/v1/egresados/mi-perfil`, {
       credentials: 'include',
       method: 'GET',
-      headers: getAuthHeaders()
+      headers: headers
     });
 
-    console.log('📡 Respuesta /api/v1/auth/me - Status:', response.status);
+    console.log('📡 Respuesta /api/v1/egresados/mi-perfil - Status:', response.status);
+    console.log('📄 Response body:', await response.clone().text());
 
     if (!response.ok) {
       if (response.status === 401) {
-        localStorage.removeItem('auth_token');
         throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
       }
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.detail || 'Error al validar usuario');
+      throw new Error(errorData.message || errorData.detail || `Error al obtener perfil (${response.status})`);
     }
 
     const userData = await response.json();
-    console.log('✅ Información completa del usuario obtenida desde /api/v1/auth/me:', userData);
+    console.log('✅ Información del egresado obtenida:', userData);
     console.log('📊 Estructura completa de data:', JSON.stringify(userData, null, 2));
-    
-    // La respuesta tiene formato: { status, message, data, code }
-    if (userData.data) {
-      console.log('📦 userData.data:', userData.data);
-      console.log('👤 userData.data.usuario:', userData.data.usuario);
-      
-      // Validar que el usuario tiene rol de Egresado
-      const usuario = userData.data.usuario || userData.data;
-      if (usuario.rol !== 'Egresado') {
-        throw new Error(`Usuario no es egresado. Rol actual: ${usuario.rol}`);
-      }
 
-      console.log('✅ Usuario validado como Egresado');
-      
+    // La respuesta tiene formato: { status, message, data: { egresado, usuario }, code }
+    if (userData.data && userData.data.egresado && userData.data.usuario) {
+      console.log('📦 userData.data.egresado:', userData.data.egresado);
+      console.log('👤 userData.data.usuario:', userData.data.usuario);
+      console.log('✅ Perfil de egresado validado');
+
       // Procesar y retornar todos los datos del egresado
       return procesarDatosEgresado(userData.data);
     }
-    
-    // Si no viene en data, usar directamente
-    if (userData.rol !== 'Egresado') {
-      throw new Error(`Usuario no es egresado. Rol actual: ${userData.rol}`);
-    }
 
-    return procesarDatosEgresado(userData);
-    
+    throw new Error('Respuesta inválida del servidor: estructura de datos no esperada');
+
   } catch (error) {
     console.error('❌ Error obteniendo perfil del egresado:', error);
     throw error;
@@ -168,8 +153,7 @@ export const actualizarPerfilEgresado = async (graduateId, datosActualizados) =>
 
 /**
  * Procesar datos del egresado desde el backend
- * Transforma la estructura del backend a la estructura del frontend
- * Maneja tanto la respuesta de /api/v1/auth/me como /api/v1/egresados/{id}
+ * Extrae solo los campos que realmente vienen de /api/v1/egresados/mi-perfil
  */
 export const procesarDatosEgresado = (perfil) => {
   if (!perfil) {
@@ -177,92 +161,44 @@ export const procesarDatosEgresado = (perfil) => {
     return {};
   }
 
-  console.log('🔄 PERFIL COMPLETO RECIBIDO PARA PROCESAR:', perfil);
+  console.log('🔄 PERFIL RECIBIDO PARA PROCESAR:', perfil);
   console.log('🔍 usuario:', perfil.usuario);
-  console.log('🔍 datos_rol:', perfil.datos_rol);
+  console.log('🔍 egresado:', perfil.egresado);
 
-  // Extraer datos del usuario y datos_rol
+  // Extraer datos del usuario y egresado
   const usuario = perfil.usuario || {};
-  const datosRol = perfil.datos_rol || {};
-  
-  console.log('👤 Datos del usuario:', usuario);
-  console.log('🎓 Datos del rol (egresado):', datosRol);
+  const egresado = perfil.egresado || {};
 
-  // Procesar nombres (igual que antes)
-  let primer_nombre = usuario.primer_nombre || '';
-  let segundo_nombre = usuario.segundo_nombre || '';
-  let primer_apellido = usuario.primer_apellido || '';
-  let segundo_apellido = usuario.segundo_apellido || '';
-  
-  if (!primer_nombre && !primer_apellido && usuario.nombre_completo) {
-    console.log('⚠️ Dividiendo nombre_completo...');
-    const nombreCompleto = usuario.nombre_completo.trim();
-    const partes = nombreCompleto.split(/\s+/);
-    
-    if (partes.length >= 4) {
-      primer_nombre = partes[0];
-      segundo_nombre = partes[1];
-      primer_apellido = partes[2];
-      segundo_apellido = partes[3];
-    } else if (partes.length === 3) {
-      primer_nombre = partes[0];
-      segundo_nombre = partes[1];
-      primer_apellido = partes[2];
-    } else if (partes.length === 2) {
-      primer_nombre = partes[0];
-      primer_apellido = partes[1];
-    } else if (partes.length === 1) {
-      primer_nombre = partes[0];
-    }
-  }
+  console.log('👤 Datos del usuario:', usuario);
+  console.log('🎓 Datos del egresado:', egresado);
+
+  // Procesar nombres del usuario (campos p_nombre, p_apellido)
+  const primer_nombre = usuario.p_nombre || '';
+  const primer_apellido = usuario.p_apellido || '';
 
   const datosProcesados = {
     // IDs
-    id_egresado: datosRol.id_egresado || '',
+    id_egresado: egresado.id_egresado || '',
     id_usuario: usuario.id_usuario || '',
-    
-    // Datos académicos del egresado (desde datos_rol)
-    codigo_programa: datosRol.codigo_programa || '',
-    anio_graduacion: datosRol.año_graduacion || new Date().getFullYear(),
-    modalidad_grado: datosRol.modalidad_grado || '',
-    programa_academico: datosRol.programa_academico || '',
-    titulo_obtenido: datosRol.titulo_obtenido || '',
-    titulado: datosRol.titulado !== undefined ? datosRol.titulado : true,
-    
-    // Datos personales (desde usuario)
-    tipo_documento: usuario.tipo_documento || 'CC',
+
+    // Datos académicos del egresado
+    codigo_programa: egresado.codigo_programa || '',
+    anio_graduacion: egresado.anio_finalizacion || new Date().getFullYear(),
+    titulado: egresado.titulado !== undefined ? egresado.titulado : false,
+
+    // Datos personales del usuario
     identificacion: usuario.identificacion || '',
-    nombres: `${primer_nombre} ${segundo_nombre}`.trim(),
-    apellidos: `${primer_apellido} ${segundo_apellido}`.trim(),
-    nombre_completo: usuario.nombre_completo || `${primer_nombre} ${segundo_nombre} ${primer_apellido} ${segundo_apellido}`.trim().replace(/\s+/g, ' '),
     primer_nombre: primer_nombre,
-    segundo_nombre: segundo_nombre,
     primer_apellido: primer_apellido,
-    segundo_apellido: segundo_apellido,
-    
+    nombre_completo: `${primer_nombre} ${primer_apellido}`.trim(),
+
     // Información de contacto
     correo: usuario.correo || '',
     telefono: usuario.telefono || '',
-    
-    // Información demográfica (desde usuario) - ESTOS SON LOS CAMPOS QUE FALLAN
-    sexo: usuario.sexo || '',
-    identidad_sexual: usuario.identidad_sexual || '',
-    fecha_nacimiento: usuario.fecha_nacimiento ? usuario.fecha_nacimiento.split('T')[0] : '', // Solo fecha
-    nacionalidad: usuario.nacionalidad || 'CO',
-    
-    // Ubicación (desde usuario)
-    pais_residencia: usuario.pais_residencia || 'CO',
-    departamento: usuario.departamento || '',
-    municipio: usuario.municipio || '',
-    ciudad_residencia: usuario.ciudad_residencia || '',
-    direccion_residencia: usuario.direccion_residencia || '',
-    
+
     // Sistema
-    rol: usuario.rol || 'Egresado',
     activo: usuario.activo !== undefined ? usuario.activo : true,
-    created_at: usuario.created_at || '',
-    updated_at: usuario.updated_at || '',
-    
+
     // Iniciales para avatar
     iniciales: getIniciales(primer_nombre, primer_apellido)
   };
@@ -333,10 +269,61 @@ export const prepararDatosParaBackend = (datosFormulario) => {
   return payload;
 };
 
+/**
+ * Obtener el nombre del programa por su código
+ * Busca en el árbol completo académico
+ */
+export const obtenerNombrePrograma = async (codigoPrograma) => {
+  try {
+    if (!codigoPrograma) return 'Sin especificar';
+
+    console.log(`🔍 Buscando nombre del programa: ${codigoPrograma}`);
+
+    const response = await fetch(`${API_ENDPOINTS.API_BASE_URL || ''}/api/v1/public-academico/arbol-completo`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.warn(`⚠️ No se pudo obtener el árbol académico`);
+      return codigoPrograma; // Devolver el código como fallback
+    }
+
+    const data = await response.json();
+    console.log('📊 Árbol académico obtenido');
+
+    // Buscar en facultades > programas
+    if (data.data && Array.isArray(data.data)) {
+      for (const facultad of data.data) {
+        if (facultad.programas && Array.isArray(facultad.programas)) {
+          const programa = facultad.programas.find(p =>
+            p.codigo_programa === codigoPrograma || p.codigo === codigoPrograma
+          );
+          if (programa) {
+            const nombre = programa.nombre_programa || programa.nombre || codigoPrograma;
+            console.log(`✅ Programa encontrado: ${nombre}`);
+            return nombre;
+          }
+        }
+      }
+    }
+
+    console.warn(`⚠️ Programa ${codigoPrograma} no encontrado en el árbol académico`);
+    return codigoPrograma; // Devolver el código como fallback
+
+  } catch (error) {
+    console.error(`❌ Error buscando programa ${codigoPrograma}:`, error);
+    return codigoPrograma; // Devolver el código como fallback
+  }
+};
+
 export default {
   obtenerMiPerfilEgresado,
   obtenerPerfilEgresadoPorId,
   actualizarPerfilEgresado,
   procesarDatosEgresado,
-  prepararDatosParaBackend
+  prepararDatosParaBackend,
+  obtenerNombrePrograma
 };
