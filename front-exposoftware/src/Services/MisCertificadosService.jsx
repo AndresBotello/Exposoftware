@@ -126,15 +126,15 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
 
 /**
  * Abrir descarga en nueva ventana (evita problemas CORS)
+ * Usa window.open() en lugar de element.click() porque funciona mejor con redirects
  */
 const abrirDescargaEnNuevaVentana = (url, nombreArchivo) => {
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = nombreArchivo;
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  console.log('🔗 Abriendo URL en nueva ventana:', url);
+  console.log('📥 Nombre del archivo:', nombreArchivo);
+
+  // window.open() permite que el navegador maneje la descarga normalmente
+  // sin problemas de CORS o restricciones de fetch
+  window.open(url, '_blank');
 
   console.log('✅ Descarga iniciada:', nombreArchivo);
 };
