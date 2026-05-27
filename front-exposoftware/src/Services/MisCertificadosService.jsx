@@ -46,12 +46,13 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
   try {
     console.log('📥 Descargando certificado:', idCertificado);
 
-    // Paso 1: Obtener el certificado del backend (sin credenciales para evitar CORS con Cloudinary)
-    // El backend debe estar configurado para aceptar esta solicitud cross-origin
+    // Paso 1: Obtener el certificado del backend
+    // Usar credentials: 'include' para enviar la sesión en despliegue (cross-origin)
     const response = await fetch(
       API_ENDPOINTS.CERTIFICADO_DESCARGAR(idCertificado),
       {
-        method: 'GET'
+        method: 'GET',
+        credentials: 'include'
       }
     );
 
