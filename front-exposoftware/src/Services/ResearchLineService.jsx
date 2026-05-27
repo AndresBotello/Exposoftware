@@ -17,7 +17,6 @@ let arbolCompletoPromise = null;
  */
 const limpiarCacheSiExpiro = () => {
   if (cache.arbolCompleto && Date.now() - cache.arbolCompletoTime > cache.CACHE_DURATION) {
-    console.log('♻️ Caché del árbol completo expirado');
     cache.arbolCompleto = null;
     cache.arbolCompletoTime = 0;
   }
@@ -27,7 +26,6 @@ const limpiarCacheSiExpiro = () => {
  * Invalidar caché manualmente (después de crear/actualizar/eliminar)
  */
 export const invalidarCache = () => {
-  console.log('🔄 Invalidando caché del árbol completo...');
   cache.arbolCompleto = null;
   cache.arbolCompletoTime = 0;
   arbolCompletoPromise = null;
@@ -41,20 +39,17 @@ const obtenerArbolCompletoConDedup = async () => {
   
   // Si ya hay una solicitud en progreso, esperar a que termine
   if (arbolCompletoPromise) {
-    console.log('⏳ Esperando solicitud previa de árbol completo...');
     return arbolCompletoPromise;
   }
   
   // Si el resultado está en caché, devolverlo
   if (cache.arbolCompleto) {
-    console.log('📦 Devolviendo árbol completo desde caché');
     return cache.arbolCompleto;
   }
   
   // Crear nueva solicitud
   arbolCompletoPromise = (async () => {
     try {
-      console.log('🔍 Obteniendo árbol completo desde API...');
       const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
         credentials: 'include',
         method: 'GET',
@@ -66,22 +61,16 @@ const obtenerArbolCompletoConDedup = async () => {
       }
 
       const data = await response.json();
-      console.log('📦 Respuesta RAW árbol completo:', data);
       console.log('📦 Tipo de data:', Array.isArray(data) ? 'Array' : typeof data);
-      console.log('📦 data.lineas:', data.lineas);
       
       const arbol = Array.isArray(data) ? data : (data.lineas || data.data || []);
-      console.log('📦 Árbol procesado:', arbol);
-      console.log('📦 Cantidad de líneas en árbol:', arbol.length);
       
       // Almacenar en caché
       cache.arbolCompleto = arbol;
       cache.arbolCompletoTime = Date.now();
       
-      console.log('✅ Árbol completo cacheado');
       return arbol;
     } catch (error) {
-      console.error('❌ Error obteniendo árbol completo:', error);
       throw error;
     } finally {
       arbolCompletoPromise = null;
@@ -117,7 +106,6 @@ const getAuthHeaders = () => {
  */
 export const obtenerLineas = async () => {
   try {
-    console.log('🔍 Obteniendo líneas desde:', API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION);
     
     const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
       credentials: 'include',
@@ -128,14 +116,12 @@ export const obtenerLineas = async () => {
     if (!response.ok) {
       // Si es error 500, probablemente no hay datos aún
       if (response.status === 500) {
-        console.warn('⚠️ El árbol de investigación aún no tiene datos. Retornando array vacío.');
         return [];
       }
       throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('📦 Respuesta completa del árbol de investigación:', data);
     
     // Extraer las líneas del árbol completo
     let lineas = [];
@@ -162,13 +148,10 @@ export const obtenerLineas = async () => {
       }));
     }
     
-    console.log('✅ Líneas extraídas del árbol:', lineas);
     return lineas;
     
   } catch (error) {
-    console.error('❌ Error obteniendo líneas:', error);
     // En lugar de lanzar error, retornar array vacío para permitir crear las primeras líneas
-    console.warn('⚠️ Retornando array vacío para permitir crear las primeras líneas');
     return [];
   }
 };
@@ -192,12 +175,10 @@ export const obtenerLineaPorId = async (lineaId) => {
     }
 
     const data = await response.json();
-    console.log(`✅ Línea ${lineaId} obtenida:`, data);
     
     return data.data || data;
     
   } catch (error) {
-    console.error(`❌ Error obteniendo línea ${lineaId}:`, error);
     throw error;
   }
 };
@@ -241,17 +222,14 @@ export const crearLinea = async (lineaData) => {
       body: JSON.stringify(payload)
     });
 
-    console.log('📡 Response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('📄 Response RAW text:', errorText);
       
       let errorData = {};
       try {
         errorData = JSON.parse(errorText);
       } catch (e) {
-        console.error('⚠️ No se pudo parsear el error como JSON');
         errorData = { message: errorText };
       }
       
@@ -273,12 +251,10 @@ export const crearLinea = async (lineaData) => {
     }
 
     const resultado = await response.json();
-    console.log('✅ Línea creada:', resultado);
     
     return resultado;
     
   } catch (error) {
-    console.error('❌ Error creando línea:', error);
     throw error;
   }
 };
@@ -297,7 +273,6 @@ export const actualizarLinea = async (lineaId, lineaData) => {
       nombre_linea: lineaData.nombre_linea.trim()
     };
 
-    console.log(`📤 Actualizando línea ${lineaId}:`, payload);
 
     const response = await fetch(API_ENDPOINTS.ADMIN_LINEA_BY_CODE(lineaId), {
       credentials: 'include',
@@ -312,12 +287,10 @@ export const actualizarLinea = async (lineaId, lineaData) => {
     }
 
     const resultado = await response.json();
-    console.log(`✅ Línea ${lineaId} actualizada:`, resultado);
     
     return resultado;
     
   } catch (error) {
-    console.error('❌ Error actualizando línea:', error);
     throw error;
   }
 };
@@ -328,7 +301,6 @@ export const actualizarLinea = async (lineaId, lineaData) => {
  */
 export const eliminarLinea = async (lineaId) => {
   try {
-    console.log(`🗑️ Eliminando línea ${lineaId}`);
 
     const response = await fetch(API_ENDPOINTS.ADMIN_LINEA_BY_CODE(lineaId), {
       credentials: 'include',
@@ -341,11 +313,9 @@ export const eliminarLinea = async (lineaId) => {
       throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
     }
 
-    console.log('✅ Línea eliminada');
     return true;
     
   } catch (error) {
-    console.error('❌ Error eliminando línea:', error);
     throw error;
   }
 };
@@ -373,7 +343,6 @@ export const obtenerSublineas = async (lineaId) => {
     return sublineas;
     
   } catch (error) {
-    console.error(`Error obteniendo sublíneas de línea ${lineaId}:`, error);
     throw new Error('No se pudieron cargar las sublíneas');
   }
 };
@@ -398,7 +367,6 @@ export const obtenerSublineaPorId = async (lineaId, sublineaId) => {
     return data.data || data;
     
   } catch (error) {
-    console.error(`Error obteniendo sublínea ${sublineaId}:`, error);
     throw error;
   }
 };
@@ -408,12 +376,9 @@ export const obtenerSublineaPorId = async (lineaId, sublineaId) => {
  */
 export const obtenerTodasSublineas = async () => {
   try {
-    console.log('🔍 Obteniendo todas las sublíneas...');
     
     // Usar el árbol completo cacheado con deduplicación
     const arbol = await obtenerArbolCompletoConDedup();
-    console.log('📦 Árbol recibido para sublíneas:', arbol);
-    console.log('📦 Cantidad de líneas en árbol:', arbol.length);
     
     // Extraer todas las sublíneas
     const sublineas = [];
@@ -438,12 +403,9 @@ export const obtenerTodasSublineas = async () => {
       }
     });
     
-    console.log(`✅ ${sublineas.length} sublíneas extraídas del árbol`);
-    console.log('📦 Sublíneas extraídas:', sublineas);
     return sublineas;
     
   } catch (error) {
-    console.error('❌ Error obteniendo todas las sublíneas:', error);
     throw new Error('No se pudieron cargar las sublíneas');
   }
 };
@@ -463,7 +425,6 @@ export const crearSublinea = async (lineaId, sublineaData) => {
       codigo_linea: typeof lineaId === 'string' ? parseInt(lineaId) : lineaId
     };
 
-    console.log(`📤 Creando sublínea en línea ${lineaId}:`, payload);
 
     const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEAS_BY_LINE(lineaId), {
       credentials: 'include',
@@ -478,12 +439,10 @@ export const crearSublinea = async (lineaId, sublineaData) => {
     }
 
     const resultado = await response.json();
-    console.log('✅ Sublínea creada:', resultado);
     
     return resultado;
     
   } catch (error) {
-    console.error('❌ Error creando sublínea:', error);
     throw error;
   }
 };
@@ -502,7 +461,6 @@ export const actualizarSublinea = async (lineaId, sublineaId, sublineaData) => {
       nombre_sublinea: sublineaData.nombre_sublinea.trim()
     };
 
-    console.log(`📤 Actualizando sublínea ${sublineaId}:`, payload);
 
     const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEA_BY_CODE(lineaId, sublineaId), {
       credentials: 'include',
@@ -517,12 +475,10 @@ export const actualizarSublinea = async (lineaId, sublineaId, sublineaData) => {
     }
 
     const resultado = await response.json();
-    console.log(`✅ Sublínea ${sublineaId} actualizada:`, resultado);
     
     return resultado;
     
   } catch (error) {
-    console.error('❌ Error actualizando sublínea:', error);
     throw error;
   }
 };
@@ -533,7 +489,6 @@ export const actualizarSublinea = async (lineaId, sublineaId, sublineaData) => {
  */
 export const eliminarSublinea = async (lineaId, sublineaId) => {
   try {
-    console.log(`🗑️ Eliminando sublínea ${sublineaId}`);
 
     const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEA_BY_CODE(lineaId, sublineaId), {
       credentials: 'include',
@@ -546,11 +501,9 @@ export const eliminarSublinea = async (lineaId, sublineaId) => {
       throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
     }
 
-    console.log('✅ Sublínea eliminada');
     return true;
     
   } catch (error) {
-    console.error('❌ Error eliminando sublínea:', error);
     throw error;
   }
 };
@@ -578,7 +531,6 @@ export const obtenerAreas = async (lineaId, sublineaId) => {
     return areas;
     
   } catch (error) {
-    console.error(`Error obteniendo áreas de sublínea ${sublineaId}:`, error);
     throw new Error('No se pudieron cargar las áreas temáticas');
   }
 };
@@ -603,7 +555,6 @@ export const obtenerAreaPorId = async (lineaId, sublineaId, areaId) => {
     return data.data || data;
     
   } catch (error) {
-    console.error(`Error obteniendo área ${areaId}:`, error);
     throw error;
   }
 };
@@ -613,7 +564,6 @@ export const obtenerAreaPorId = async (lineaId, sublineaId, areaId) => {
  */
 export const obtenerTodasAreas = async () => {
   try {
-    console.log('🔍 Obteniendo todas las áreas temáticas...');
     
     // Usar el árbol completo cacheado con deduplicación
     const arbol = await obtenerArbolCompletoConDedup();
@@ -640,11 +590,9 @@ export const obtenerTodasAreas = async () => {
       }
     });
     
-    console.log(`✅ ${areas.length} áreas extraídas del árbol`);
     return areas;
     
   } catch (error) {
-    console.error('❌ Error obteniendo todas las áreas temáticas:', error);
     throw new Error('No se pudieron cargar las áreas temáticas');
   }
 };
@@ -664,7 +612,6 @@ export const crearArea = async (lineaId, sublineaId, areaData) => {
       codigo_sublinea: typeof sublineaId === 'string' ? parseInt(sublineaId) : sublineaId
     };
 
-    console.log(`📤 Creando área en sublínea ${sublineaId}:`, payload);
 
     const response = await fetch(API_ENDPOINTS.ADMIN_AREAS_BY_SUBLINEA(lineaId, sublineaId), {
       credentials: 'include',
@@ -679,12 +626,10 @@ export const crearArea = async (lineaId, sublineaId, areaData) => {
     }
 
     const resultado = await response.json();
-    console.log('✅ Área temática creada:', resultado);
     
     return resultado;
     
   } catch (error) {
-    console.error('❌ Error creando área temática:', error);
     throw error;
   }
 };
@@ -703,7 +648,6 @@ export const actualizarArea = async (lineaId, sublineaId, areaId, areaData) => {
       nombre_area: areaData.nombre_area.trim()
     };
 
-    console.log(`📤 Actualizando área ${areaId}:`, payload);
 
     const response = await fetch(API_ENDPOINTS.ADMIN_AREA_BY_CODE(lineaId, sublineaId, areaId), {
       credentials: 'include',
@@ -718,12 +662,10 @@ export const actualizarArea = async (lineaId, sublineaId, areaId, areaData) => {
     }
 
     const resultado = await response.json();
-    console.log(`✅ Área temática ${areaId} actualizada:`, resultado);
     
     return resultado;
     
   } catch (error) {
-    console.error('❌ Error actualizando área temática:', error);
     throw error;
   }
 };
@@ -734,7 +676,6 @@ export const actualizarArea = async (lineaId, sublineaId, areaId, areaData) => {
  */
 export const eliminarArea = async (lineaId, sublineaId, areaId) => {
   try {
-    console.log(`🗑️ Eliminando área ${areaId}`);
 
     const response = await fetch(API_ENDPOINTS.ADMIN_AREA_BY_CODE(lineaId, sublineaId, areaId), {
       credentials: 'include',
@@ -747,11 +688,9 @@ export const eliminarArea = async (lineaId, sublineaId, areaId) => {
       throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
     }
 
-    console.log('✅ Área temática eliminada');
     return true;
     
   } catch (error) {
-    console.error('❌ Error eliminando área temática:', error);
     throw error;
   }
 };

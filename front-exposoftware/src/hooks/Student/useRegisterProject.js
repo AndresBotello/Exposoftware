@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { API_ENDPOINTS } from "../../utils/constants";
+import { API_ENDPOINTS, API_BASE_URL } from "../../utils/constants";
 import RegisterProjectService from "../../Services/RegisterProjectService";
 import EventosService from "../../Services/EventosService";
 import { obtenerMaterias } from "../../Services/CreateGroup";
@@ -66,7 +66,6 @@ export function useRegisterProject() {
       setError(null);
 
       try {
-        console.log("🔄 Cargando catálogos desde el backend...");
 
         // 1️⃣ Árbol de investigación
         const arbolInvestigacion = await RegisterProjectService.obtenerArbolInvestigacion();
@@ -108,7 +107,6 @@ export function useRegisterProject() {
         // 2️⃣.5️⃣ Todos los grupos (para enriquecer asignaciones)
         let todosLosGruposData = [];
         try {
-          console.log('📥 Cargando todos los grupos...');
           const response = await fetch(`/api/v1/admin/grupos`, {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
@@ -117,10 +115,8 @@ export function useRegisterProject() {
           if (response.ok) {
             const result = await response.json();
             todosLosGruposData = result.data || result || [];
-            console.log(`✅ Grupos cargados: ${todosLosGruposData.length}`);
           }
         } catch (err) {
-          console.warn('⚠️ Error cargando grupos:', err.message);
           todosLosGruposData = [];
         }
 
@@ -129,7 +125,6 @@ export function useRegisterProject() {
         let materiasData = [];
         let clasesDisponibles = [];
         try {
-          console.log('🔄 Cargando clases disponibles del estudiante...');
 
           const response = await fetch(API_ENDPOINTS.ESTUDIANTE_MIS_CLASES, {
             method: 'GET',
@@ -154,14 +149,11 @@ export function useRegisterProject() {
             });
 
             materiasData = Object.values(materiasUnicas);
-            console.log(`✅ Clases disponibles cargadas: ${clasesDisponibles.length} | Materias únicas: ${materiasData.length}`);
           } else {
-            console.warn('⚠️ Error cargando clases disponibles:', response.status);
             materiasData = [];
             clasesDisponibles = [];
           }
         } catch (err) {
-          console.warn('⚠️ Error cargando clases:', err.message);
           materiasData = [];
           clasesDisponibles = [];
         }
@@ -191,7 +183,6 @@ export function useRegisterProject() {
           (e) =>
             typeof e.estado === "string" && e.estado.toLowerCase() === "inscripciones_abiertas"
         );
-        console.log(`📅 Eventos totales: ${eventosData.length} | Con inscripciones abiertas: ${eventosInscritos.length}`);
 
         setLineas(lineasData);
         setSublineas(sublineasData);
@@ -209,9 +200,7 @@ export function useRegisterProject() {
           setForm((prev) => ({ ...prev, id_estudiantes: [userId] }));
         }
 
-        console.log("✅ Catálogos cargados exitosamente");
       } catch (err) {
-        console.error("❌ Error cargando catálogos:", err);
         setError(err.message || "Error al cargar los datos. Por favor, intenta de nuevo.");
       } finally {
         setLoadingData(false);
@@ -236,7 +225,6 @@ export function useRegisterProject() {
   // Usa las clases disponibles cargadas en el endpoint /api/v1/estudiantes/mis_clases_disponibles
   useEffect(() => {
     if (form.codigo_materia && clasesDisponibles.length > 0) {
-      console.log(`📥 Filtrando clases de materia: ${form.codigo_materia}`);
 
       // Filtrar clases disponibles por la materia seleccionada
       const clasesDeMateria = clasesDisponibles.filter(
@@ -253,7 +241,6 @@ export function useRegisterProject() {
         id_docente_materia: clase.id_docente_materia
       }));
 
-      console.log(`✅ Clases cargadas: ${gruposFormateados.length}`, gruposFormateados);
       setGrupos(gruposFormateados);
     } else {
       setGrupos([]);
@@ -296,9 +283,9 @@ export function useRegisterProject() {
     }
 
     try {
-      const response = await fetch(`/api/v1/usuarios/buscar?q=${encodeURIComponent(termino)}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/usuarios/buscar?q=${encodeURIComponent(termino)}`, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include'
       });
 
@@ -313,11 +300,9 @@ export function useRegisterProject() {
           rol: u.rol || u.role
         }));
       } else {
-        console.warn(`⚠️ Error buscando estudiantes: ${response.status}`);
         return [];
       }
     } catch (err) {
-      console.error('❌ Error en búsqueda de estudiantes:', err);
       return [];
     }
   };
@@ -436,13 +421,11 @@ export function useRegisterProject() {
         nombresParticipantes[participantes.indexOf(id)] || ''
       );
 
-      console.log("📤 Enviando proyecto:", proyectoData);
       await RegisterProjectService.crearProyecto(proyectoData, form.archivoPDF, form.archivoExtra, idUsuarioActual);
 
       alert("¡Proyecto registrado exitosamente!");
       setOpen(false);
     } catch (err) {
-      console.error("❌ Error al registrar proyecto:", err);
       alert(err.message || "Error al registrar el proyecto. Por favor, intenta de nuevo.");
     } finally {
       setLoading(false);

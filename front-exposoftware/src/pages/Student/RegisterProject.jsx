@@ -3,7 +3,6 @@ import { useRegisterProject } from "../../hooks/Student/useRegisterProject";
 
 // Función auxiliar para agregar estudiante con su información
 const agregarEstudianteConInfo = (id, estudiante, setEstudiantesAgregados, addParticipant) => {
-  console.log("📝 agregarEstudianteConInfo llamada con:", { id, estudiante });
   setEstudiantesAgregados(prev => ({
     ...prev,
     [id]: estudiante
@@ -489,7 +488,6 @@ function ParticipantCombo({ students, selectedIds, onAdd, buscarEstudiantes }) {
               key={s.id}
               type="button"
               onClick={() => {
-                console.log("🔘 Botón presionado para estudiante:", s);
                 onAdd(s.id, s);
                 setQ("");
                 setResultados([]);

@@ -22,11 +22,9 @@ export default function Profile() {
 
   const handleLogout = async () => {
     try {
-      console.log("🚪 Cerrando sesión del estudiante...");
       await logout();
       navigate("/login");
     } catch (error) {
-      console.error("❌ Error al cerrar sesión:", error);
       alert("❌ Error al cerrar sesión");
     }
   };
@@ -48,7 +46,6 @@ export default function Profile() {
       setIsEditing(false);
       alert("✅ Cambios guardados exitosamente");
     } catch (error) {
-      console.error("❌ Error al guardar perfil:", error);
       alert("❌ Error al guardar: " + error.message);
     }
   };

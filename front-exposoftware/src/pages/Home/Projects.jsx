@@ -24,9 +24,7 @@ export default function PublicProjects() {
       const datosProyectos = await obtenerTodosLosProyectos();
       setProyectos(datosProyectos);
 
-      console.log('✅ Proyectos cargados:', datosProyectos.length);
     } catch (err) {
-      console.error('❌ Error cargando proyectos:', err);
       setError(err.message);
     } finally {
       setCargando(false);
@@ -44,7 +42,6 @@ export default function PublicProjects() {
         [eventoId]: evento.nombre_evento || evento.nombre || 'Evento desconocido'
       }));
     } catch (error) {
-      console.error('Error obteniendo nombre del evento:', error);
       setEventoNombre(prev => ({
         ...prev,
         [eventoId]: 'Evento desconocido'

@@ -9,20 +9,14 @@ export const ProtectedRoute = ({ children, requiredRole = null }) => {
   const isAuthenticated = AuthService.isAuthenticated();
   const userRole = AuthService.getUserRole();
 
-  console.log('🔐 ProtectedRoute - Verificando acceso:');
-  console.log('   - Autenticado:', isAuthenticated);
-  console.log('   - Rol actual:', userRole);
-  console.log('   - Rol requerido:', requiredRole);
 
   // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
-    console.log('❌ Usuario no autenticado - Redirigiendo a login');
     return <Navigate to="/login" replace />;
   }
 
   // Si se requiere un rol específico, verificar
   if (requiredRole && userRole !== requiredRole) {
-    console.log(`❌ Rol incorrecto. Esperado: ${requiredRole}, Actual: ${userRole}`);
     
     // Redirigir al dashboard correcto según el rol
     switch (userRole) {
@@ -41,7 +35,6 @@ export const ProtectedRoute = ({ children, requiredRole = null }) => {
     }
   }
 
-  console.log('✅ Acceso permitido');
   // Usuario autenticado y con el rol correcto
   return children;
 };
@@ -89,19 +82,14 @@ export const EstudianteOEgresadoRoute = ({ children }) => {
   const isAuthenticated = AuthService.isAuthenticated();
   const userRole = AuthService.getUserRole();
 
-  console.log('🔐 EstudianteOEgresadoRoute - Verificando acceso:');
-  console.log('   - Autenticado:', isAuthenticated);
-  console.log('   - Rol actual:', userRole);
 
   // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
-    console.log('❌ Usuario no autenticado - Redirigiendo a login');
     return <Navigate to="/login" replace />;
   }
 
   // Permitir solo estudiantes y egresados
   if (userRole !== 'estudiante' && userRole !== 'egresado') {
-    console.log(`❌ Rol no permitido. Se requiere estudiante o egresado, actual: ${userRole}`);
     
     // Redirigir al dashboard correcto según el rol
     switch (userRole) {

@@ -64,14 +64,12 @@ export default function CreateTeacher() {
                   allPrograms = [...allPrograms, ...progs];
                 }
               } catch (err) {
-                console.warn('Error loading programs for faculty:', err);
               }
             }
           }
           setProgramas(allPrograms);
         }
       } catch (err) {
-        console.error('Error loading programas:', err);
       } finally {
         setLoadingProgramas(false);
       }
@@ -183,7 +181,6 @@ export default function CreateTeacher() {
         m.codigo_departamento === departamento ||
         m.departamento === departamento
       );
-      console.log('📍 Municipios para departamento', departamento, ':', municipiosDelDepto);
     }
   }, [departamento, municipiosApi]);
   
@@ -227,9 +224,6 @@ export default function CreateTeacher() {
   const handleFormSubmit = (e) => {
     e.preventDefault();
     
-    console.log('🚀 Formulario enviado');
-    console.log('📋 Categoría Docente:', categoriaDocente);
-    console.log('📋 Código Programa:', codigoPrograma);
 
     // Combinar nombres y apellidos para validación
     const nombresCompletos = `${primerNombre} ${segundoNombre}`.trim();
@@ -257,7 +251,6 @@ export default function CreateTeacher() {
       activo,
     };
 
-    console.log('📦 Datos del formulario:', formData);
 
     // Validar todos los campos requeridos
     const newErrors = {};
@@ -268,19 +261,14 @@ export default function CreateTeacher() {
       }
     });
 
-    console.log('❌ Errores encontrados:', newErrors);
-    console.log('❌ Cantidad de errores:', Object.keys(newErrors).length);
-    
     // Mostrar cada error específico
     Object.keys(newErrors).forEach(campo => {
-      console.log(`   ⚠️ Campo "${campo}": ${newErrors[campo]}`);
     });
     
     setErrors(newErrors);
 
     // Si hay errores, no enviar el formulario
     if (hasErrors(newErrors)) {
-      console.log('⛔ Formulario NO enviado - hay errores de validación');
       // Scroll al primer error
       const firstErrorField = Object.keys(newErrors)[0];
       const element = document.querySelector(`[name="${firstErrorField}"]`);
@@ -291,7 +279,6 @@ export default function CreateTeacher() {
       return;
     }
 
-    console.log('✅ Validación pasada - enviando al servidor');
     
     // Si no hay errores, proceder con el envío con callback de éxito
     handleSubmit(e, (message) => {

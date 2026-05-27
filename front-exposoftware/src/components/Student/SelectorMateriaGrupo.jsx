@@ -23,10 +23,8 @@ export default function SelectorMateriaGrupo({
     try {
       const data = await SubjectService.obtenerMaterias();
       setMaterias(data || []);
-      console.log('✅ Materias cargadas:', data?.length);
     } catch (err) {
       setError('Error al cargar materias: ' + err.message);
-      console.error('❌ Error:', err);
     } finally {
       setCargandoMaterias(false);
     }
@@ -43,7 +41,6 @@ export default function SelectorMateriaGrupo({
     setCargandoGrupos(true);
     setError(null);
     try {
-      console.log('📥 Cargando asignaciones de:', codigoMateria);
       const asignaciones = await SubjectService.obtenerAsignacionesMateria(codigoMateria);
 
       // Procesar asignaciones
@@ -57,7 +54,6 @@ export default function SelectorMateriaGrupo({
       }));
 
       setGruposActuales(grupos);
-      console.log('✅ Grupos cargados:', grupos);
 
       // Callback con materia seleccionada
       const materiaSeleccionada = materias.find(m => m.codigo_materia === codigoMateria);
@@ -68,7 +64,6 @@ export default function SelectorMateriaGrupo({
       });
     } catch (err) {
       setError('Error al cargar grupos: ' + err.message);
-      console.error('❌ Error:', err);
       setGruposActuales([]);
     } finally {
       setCargandoGrupos(false);
@@ -81,7 +76,6 @@ export default function SelectorMateriaGrupo({
       materia: materia,
       grupo: grupo
     });
-    console.log('✅ Seleccionado:', { materia: materia?.codigo_materia, grupo: grupo.codigo_grupo });
   };
 
   return (

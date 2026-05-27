@@ -34,7 +34,6 @@ export function useStudentProfile(user, updateUser) {
           });
         }
       } catch (error) {
-        console.error('Error:', error);
       } finally {
         setLoading(false);
       }

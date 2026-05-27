@@ -15,18 +15,14 @@ const procesarRespuesta = async (response) => {
   if (contentType && contentType.includes("application/json")) {
     try {
       responseData = await response.json();
-      console.log('📦 Datos de respuesta completos:', JSON.stringify(responseData, null, 2));
     } catch (error) {
-      console.error('❌ Error al parsear JSON:', error);
     }
   } else {
     // Si no es JSON, intentar leer como texto
     try {
       const text = await response.text();
-      console.log('📄 Respuesta como texto:', text);
       responseData = { message: text };
     } catch (error) {
-      console.error('❌ Error al leer respuesta:', error);
     }
   }
 
@@ -43,8 +39,6 @@ const procesarRespuesta = async (response) => {
   // Si hay errores, extraer el mensaje apropiado
   let errorMessage = responseData.message || responseData.detail || 'Error desconocido';
   
-  console.log('🔍 Analizando error - Status:', response.status);
-  console.log('🔍 responseData completo:', responseData);
   
   // Si hay un array de errores detallados, procesarlos
   if (responseData.errors && Array.isArray(responseData.errors)) {
@@ -66,7 +60,6 @@ const procesarRespuesta = async (response) => {
     }
   }
 
-  console.error('❌ Error del servidor:', errorMessage);
   throw new Error(errorMessage);
 };
 
@@ -77,9 +70,7 @@ const procesarRespuesta = async (response) => {
  */
 export const obtenerMaterias = async () => {
   try {
-    console.log('📥 Cargando materias desde:', API_ENDPOINTS.MATERIAS);
     const headers = AuthService.getAuthHeaders();
-    console.log('🔑 Headers de autenticación:', headers);
     
     const response = await fetch(API_ENDPOINTS.MATERIAS, {
       credentials: 'include',
@@ -87,20 +78,10 @@ export const obtenerMaterias = async () => {
       headers: headers
     });
     
-    console.log('📡 Respuesta del servidor - Status:', response.status, response.statusText);
     
     const resultado = await procesarRespuesta(response);
-    console.log('� Respuesta completa:', resultado);
-    console.log('✅ Materias cargadas:', resultado.data?.length || 0);
-    
-    if (resultado.data && resultado.data.length > 0) {
-      console.log('🔍 Estructura de la primera materia:', resultado.data[0]);
-      console.log('🔍 Claves de la primera materia:', Object.keys(resultado.data[0]));
-    }
-    
     return resultado.data || [];
   } catch (error) {
-    console.error('❌ Error al cargar materias:', error.message);
     throw error;
   }
 };
@@ -118,10 +99,8 @@ export const obtenerGrupos = async () => {
       headers: AuthService.getAuthHeaders()
     });
     const resultado = await procesarRespuesta(response);
-    console.log('📥 Grupos cargados desde backend:', resultado.data?.length || 0);
     return resultado.data || [];
   } catch (error) {
-    console.error('❌ Error al cargar grupos:', error.message);
     throw error;
   }
 };
@@ -139,10 +118,8 @@ export const obtenerDocentes = async () => {
       headers: AuthService.getAuthHeaders()
     });
     const resultado = await procesarRespuesta(response);
-    console.log('📥 Profesores cargados desde backend:', resultado.data?.length || 0);
     return resultado.data;
   } catch (error) {
-    console.error('❌ Error al cargar profesores:', error.message);
     throw error;
   }
 };
@@ -158,11 +135,6 @@ export const obtenerDocentes = async () => {
  */
 export const crearMateria = async (materiaData) => {
   // Validaciones previas
-  console.log('🔍 VALIDACIONES PREVIAS:');
-  console.log('   - codigo_materia:', materiaData.codigo_materia, '(length:', materiaData.codigo_materia?.length, ')');
-  console.log('   - nombre_materia:', materiaData.nombre_materia, '(length:', materiaData.nombre_materia?.length, ')');
-  console.log('   - ciclo_semestral:', materiaData.ciclo_semestral);
-  
   // Validar longitud del código
   if (materiaData.codigo_materia.length > 8) {
     throw new Error('El código de materia no puede exceder 8 caracteres');
@@ -193,20 +165,13 @@ export const crearMateria = async (materiaData) => {
     nombre_materia: materiaData.nombre_materia.trim()
   };
 
-  console.log('📤 Creando materia en backend:', JSON.stringify(payload, null, 2));
-  console.log('🔗 Endpoint:', API_ENDPOINTS.MATERIAS);
-  
   const headers = AuthService.getAuthHeaders();
-  console.log('🔑 Headers:', headers);
   
   // Verificar token
   const token = localStorage.getItem('auth_token');
   const expiresAt = localStorage.getItem('token_expires_at');
-  console.log('🔐 Token exists:', !!token);
-  console.log('🕐 Token expires at:', expiresAt);
   if (expiresAt) {
     const isExpired = new Date(expiresAt) < new Date();
-    console.log('⏰ Token expired:', isExpired);
     if (isExpired) {
       throw new Error('Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
     }
@@ -220,14 +185,10 @@ export const crearMateria = async (materiaData) => {
       body: JSON.stringify(payload)
     });
 
-    console.log('📡 Respuesta del servidor - Status:', response.status, response.statusText);
     
     // Si es error 500, dar más información al usuario
     if (response.status === 500) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ ERROR 500 - DETALLE:', errorData);
-      console.error('❌ Payload enviado:', payload);
-      console.error('❌ Headers enviados:', headers);
       
       throw new Error(
         '⚠️ ERROR INTERNO DEL SERVIDOR (500)\n\n' +
@@ -249,10 +210,8 @@ export const crearMateria = async (materiaData) => {
     }
     
     const resultado = await procesarRespuesta(response);
-    console.log('✅ Materia creada exitosamente:', resultado);
     return resultado;
   } catch (error) {
-    console.error('❌ Error al crear materia:', error.message);
     throw error;
   }
 };
@@ -274,8 +233,6 @@ export const crearAsignacionDocente = async (asignacionData) => {
     id_docente: asignacionData.id_docente
   };
 
-  console.log('📤 Creando asignación docente-materia:', JSON.stringify(payload, null, 2));
-
   try {
     const response = await fetch(API_ENDPOINTS.ASIGNACIONES_DOCENTE, {
       credentials: 'include',
@@ -285,10 +242,8 @@ export const crearAsignacionDocente = async (asignacionData) => {
     });
 
     const resultado = await procesarRespuesta(response);
-    console.log('✅ Asignación creada exitosamente:', resultado);
     return resultado;
   } catch (error) {
-    console.error('❌ Error al crear asignación:', error.message);
     throw error;
   }
 };
@@ -308,8 +263,6 @@ export const actualizarMateria = async (id, materiaData) => {
     id_ciclo: materiaData.id_ciclo
   };
 
-  console.log('📤 Actualizando materia en backend (código: ' + id + '):', JSON.stringify(payload, null, 2));
-
   try {
     const response = await fetch(API_ENDPOINTS.ADMIN_MATERIA_BY_CODE(id), {
       credentials: 'include',
@@ -319,10 +272,8 @@ export const actualizarMateria = async (id, materiaData) => {
     });
 
     const resultado = await procesarRespuesta(response);
-    console.log('✅ Materia actualizada exitosamente:', resultado);
     return resultado;
   } catch (error) {
-    console.error('❌ Error al actualizar materia:', error.message);
     throw error;
   }
 };
@@ -334,7 +285,6 @@ export const actualizarMateria = async (id, materiaData) => {
  * @returns {Promise<Object>} Confirmación de eliminación
  */
 export const eliminarMateria = async (id) => {
-  console.log('🗑️ Eliminando materia del backend - ID:', id);
 
   try {
     const response = await fetch(API_ENDPOINTS.MATERIA_BY_ID(id), { 
@@ -344,10 +294,8 @@ export const eliminarMateria = async (id) => {
     });
 
     const resultado = await procesarRespuesta(response);
-    console.log('✅ Materia eliminada del backend');
     return resultado;
   } catch (error) {
-    console.error('❌ Error al eliminar materia:', error.message);
     throw error;
   }
 };
@@ -363,8 +311,6 @@ export const eliminarMateria = async (id) => {
 export const agregarGrupoAMateria = async (codigoMateria, codigoGrupo) => {
   const url = API_ENDPOINTS.ADMIN_GRUPO_BY_CODE(codigoMateria, codigoGrupo);
   
-  console.log(`📤 Agregando grupo ${codigoGrupo} a materia ${codigoMateria}`);
-  console.log(`🔗 URL: ${url}`);
 
   try {
     const response = await fetch(url, {
@@ -374,10 +320,8 @@ export const agregarGrupoAMateria = async (codigoMateria, codigoGrupo) => {
     });
 
     const resultado = await procesarRespuesta(response);
-    console.log(`✅ Grupo ${codigoGrupo} agregado exitosamente a materia ${codigoMateria}`);
     return resultado;
   } catch (error) {
-    console.error(`❌ Error al agregar grupo ${codigoGrupo} a materia ${codigoMateria}:`, error.message);
     throw error;
   }
 };
@@ -393,8 +337,6 @@ export const agregarGrupoAMateria = async (codigoMateria, codigoGrupo) => {
 export const eliminarGrupoDeMateria = async (codigoMateria, codigoGrupo) => {
   const url = API_ENDPOINTS.ADMIN_GRUPO_BY_CODE(codigoMateria, codigoGrupo);
   
-  console.log(`🗑️ Eliminando grupo ${codigoGrupo} de materia ${codigoMateria}`);
-  console.log(`🔗 URL: ${url}`);
 
   try {
     const response = await fetch(url, {
@@ -404,10 +346,8 @@ export const eliminarGrupoDeMateria = async (codigoMateria, codigoGrupo) => {
     });
 
     const resultado = await procesarRespuesta(response);
-    console.log(`✅ Grupo ${codigoGrupo} eliminado exitosamente de materia ${codigoMateria}`);
     return resultado;
   } catch (error) {
-    console.error(`❌ Error al eliminar grupo ${codigoGrupo} de materia ${codigoMateria}:`, error.message);
     throw error;
   }
 };
@@ -453,10 +393,8 @@ export const validarGruposUnicos = (grupos) => {
  */
 export const obtenerAsignacionesMateria = async (codigoMateria) => {
   try {
-    console.log(`📥 Cargando clases (docente+grupo) de materia: ${codigoMateria}`);
     // Usar el endpoint optimizado que devuelve todas las clases
     const url = `${API_ENDPOINTS.ADMIN_MATERIAS}/${codigoMateria}/asignaciones_docentes`;
-    console.log(`🔗 URL: ${url}`);
 
     const response = await fetch(url, {
       credentials: 'include',
@@ -464,18 +402,10 @@ export const obtenerAsignacionesMateria = async (codigoMateria) => {
       headers: AuthService.getAuthHeaders()
     });
 
-    console.log('📡 Respuesta del servidor - Status:', response.status, response.statusText);
     const resultado = await procesarRespuesta(response);
-    console.log('✅ Clases cargadas:', resultado.data?.length || 0);
-
-    if (resultado.data && resultado.data.length > 0) {
-      console.log('🔍 Estructura de la primera clase:', resultado.data[0]);
-      console.log('🔍 Claves disponibles:', Object.keys(resultado.data[0]));
-    }
 
     return resultado.data || [];
   } catch (error) {
-    console.error(`❌ Error al cargar clases de materia ${codigoMateria}:`, error.message);
     throw error;
   }
 };

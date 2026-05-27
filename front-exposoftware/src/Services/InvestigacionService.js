@@ -25,10 +25,8 @@ class InvestigacionService {
 
       const result = await response.json();
       this.arbolCache = result.data || [];
-      console.log('✅ Árbol de investigación cargado:', this.arbolCache.length, 'líneas');
       return this.arbolCache;
     } catch (error) {
-      console.error('❌ Error al obtener árbol de investigación:', error.message);
       throw error;
     }
   }
@@ -45,12 +43,10 @@ class InvestigacionService {
       // Buscar la línea
       const lineaEncontrada = arbol.find(l => l.codigo_linea === codigoLinea);
       if (!lineaEncontrada) {
-        console.warn('⚠️ Línea no encontrada:', codigoLinea);
         return result;
       }
 
       result.linea = lineaEncontrada.nombre_linea;
-      console.log('✅ Línea encontrada:', result.linea);
 
       // Buscar la sublínea si se proporciona código
       if (codigoSublinea && lineaEncontrada.sublineas) {
@@ -60,7 +56,6 @@ class InvestigacionService {
 
         if (sublineaEncontrada) {
           result.sublinea = sublineaEncontrada.nombre_sublinea;
-          console.log('✅ Sublínea encontrada:', result.sublinea);
 
           // Buscar el área si se proporciona código
           if (codigoArea && sublineaEncontrada.areas_tematicas) {
@@ -70,7 +65,6 @@ class InvestigacionService {
 
             if (areaEncontrada) {
               result.area = areaEncontrada.nombre_area;
-              console.log('✅ Área encontrada:', result.area);
             }
           }
         }
@@ -78,7 +72,6 @@ class InvestigacionService {
 
       return result;
     } catch (error) {
-      console.error('❌ Error al obtener nombres de investigación:', error.message);
       throw error;
     }
   }

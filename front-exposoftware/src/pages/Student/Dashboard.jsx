@@ -28,7 +28,6 @@ export default function StudentDashboard() {
       link.download = `${title}_${new Date().toISOString().split('T')[0]}.png`;
       link.click();
     } catch (error) {
-      console.error('Error exportando imagen:', error);
       alert('Error al exportar la imagen');
     }
   };
@@ -43,7 +42,6 @@ export default function StudentDashboard() {
         chartData: [proyectosPorMateriaData, proyectosPorSublineaData]
       });
     } catch (error) {
-      console.error('Error exportando reporte:', error);
     }
   };
 

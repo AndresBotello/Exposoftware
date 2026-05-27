@@ -68,7 +68,6 @@ export default function GraduateProfile() {
       try {
         setLoadingPerfil(true);
         setError(null);
-        console.log('📋 Cargando perfil del egresado desde contexto...');
 
         // Obtener perfil del contexto (ya fue cargado en Dashboard)
         const datos = getGraduateProfile();
@@ -76,7 +75,6 @@ export default function GraduateProfile() {
         if (!datos) {
           throw new Error('No se pudo obtener el perfil del egresado');
         }
-        console.log('✅ Perfil cargado desde contexto:', datos);
 
         setFormData(datos);
 
@@ -86,7 +84,6 @@ export default function GraduateProfile() {
           setNombrePrograma(nombre);
         }
       } catch (err) {
-        console.error('❌ Error al cargar perfil:', err);
         setError('No se pudo cargar el perfil. Por favor intente nuevamente.');
 
         // Si falla, usar datos básicos del contexto
@@ -132,7 +129,6 @@ export default function GraduateProfile() {
   const cargarFacultades = async () => {
     try {
       setCargandoFacultades(true);
-      console.log('📚 Cargando facultades desde API...');
 
       const response = await fetch(API_ENDPOINTS.PUBLIC_FACULTADES, {
         method: 'GET',
@@ -143,17 +139,14 @@ export default function GraduateProfile() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Facultades cargadas:', data);
         
         // La respuesta puede venir en data.data o directamente
         const facultadesData = data.data || data;
         setFacultades(Array.isArray(facultadesData) ? facultadesData : []);
       } else {
-        console.error('❌ Error cargando facultades:', response.status);
         setFacultades([]);
       }
     } catch (error) {
-      console.error('❌ Error cargando facultades:', error);
       setFacultades([]);
     } finally {
       setCargandoFacultades(false);
@@ -169,7 +162,6 @@ export default function GraduateProfile() {
 
     try {
       setCargandoProgramas(true);
-      console.log(`📚 Cargando programas de facultad ${facultadId}...`);
       
       const response = await fetch(API_ENDPOINTS.PROGRAMAS_BY_FACULTAD_PUBLICO(facultadId), {
         method: 'GET',
@@ -180,17 +172,14 @@ export default function GraduateProfile() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Programas cargados:', data);
         
         // La respuesta puede venir en data.data o directamente
         const programasData = data.data || data;
         setProgramas(Array.isArray(programasData) ? programasData : []);
       } else {
-        console.error('❌ Error cargando programas:', response.status);
         setProgramas([]);
       }
     } catch (error) {
-      console.error('❌ Error cargando programas:', error);
       setProgramas([]);
     } finally {
       setCargandoProgramas(false);
@@ -230,10 +219,8 @@ export default function GraduateProfile() {
     if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
       try {
         await AuthService.logout();
-        console.log('✅ Sesión cerrada exitosamente');
         navigate('/login');
       } catch (error) {
-        console.error('❌ Error al cerrar sesión:', error);
         // Aunque falle, redirigir al login
         navigate('/login');
       }
@@ -268,7 +255,6 @@ export default function GraduateProfile() {
       setError(null);
       setSuccess(null);
 
-      console.log('💾 Guardando cambios del perfil...');
         
       // Preparar datos para el backend
       const payload = GraduateService.prepararDatosParaBackend(formData);
@@ -277,7 +263,6 @@ export default function GraduateProfile() {
       const idEgresado = formData.id_egresado || user.id_egresado || user.id_usuario;
       const perfilActualizado = await GraduateService.actualizarPerfilEgresado(idEgresado, payload);
         
-      console.log('✅ Perfil actualizado:', perfilActualizado);
         
       setFormData(perfilActualizado);
       setIsEditing(false);
@@ -286,7 +271,6 @@ export default function GraduateProfile() {
       // Limpiar mensaje después de 3 segundos
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      console.error('❌ Error al guardar:', err);
       setError(`Error al actualizar el perfil: ${err.message}`);
     } finally {
       setGuardando(false);

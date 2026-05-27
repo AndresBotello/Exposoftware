@@ -7,9 +7,7 @@ import * as AuthService from "./AuthService";
  */
 export const obtenerFacultades = async () => {
   try {
-    console.log('📥 Cargando facultades desde:', API_ENDPOINTS.ADMIN_FACULTADES);
     const headers = AuthService.getAuthHeaders();
-    console.log('🔑 Headers de autenticación:', headers);
     
     const response = await fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
       credentials: 'include',
@@ -17,26 +15,19 @@ export const obtenerFacultades = async () => {
       headers: headers
     });
     
-    console.log('📡 Respuesta del servidor - Status:', response.status, response.statusText);
     
     if (response.ok) {
       const result = await response.json();
-      console.log('📦 Respuesta completa:', result);
       // El backend retorna { status, message, data, code }
       const facultades = result.data || result;
-      console.log('✅ Facultades cargadas:', facultades.length);
       if (facultades.length > 0) {
-        console.log('🔍 Estructura de la primera facultad:', facultades[0]);
-        console.log('🔍 Claves de la primera facultad:', Object.keys(facultades[0]));
       }
       return Array.isArray(facultades) ? facultades : [];
     } else {
       const errorText = await response.text();
-      console.error('❌ Error al cargar facultades:', response.status, response.statusText, errorText);
       throw new Error(`Error al cargar facultades: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('❌ Error de conexión al cargar facultades:', error);
     throw error;
   }
 };
@@ -64,8 +55,6 @@ export const crearFacultad = async (datosFacultad) => {
     nombre_facultad: datosFacultad.nombre_facultad.trim()
   };
 
-  console.log('📤 Enviando facultad al backend:', JSON.stringify(payload, null, 2));
-
   try {
     const response = await fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
       credentials: 'include',
@@ -76,11 +65,9 @@ export const crearFacultad = async (datosFacultad) => {
 
     if (response.status === 201) {
       const data = await response.json();
-      console.log('✅ Facultad creada:', data);
       return { success: true, data };
     } else if (response.status === 400) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Solicitud incorrecta:', errorData);
       throw new Error(`Solicitud incorrecta: ${errorData.message || errorData.detail || 'Verifique los datos ingresados'}`);
     } else if (response.status === 401) {
       const errorData = await response.json().catch(() => ({}));
@@ -102,7 +89,6 @@ export const crearFacultad = async (datosFacultad) => {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error al crear facultad:', error);
     throw new Error("Error de conexión al crear la facultad. Verifique su conexión a internet.");
   }
 };
@@ -129,8 +115,6 @@ export const actualizarFacultad = async (idFacultad, datosFacultad) => {
     nombre_facultad: datosFacultad.nombre_facultad.trim()
   };
 
-  console.log('📤 Actualizando facultad (ID: ' + idFacultad + '):', JSON.stringify(payload, null, 2));
-
   try {
     const response = await fetch(API_ENDPOINTS.ADMIN_FACULTAD_BY_ID(idFacultad), {
       credentials: 'include',
@@ -141,7 +125,6 @@ export const actualizarFacultad = async (idFacultad, datosFacultad) => {
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Facultad actualizada:', data);
       return { success: true, data };
     } else if (response.status === 400) {
       const errorData = await response.json().catch(() => ({}));
@@ -160,7 +143,6 @@ export const actualizarFacultad = async (idFacultad, datosFacultad) => {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error al actualizar facultad:', error);
     throw new Error("Error de conexión al actualizar la facultad.");
   }
 };
@@ -175,7 +157,6 @@ export const eliminarFacultad = async (idFacultad) => {
     throw new Error("El ID de la facultad es obligatorio");
   }
 
-  console.log('🗑️ Eliminando facultad - ID:', idFacultad);
 
   try {
     const response = await fetch(API_ENDPOINTS.ADMIN_FACULTAD_BY_ID(idFacultad), {
@@ -185,7 +166,6 @@ export const eliminarFacultad = async (idFacultad) => {
     });
 
     if (response.ok) {
-      console.log('✅ Facultad eliminada del backend');
       return { success: true };
     } else if (response.status === 404) {
       const errorData = await response.json().catch(() => ({}));
@@ -201,7 +181,6 @@ export const eliminarFacultad = async (idFacultad) => {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error al eliminar facultad:', error);
     throw new Error("Error de conexión al eliminar la facultad.");
   }
 };
@@ -217,7 +196,6 @@ export const eliminarFacultad = async (idFacultad) => {
 export const filtrarFacultades = (facultades, searchTerm) => {
   // Validar que facultades sea un array
   if (!Array.isArray(facultades)) {
-    console.warn('⚠️ filtrarFacultades: facultades no es un array:', facultades);
     return [];
   }
   
@@ -231,7 +209,6 @@ export const filtrarFacultades = (facultades, searchTerm) => {
 
       return nombre.includes(termino) || id.includes(termino);
     } catch (error) {
-      console.error('Error filtrando facultad:', error, facultad);
       return false;
     }
   });

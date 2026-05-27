@@ -45,7 +45,6 @@ export default function GestionProyectos() {
       toast.current?.show({ severity: 'success', summary: 'Proyectos Cargados', detail: `${proyectosData.length} proyecto(s) encontrado(s)`, life: 3000 });
       await cargarEventos();
     } catch (error) {
-      console.error('❌ Error al cargar proyectos:', error);
       toast.current?.show({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los proyectos', life: 5000 });
     } finally {
       setLoading(false);
@@ -57,7 +56,6 @@ export default function GestionProyectos() {
       const eventosData = await EventosService.obtenerEventosAdmin();
       setEventos(eventosData);
     } catch (error) {
-      console.error('❌ Error cargando eventos:', error);
     }
   };
 

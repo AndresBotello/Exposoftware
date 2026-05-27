@@ -7,7 +7,6 @@ import * as AuthService from "./AuthService";
  */
 export const obtenerFacultades = async () => {
   try {
-    console.log('📥 Cargando facultades desde:', API_ENDPOINTS.ADMIN_FACULTADES);
     const headers = AuthService.getAuthHeaders();
     
     const response = await fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
@@ -16,21 +15,16 @@ export const obtenerFacultades = async () => {
       headers: headers
     });
     
-    console.log('📡 Respuesta del servidor - Status:', response.status, response.statusText);
     
     if (response.ok) {
       const result = await response.json();
-      console.log('📦 Respuesta completa:', result);
       const facultades = result.data || result;
-      console.log('✅ Facultades cargadas:', facultades.length);
       return Array.isArray(facultades) ? facultades : [];
     } else {
       const errorText = await response.text();
-      console.error('❌ Error al cargar facultades:', response.status, response.statusText, errorText);
       throw new Error(`Error al cargar facultades: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('❌ Error de conexión al cargar facultades:', error);
     throw error;
   }
 };
@@ -58,12 +52,10 @@ export const obtenerFacultadPorId = async (facultadId) => {
       }
     );
     
-    console.log('📡 Respuesta del servidor - Status:', response.status);
     
     if (response.ok) {
       const result = await response.json();
       const facultad = result.data || result;
-      console.log('✅ Facultad cargada:', facultad.nombre_facultad);
       return facultad;
     } else if (response.status === 404) {
       throw new Error("La facultad no existe");
@@ -71,7 +63,6 @@ export const obtenerFacultadPorId = async (facultadId) => {
       throw new Error(`Error al cargar facultad: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('❌ Error al cargar facultad:', error);
     throw error;
   }
 };
@@ -87,7 +78,6 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
   }
 
   try {
-    console.log('📥 Cargando programas para facultad:', facultadId);
     const headers = AuthService.getAuthHeaders();
     
     const response = await fetch(
@@ -99,21 +89,17 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
       }
     );
     
-    console.log('📡 Respuesta del servidor - Status:', response.status);
     
     if (response.ok) {
       const result = await response.json();
       const programas = result.data || result;
-      console.log('✅ Programas cargados:', programas.length);
       return Array.isArray(programas) ? programas : [];
     } else if (response.status === 404) {
-      console.log('⚠️ La facultad no tiene programas');
       return [];
     } else {
       throw new Error(`Error al cargar programas: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('❌ Error al cargar programas:', error);
     throw error;
   }
 };
@@ -164,11 +150,9 @@ export const crearPrograma = async (datosPrograma) => {
 
     if (response.status === 201) {
       const data = await response.json();
-      console.log('✅ Programa creado:', data);
       return { success: true, data };
     } else if (response.status === 400) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Solicitud incorrecta:', errorData);
       throw new Error(`Solicitud incorrecta: ${errorData.message || errorData.detail || 'Verifique los datos ingresados'}`);
     } else if (response.status === 401) {
       const errorData = await response.json().catch(() => ({}));
@@ -193,7 +177,6 @@ export const crearPrograma = async (datosPrograma) => {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error al crear programa:', error);
     throw new Error("Error de conexión al crear el programa. Verifique su conexión a internet.");
   }
 };
@@ -240,7 +223,6 @@ export const actualizarPrograma = async (facultadId, codigoPrograma, datosProgra
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Programa actualizado:', data);
       return { success: true, data };
     } else if (response.status === 400) {
       const errorData = await response.json().catch(() => ({}));
@@ -259,7 +241,6 @@ export const actualizarPrograma = async (facultadId, codigoPrograma, datosProgra
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error al actualizar programa:', error);
     throw new Error("Error de conexión al actualizar el programa.");
   }
 };
@@ -279,7 +260,6 @@ export const eliminarPrograma = async (facultadId, codigoPrograma) => {
     throw new Error("El código del programa es obligatorio");
   }
 
-  console.log('🗑️ Eliminando programa - Facultad:', facultadId, 'Código:', codigoPrograma);
 
   try {
     const response = await fetch(
@@ -292,7 +272,6 @@ export const eliminarPrograma = async (facultadId, codigoPrograma) => {
     );
 
     if (response.ok) {
-      console.log('✅ Programa eliminado del backend');
       return { success: true };
     } else if (response.status === 404) {
       const errorData = await response.json().catch(() => ({}));
@@ -308,7 +287,6 @@ export const eliminarPrograma = async (facultadId, codigoPrograma) => {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error al eliminar programa:', error);
     throw new Error("Error de conexión al eliminar el programa.");
   }
 };
@@ -324,7 +302,6 @@ export const eliminarPrograma = async (facultadId, codigoPrograma) => {
 export const filtrarProgramas = (programas, searchTerm) => {
   // Validar que programas sea un array
   if (!Array.isArray(programas)) {
-    console.warn('⚠️ filtrarProgramas: programas no es un array:', programas);
     return [];
   }
   
@@ -338,7 +315,6 @@ export const filtrarProgramas = (programas, searchTerm) => {
 
       return nombre.includes(termino) || codigo.includes(termino);
     } catch (error) {
-      console.error('Error filtrando programa:', error, programa);
       return false;
     }
   });

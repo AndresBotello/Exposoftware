@@ -63,7 +63,6 @@ const EditStudent = () => {
         await AuthService.logout();
         navigate('/login');
       } catch (error) {
-        console.error('❌ Error al cerrar sesión:', error);
       }
     }
   };
@@ -93,7 +92,6 @@ const EditStudent = () => {
         anio_ingreso: datosEstudiante.anio_ingreso || new Date().getFullYear()
       });
     } catch (err) {
-      console.error('Error al cargar datos:', err);
       setError(err.message || 'Error al cargar los datos del estudiante');
     } finally {
       setCargando(false);
@@ -143,7 +141,6 @@ const EditStudent = () => {
         navigate(`/admin/estudiantes/${studentId}`);
       }, 1500);
     } catch (err) {
-      console.error('Error al actualizar estudiante:', err);
       setError(err.message || 'Error al actualizar el estudiante');
     } finally {
       setGuardando(false);

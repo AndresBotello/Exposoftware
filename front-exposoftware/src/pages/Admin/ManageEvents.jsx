@@ -43,7 +43,6 @@ export default function ManageEvents() {
       setEventos(eventosOrdenados);
       setEventosFiltrados(eventosOrdenados);
     } catch (error) {
-      console.error("❌ Error al cargar eventos:", error);
       setEventos([]);
       setEventosFiltrados([]);
     } finally {
@@ -97,7 +96,6 @@ export default function ManageEvents() {
       setEstado(eventoCompleto.estado || "ACTIVO");
       setShowEditModal(true);
     } catch (error) {
-      console.error("❌ Error al cargar evento:", error);
       alert("Error al cargar los datos del evento");
     }
   };
@@ -146,7 +144,6 @@ export default function ManageEvents() {
         const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes), 0));
         return date.toISOString();
       } catch (e) {
-        console.error('❌ Error al convertir fecha:', fechaStr, e);
         return null;
       }
     };
@@ -187,7 +184,6 @@ export default function ManageEvents() {
       setShowEditModal(false);
       cargarEventos();
     } catch (error) {
-      console.error("❌ Error al actualizar evento:", error);
       alert(`❌ Error al actualizar evento: ${error.message}`);
     } finally {
       setGuardandoEvento(false);
@@ -201,7 +197,6 @@ export default function ManageEvents() {
       alert(`✅ Estado cambiado a ${nuevoEstado}`);
       cargarEventos();
     } catch (error) {
-      console.error("❌ Error al cambiar estado:", error);
       alert(`❌ Error al cambiar estado: ${error.message}`);
     }
   };
@@ -212,7 +207,6 @@ export default function ManageEvents() {
       setCapacidadInfo(data);
       setShowCapacidadModal(true);
     } catch (error) {
-      console.error("❌ Error al verificar capacidad:", error);
       alert("Error al obtener información de capacidad");
     }
   };
@@ -224,7 +218,6 @@ export default function ManageEvents() {
       alert("✅ Evento archivado exitosamente");
       cargarEventos();
     } catch (error) {
-      console.error("❌ Error al archivar evento:", error);
       alert(`❌ Error al archivar evento: ${error.message}`);
     }
   };

@@ -63,9 +63,7 @@ export default function GuestProfile() {
         es_profesor_extranjero: datos.es_profesor_extranjero || false
       });
 
-      console.log('✅ Perfil cargado desde contexto en Profile:', datos);
     } catch (err) {
-      console.error('❌ Error cargando perfil:', err);
       setError(err.message);
     } finally {
       setCargando(false);
@@ -117,7 +115,6 @@ export default function GuestProfile() {
       // Recargar perfil
       await cargarPerfil();
     } catch (err) {
-      console.error('❌ Error guardando perfil:', err);
       alert(`Error al guardar: ${err.message}`);
     } finally {
       setGuardando(false);

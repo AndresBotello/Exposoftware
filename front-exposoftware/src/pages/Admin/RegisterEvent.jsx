@@ -35,7 +35,6 @@ export default function RegisterAttendance() {
         await AuthService.logout();
         navigate('/login');
       } catch (error) {
-        console.error('❌ Error al cerrar sesión:', error);
       }
     }
   };
@@ -75,9 +74,7 @@ export default function RegisterAttendance() {
     try {
       const data = await EventosService.obtenerEventos();
       setEventos(data);
-      console.log("✅ Eventos cargados:", data.length);
     } catch (error) {
-      console.error("❌ Error al cargar eventos:", error);
       setEventos([]);
     } finally {
       setLoadingEventos(false);
@@ -133,7 +130,6 @@ export default function RegisterAttendance() {
       payload.lugar = lugarEvento.trim();
     }
 
-    console.log("📤 Creando evento:", payload);
 
     setCargandoEvento(true);
     try {
@@ -146,7 +142,6 @@ export default function RegisterAttendance() {
       // Recargar lista de eventos
       cargarEventos();
     } catch (error) {
-      console.error("❌ Error al crear evento:", error);
       alert(`❌ Error al crear evento: ${error.message}`);
     } finally {
       setCargandoEvento(false);

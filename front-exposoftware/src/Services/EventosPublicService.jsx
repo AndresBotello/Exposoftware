@@ -17,7 +17,6 @@ export const getAllEventos = async () => {
     'all_eventos',
     async () => {
       try {
-        console.log('🎪 Obteniendo lista de todos los eventos...');
 
         const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS, {
           credentials: 'include',
@@ -30,7 +29,6 @@ export const getAllEventos = async () => {
         }
 
         const result = await response.json();
-        console.log('✅ Eventos obtenidos:', result);
 
         // El backend puede devolver: array directo, {data: array}, o {eventos: array}
         let eventos = [];
@@ -45,7 +43,6 @@ export const getAllEventos = async () => {
         return eventos;
 
       } catch (error) {
-        console.error('❌ Error obteniendo eventos:', error);
         throw error;
       }
     },
@@ -61,7 +58,6 @@ export const getAllEventos = async () => {
  */
 export const getEventoById = async (eventoId) => {
   try {
-    console.log(`🎪 Obteniendo evento con ID: ${eventoId}`);
     
     const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
       credentials: 'include',
@@ -74,7 +70,6 @@ export const getEventoById = async (eventoId) => {
     }
 
     const result = await response.json();
-    console.log('✅ Evento obtenido:', result);
 
     // El backend puede devolver: objeto directo o {data: objeto}
     const evento = result.data || result;
@@ -82,7 +77,6 @@ export const getEventoById = async (eventoId) => {
     return evento;
     
   } catch (error) {
-    console.error(`❌ Error obteniendo evento ${eventoId}:`, error);
     throw error;
   }
 };
@@ -107,11 +101,9 @@ export const getEventosMap = async () => {
       }
     });
     
-    console.log(`📊 Mapa de eventos creado con ${map.size} eventos`);
     return map;
     
   } catch (error) {
-    console.error('❌ Error creando mapa de eventos:', error);
     return new Map(); // Retornar mapa vacío en caso de error
   }
 };
@@ -122,23 +114,19 @@ export const getEventosMap = async () => {
  */
 export const getEventosEnCurso = async () => {
   try {
-    console.log('🎪 Obteniendo eventos en curso...');
     const eventos = await getAllEventos();
 
-    console.log(`📊 Total eventos obtenidos: ${eventos.length}`);
 
     const eventosEnCurso = eventos.filter(evento => {
       const estado = evento.estado || evento.status;
       return estado && (estado.toLowerCase() === 'en_curso' || estado.toLowerCase() === 'en curso');
     });
 
-    console.log(`✅ ${eventosEnCurso.length} eventos en curso encontrados`);
     eventosEnCurso.forEach((e, idx) => {
       console.log(`   [${idx}] ${e.nombre_evento || e.nombre} (ID: ${e.id_evento || e.id})`);
     });
     return eventosEnCurso;
   } catch (error) {
-    console.error('❌ Error obteniendo eventos en curso:', error);
     throw error;
   }
 };
@@ -151,7 +139,6 @@ export const getEventosEnCurso = async () => {
  */
 export const getProyectosEventoAprobados = async (idEvento) => {
   try {
-    console.log(`📚 Obteniendo proyectos aprobados del evento: ${idEvento}`);
 
     const response = await fetch(API_ENDPOINTS.PROYECTOS_BY_EVENTO(idEvento), {
       credentials: 'include',
@@ -166,7 +153,6 @@ export const getProyectosEventoAprobados = async (idEvento) => {
     }
 
     const result = await response.json();
-    console.log(`✅ Proyectos del evento obtenidos:`, result);
 
     // Extraer el array de proyectos
     let proyectos = result.data || result;
@@ -174,18 +160,14 @@ export const getProyectosEventoAprobados = async (idEvento) => {
       proyectos = [];
     }
 
-    console.log(`📊 Total proyectos devueltos por backend: ${proyectos.length}`);
 
     // Mostrar estado de cada proyecto
     proyectos.forEach((p, idx) => {
       const estado = p.estado || p.status || 'SIN ESTADO';
-      console.log(`   [${idx}] ${p.nombre_proyecto || p.titulo_proyecto} - Estado: "${estado}"`);
     });
 
-    console.log(`📊 ${proyectos.length} proyectos totales devueltos`);
     return proyectos;
   } catch (error) {
-    console.error(`❌ Error obteniendo proyectos del evento ${idEvento}:`, error);
     throw error;
   }
 };

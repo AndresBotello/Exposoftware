@@ -23,7 +23,6 @@ const getAuthHeaders = () => {
 const getPublicHeaders = () => {
   const token = getAuthToken();
   if (!token) {
-    console.warn('⚠️ No hay token de autenticación disponible');
   }
   return {
     'Content-Type': 'application/json',
@@ -42,13 +41,10 @@ class RegisterProjectService {
    */
   static async obtenerEstudiantes() {
     try {
-      console.warn('⚠️ No hay endpoint público para listar estudiantes');
-      console.warn('💡 Solución: Usar estudiante autenticado o permitir agregar por ID manual');
       
       // Retornar array vacío - el componente manejará esto
       return [];
     } catch (error) {
-      console.error('❌ Error obteniendo estudiantes:', error);
       return [];
     }
   }
@@ -59,10 +55,8 @@ class RegisterProjectService {
    */
   static async obtenerDocentes() {
     try {
-      console.log('🔍 Obteniendo lista de profesores...');
       
       // 🔥 Intentar primero endpoint público (para estudiantes)
-      console.log('🔄 Intentando endpoint público: /api/v1/docentes');
       let response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
         method: 'GET',
         headers: getAuthHeaders(),
@@ -70,7 +64,6 @@ class RegisterProjectService {
 
       // Si falla con 403 o 405 (sin permisos / método no permitido), intentar endpoint de admin
       if (response.status === 403 || response.status === 405) {
-        console.log('⚠️ Endpoint público falló (403), intentando endpoint admin...');
         response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
           method: 'GET',
           headers: getAuthHeaders(),
@@ -78,12 +71,10 @@ class RegisterProjectService {
       }
 
       if (!response.ok) {
-        console.warn(`⚠️ Error al cargar profesores: ${response.status}`);
         return [];
       }
 
       const result = await response.json();
-      console.log('📚 Respuesta de profesores:', result);
 
       // Verificar estructura de respuesta paginada
       let profesores = [];
@@ -92,11 +83,9 @@ class RegisterProjectService {
       } else if (Array.isArray(result)) {
         profesores = result;
       } else {
-        console.warn('⚠️ Formato inesperado de respuesta de profesores:', result);
         return [];
       }
 
-      console.log(`✅ ${profesores.length} profesores cargados`);
 
       return profesores.map(prof => ({
         id: prof.id_docente || prof.id,
@@ -104,7 +93,6 @@ class RegisterProjectService {
         correo: prof.correo,
       }));
     } catch (error) {
-      console.error('❌ Error obteniendo docentes:', error);
       return [];
     }
   }
@@ -117,72 +105,56 @@ class RegisterProjectService {
   static async obtenerArbolInvestigacion() {
     try {
       const token = getAuthToken();
-      console.log('🔑 Token disponible:', token ? `${token.substring(0, 30)}...` : 'NO HAY TOKEN');
-      
+
       // INTENTO 1: Usar el endpoint del árbol completo
-      console.log('🔄 Intentando obtener árbol completo desde /arbol-completo...');
       const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
         method: 'GET',
         headers: getPublicHeaders(),
       });
 
-      console.log('📡 Respuesta del servidor:', response.status, response.statusText);
 
       // Si funciona, retornar el árbol completo
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Árbol de investigación completo obtenido:', data);
-        console.log('📊 Tipo de respuesta:', typeof data, '¿Es array?', Array.isArray(data));
 
         // Manejar diferentes formatos de respuesta
         let arbol = data;
         
         if (!Array.isArray(data)) {
-          console.log('🔄 Respuesta no es array, extrayendo datos...');
           
           // Intentar extraer el array de diferentes estructuras posibles
           if (data.data && Array.isArray(data.data)) {
             arbol = data.data;
-            console.log('✅ Árbol extraído de data.data');
           } else if (data.lineas && Array.isArray(data.lineas)) {
             arbol = data.lineas;
-            console.log('✅ Árbol extraído de data.lineas');
           } else if (data.status === 'success' && data.data) {
             // Formato {status: "success", data: [...]}
             arbol = Array.isArray(data.data) ? data.data : (data.data.lineas || []);
-            console.log('✅ Árbol extraído de formato success');
           } else {
-            console.warn('⚠️ Formato inesperado de respuesta, intentando método alternativo...');
             return await this.obtenerArbolInvestigacionAlternativo();
           }
         }
 
         if (!Array.isArray(arbol) || arbol.length === 0) {
-          console.warn('⚠️ Árbol vacío o formato inválido, intentando método alternativo...');
           return await this.obtenerArbolInvestigacionAlternativo();
         }
 
-        console.log('✅ Árbol procesado correctamente:', arbol.length, 'líneas');
         return arbol;
       }
 
       // Si falla por permisos o error del servidor, intentar método alternativo
       if (response.status === 401 || response.status === 403 || response.status === 500) {
-        console.warn('⚠️ Árbol completo no disponible, usando método alternativo...');
         return await this.obtenerArbolInvestigacionAlternativo();
       }
 
       throw new Error(`Error ${response.status}: ${response.statusText}`);
       
     } catch (error) {
-      console.error('❌ Error obteniendo árbol de investigación:', error);
       
       // Último intento: método alternativo
       try {
-        console.log('🔄 Último intento con método alternativo...');
         return await this.obtenerArbolInvestigacionAlternativo();
       } catch (fallbackError) {
-        console.error('❌ Método alternativo también falló:', fallbackError);
         throw new Error('No se pudo cargar el árbol de investigación. Contacta al administrador.');
       }
     }
@@ -194,7 +166,6 @@ class RegisterProjectService {
    */
   static async obtenerArbolInvestigacionAlternativo() {
     try {
-      console.log('🔄 Construyendo árbol de investigación desde endpoints individuales...');
       
       // Primero, obtener todas las líneas de investigación
       const lineasResponse = await fetch(API_ENDPOINTS.PUBLIC_LINEAS_INVESTIGACION, {
@@ -209,7 +180,6 @@ class RegisterProjectService {
       const lineasData = await lineasResponse.json();
       const lineas = Array.isArray(lineasData) ? lineasData : (lineasData.data || lineasData.lineas || []);
       
-      console.log('📋 Líneas obtenidas:', lineas.length);
 
       // Para cada línea, obtener su jerarquía completa
       const arbolCompleto = [];
@@ -217,7 +187,6 @@ class RegisterProjectService {
       for (const linea of lineas) {
         try {
           const codigoLinea = linea.codigo_linea || linea.codigo;
-          console.log(`🔍 Obteniendo jerarquía para línea ${codigoLinea}...`);
           
           const jerarquiaResponse = await fetch(
             API_ENDPOINTS.PUBLIC_LINEA_BY_CODE(codigoLinea),
@@ -230,10 +199,8 @@ class RegisterProjectService {
           if (jerarquiaResponse.ok) {
             const jerarquia = await jerarquiaResponse.json();
             arbolCompleto.push(jerarquia);
-            console.log(`✅ Jerarquía de línea ${codigoLinea} obtenida`);
           } else {
             // Si falla, agregar línea sin sublíneas
-            console.warn(`⚠️ No se pudo obtener jerarquía de línea ${codigoLinea}, agregando sin sublíneas`);
             arbolCompleto.push({
               codigo_linea: codigoLinea,
               nombre_linea: linea.nombre_linea || linea.nombre,
@@ -241,16 +208,13 @@ class RegisterProjectService {
             });
           }
         } catch (lineaError) {
-          console.error(`❌ Error procesando línea:`, lineaError);
           // Continuar con la siguiente línea
         }
       }
 
-      console.log('✅ Árbol de investigación construido desde endpoints individuales:', arbolCompleto.length, 'líneas');
       return arbolCompleto;
       
     } catch (error) {
-      console.error('❌ Error en método alternativo:', error);
       throw error;
     }
   }
@@ -269,7 +233,6 @@ class RegisterProjectService {
         sublineas: linea.sublineas || [],
       }));
     } catch (error) {
-      console.error('❌ Error obteniendo líneas de investigación:', error);
       throw error;
     }
   }
@@ -299,7 +262,6 @@ class RegisterProjectService {
 
       return sublineas;
     } catch (error) {
-      console.error('❌ Error obteniendo sublíneas de investigación:', error);
       throw error;
     }
   }
@@ -329,7 +291,6 @@ class RegisterProjectService {
 
       return areas;
     } catch (error) {
-      console.error('❌ Error obteniendo áreas temáticas:', error);
       throw error;
     }
   }
@@ -364,10 +325,6 @@ class RegisterProjectService {
         throw new Error('Debe adjuntar el archivo PDF del proyecto');
       }
 
-      console.log('🔍 DATOS DEL PROYECTO ANTES DE ENVIAR:');
-      console.log('   - id_docente:', proyectoData.id_docente);
-      console.log('   - id_grupo:', proyectoData.id_grupo);
-      console.log('   - tipo id_docente:', typeof proyectoData.id_docente);
 
       // Preparar FormData para envío multipart
       const formData = new FormData();
@@ -398,28 +355,6 @@ class RegisterProjectService {
         estado_calificacion: "Pendiente",
         // No incluir calificacion - la asigna el profesor después
       };
-      
-      console.log('🔍 VERIFICACIÓN FINAL (NUEVO FORMATO):');
-      console.log('   - id_docente:', payload.id_docente);
-      console.log('   - integrantes:', payload.integrantes);
-      console.log('   - id_docente_materia:', payload.id_docente_materia, '(tipo:', typeof payload.id_docente_materia + ')');
-      console.log('');
-
-      console.log('📦 PAYLOAD COMPLETO A ENVIAR:');
-      console.log(JSON.stringify(payload, null, 2));
-      console.log('');
-      console.log('📋 VALIDACIÓN DEL PAYLOAD:');
-      console.log('   ✓ id_docente:', payload.id_docente, '(tipo:', typeof payload.id_docente + ')');
-      console.log('   ✓ integrantes:', payload.integrantes, '(cantidad:', payload.integrantes.length + ')');
-      console.log('   ✓ id_docente_materia:', payload.id_docente_materia, '(tipo:', typeof payload.id_docente_materia + ')');
-      console.log('   ✓ codigo_area:', payload.codigo_area, '(tipo:', typeof payload.codigo_area + ')');
-      console.log('   ✓ id_evento:', payload.id_evento);
-      console.log('   ✓ codigo_materia:', payload.codigo_materia);
-      console.log('   ✓ codigo_linea:', payload.codigo_linea, '(tipo:', typeof payload.codigo_linea + ')');
-      console.log('   ✓ codigo_sublinea:', payload.codigo_sublinea, '(tipo:', typeof payload.codigo_sublinea + ')');
-      console.log('   ✓ titulo_proyecto:', payload.titulo_proyecto);
-      console.log('   ✓ id_tipo_actividad:', payload.id_tipo_actividad, '(tipo:', typeof payload.id_tipo_actividad + ')');
-      console.log('');
 
       // Agregar proyecto_data como JSON string
       formData.append('proyecto_data', JSON.stringify(payload));
@@ -429,9 +364,6 @@ class RegisterProjectService {
       if (archivoExtra) {
         formData.append('archivo_extra', archivoExtra);
       }
-
-      console.log('📤 Enviando proyecto (FormData):', payload);
-      console.log('📤 JSON que se envía:', JSON.stringify(payload, null, 2));
 
       const response = await fetch(API_ENDPOINTS.PROYECTOS, {
         method: 'POST',
@@ -444,10 +376,7 @@ class RegisterProjectService {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        console.error('❌ Error del backend:', err);
         console.error('❌ Error completo (JSON):', JSON.stringify(err, null, 2));
-        console.error('❌ Status:', response.status);
-        console.error('❌ StatusText:', response.statusText);
         
         // Extraer mensaje de error detallado
         let errorMessage = 'Error desconocido';
@@ -463,7 +392,6 @@ class RegisterProjectService {
           errorMessage = err.message;
         }
         
-        console.error('❌ Mensaje de error procesado:', errorMessage);
         
         // 🔥 Si el error es "docente no existe", dar mensaje más claro
         if (errorMessage.includes('No existe ningún docente')) {
@@ -479,24 +407,9 @@ class RegisterProjectService {
       }
 
       const result = await response.json();
-      console.log('✅ Proyecto creado exitosamente!');
-      console.log('');
-      console.log('📊 RESPUESTA DEL BACKEND:');
-      console.log(JSON.stringify(result, null, 2));
-      console.log('');
-      console.log('📋 DATOS DEL PROYECTO CREADO:');
-      console.log('   ✓ id_proyecto:', result.id_proyecto);
-      console.log('   ✓ titulo_proyecto:', result.titulo_proyecto);
-      console.log('   ✓ id_docente:', result.id_docente);
-      console.log('   ✓ id_estudiantes:', result.id_estudiantes);
-      console.log('   ✓ archivo_pdf:', result.archivo_pdf);
-      console.log('   ✓ fecha_subida:', result.fecha_subida);
-      console.log('   ✓ activo:', result.activo);
-      console.log('');
-      
+
       return result;
     } catch (error) {
-      console.error('❌ Error creando proyecto:', error);
       throw error;
     }
   }
@@ -533,7 +446,6 @@ class RegisterProjectService {
         nombre: m.nombre_materia || m.nombre,
       }));
     } catch (error) {
-      console.error('❌ Error obteniendo materias:', error);
       return [];
     }
   }
@@ -547,12 +459,10 @@ class RegisterProjectService {
   static async obtenerMateriasPorPrograma(facultyId, programCode) {
     try {
       if (!facultyId || !programCode) {
-        console.warn('⚠️ Se requiere facultyId y programCode para obtener materias');
         return [];
       }
 
       // INTENTO 1: Endpoint público completo
-      console.log(`🔍 Intentando obtener materias de ${programCode} desde endpoint público...`);
       let response = await fetch(
         API_ENDPOINTS.PUBLIC_PROGRAMA_MATERIAS(facultyId, programCode),
         {
@@ -563,7 +473,6 @@ class RegisterProjectService {
 
       // INTENTO 2: Endpoint admin de materias directamente
       if (!response.ok) {
-        console.log('⚠️ Endpoint público falló, intentando obtener todas las materias...');
         response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS, {
           method: 'GET',
           headers: getAuthHeaders(),
@@ -571,12 +480,10 @@ class RegisterProjectService {
       }
 
       if (!response.ok) {
-        console.warn(`⚠️ No se pudieron cargar las materias del programa ${programCode}`);
         return [];
       }
 
       const data = await response.json();
-      console.log('📚 Datos de materias obtenidos:', data);
 
       // La respuesta puede venir en diferentes formatos
       let materias = [];
@@ -597,18 +504,15 @@ class RegisterProjectService {
       }
 
       if (!Array.isArray(materias)) {
-        console.warn('⚠️ Formato inesperado de materias:', data);
         return [];
       }
 
-      console.log(`✅ ${materias.length} materias encontradas`);
 
       return materias.map(m => ({
         codigo: m.codigo_materia || m.codigo,
         nombre: m.nombre_materia || m.nombre,
       }));
     } catch (error) {
-      console.error('❌ Error obteniendo materias del programa:', error);
       return [];
     }
   }
@@ -620,11 +524,9 @@ class RegisterProjectService {
   static async obtenerGruposPorMateria(codigoMateria) {
     try {
       if (!codigoMateria) {
-        console.warn('⚠️ Se requiere código de materia para obtener grupos');
         return [];
       }
 
-      console.log(`🔍 Obteniendo asignaciones (docente-materia-grupo) para: ${codigoMateria}`);
       const response = await fetch(
         API_ENDPOINTS.ADMIN_MATERIA_ASIGNACIONES(codigoMateria),
         {
@@ -639,11 +541,9 @@ class RegisterProjectService {
       }
 
       const result = await response.json();
-      console.log('📋 Respuesta de asignaciones:', result);
 
       // Extraer asignaciones del objeto materia
       const asignaciones = result.data?.asignaciones || result.asignaciones || [];
-      console.log(`✅ ${asignaciones.length} asignaciones encontradas para la materia ${codigoMateria}`);
 
       // Mapear asignaciones a formato compatible
       return asignaciones.map(asignacion => {
@@ -665,7 +565,6 @@ class RegisterProjectService {
         };
       });
     } catch (error) {
-      console.error('❌ Error obteniendo grupos:', error);
       return [];
     }
   }
@@ -679,11 +578,9 @@ class RegisterProjectService {
   static async obtenerGruposPorDocente(idDocente) {
     try {
       if (!idDocente) {
-        console.warn('⚠️ Se requiere ID de docente para obtener grupos');
         return [];
       }
 
-      console.log(`🔍 Obteniendo grupos del docente: ${idDocente}`);
       
       // Intentar endpoint público primero
       let response = await fetch(
@@ -696,7 +593,6 @@ class RegisterProjectService {
 
       // Si falla (403), intentar endpoint de admin
       if (response.status === 403) {
-        console.log('⚠️ Endpoint público falló, intentando endpoint admin...');
         response = await fetch(
           API_ENDPOINTS.ADMIN_GRUPOS_BY_TEACHER(idDocente),
           {
@@ -712,7 +608,6 @@ class RegisterProjectService {
       }
 
       const result = await response.json();
-      console.log('👥 Respuesta de grupos del docente:', result);
 
       // La respuesta puede venir en result.data o directamente
       let grupos = [];
@@ -721,11 +616,9 @@ class RegisterProjectService {
       } else if (Array.isArray(result)) {
         grupos = result;
       } else {
-        console.warn('⚠️ Formato inesperado de grupos del docente:', result);
         return [];
       }
 
-      console.log(`✅ ${grupos.length} grupos encontrados para el docente ${idDocente}`);
 
       // Formatear respuesta con información completa
       return grupos.map(g => ({
@@ -740,7 +633,6 @@ class RegisterProjectService {
         totalEstudiantes: g.total_estudiantes || 0,
       }));
     } catch (error) {
-      console.error('❌ Error obteniendo grupos del docente:', error);
       return [];
     }
   }
@@ -751,10 +643,8 @@ class RegisterProjectService {
    */
   static async obtenerTodosLosEstudiantes() {
     try {
-      console.log('🔍 Obteniendo lista de todos los estudiantes...');
       
       // Intentar endpoint admin (el que realmente existe en el backend)
-      console.log('🔄 Intentando endpoint: /api/v1/admin/estudiantes');
       let response = await fetch(API_ENDPOINTS.ADMIN_ESTUDIANTES, {
         method: 'GET',
         headers: getAuthHeaders(),
@@ -762,7 +652,6 @@ class RegisterProjectService {
 
       // Si falla con 403 o 404, intentar endpoint público con prefijo correcto
       if (response.status === 403 || response.status === 404) {
-        console.log('⚠️ Endpoint admin falló, intentando endpoint público...');
         response = await fetch(API_ENDPOINTS.ADMIN_ESTUDIANTES, {
           method: 'GET',
           headers: getAuthHeaders(),
@@ -770,12 +659,10 @@ class RegisterProjectService {
       }
 
       if (!response.ok) {
-        console.warn(`⚠️ Error al cargar estudiantes: ${response.status}`);
         return [];
       }
 
       const result = await response.json();
-      console.log('👥 Respuesta de estudiantes:', result);
 
       // Verificar estructura de respuesta paginada
       let estudiantes = [];
@@ -784,11 +671,9 @@ class RegisterProjectService {
       } else if (Array.isArray(result)) {
         estudiantes = result;
       } else {
-        console.warn('⚠️ Formato inesperado de respuesta de estudiantes:', result);
         return [];
       }
 
-      console.log(`✅ ${estudiantes.length} estudiantes cargados`);
 
       return estudiantes.map(est => {
         // Manejar estructura anidada {estudiante: {...}, usuario: {...}}
@@ -806,7 +691,6 @@ class RegisterProjectService {
         };
       });
     } catch (error) {
-      console.error('❌ Error obteniendo estudiantes:', error);
       return [];
     }
   }

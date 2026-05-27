@@ -54,7 +54,6 @@ const StudentList = () => {
       setProgramas(resultadoProgramas);
       setEstudiantesFiltrados(listaEstudiantes);
     } catch (err) {
-      console.error('❌ Error completo al cargar estudiantes:', err);
       let mensajeError = err.message || 'Error al cargar los estudiantes del servidor';
       if (err.message?.includes('interno del servidor')) {
         mensajeError += ' - Es posible que el endpoint /api/v1/admin/estudiantes no esté implementado en el backend todavía.';
@@ -90,7 +89,6 @@ const StudentList = () => {
       setEstudianteSeleccionado(null);
       setAccionPendiente(null);
     } catch (err) {
-      console.error('Error al cambiar estado:', err);
       alert(`Error: ${err.message}`);
     } finally {
       setCargando(false);

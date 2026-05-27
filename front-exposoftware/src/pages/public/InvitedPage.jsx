@@ -24,7 +24,6 @@ export default function InvitedPage() {
       await logout();
       navigate("/");
     } catch (err) {
-      console.error("Error en logout:", err);
       navigate("/");
     }
   };
@@ -46,7 +45,6 @@ export default function InvitedPage() {
         // Obtener todos los eventos primero para obtener el id_evento si no viene en params
         let idEvento = eventoId;
         if (!idEvento) {
-          console.log('📅 Obteniendo evento actual...');
           const todosEventos = await EventosService.obtenerEventos();
           if (todosEventos && todosEventos.length > 0) {
             idEvento = todosEventos[0].id_evento;
@@ -56,7 +54,6 @@ export default function InvitedPage() {
           }
         }
 
-        console.log('🔍 Cargando proyectos públicos del evento:', idEvento);
 
         const response = await fetch(
           `${API_BASE_URL}/api/v1/eventos/${idEvento}/proyectos`,
@@ -73,7 +70,6 @@ export default function InvitedPage() {
           const data = await response.json();
           const proyectos = data.data || [];
           setProjects(proyectos);
-          console.log('✅ Proyectos públicos cargados:', proyectos.length);
 
           // Si no tenemos evento info, usar la del primer proyecto
           if (!eventoInfo && proyectos.length > 0) {
@@ -86,7 +82,6 @@ export default function InvitedPage() {
           throw new Error('Error al obtener proyectos públicos');
         }
       } catch (err) {
-        console.error('❌ Error cargando proyectos públicos:', err);
         setError(err.message || 'Error al cargar los proyectos');
       } finally {
         setLoadingProjects(false);

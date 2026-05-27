@@ -91,7 +91,6 @@ function RegisterPage() {
           setDepartamentos(Array.isArray(data) ? data : (data.data || data.departamentos || []));
         }
       } catch (err) {
-        console.error("Error cargando catálogos de ubicación:", err);
       }
     };
     loadCatalogs();

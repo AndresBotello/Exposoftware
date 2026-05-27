@@ -10,7 +10,6 @@ class RatingService {
    */
   async calificarProyecto(id_proyecto, calificacion) {
     try {
-      console.log('⭐ Calificando proyecto:', { id_proyecto, calificacion });
 
       const response = await fetch(
         `${API_BASE_URL}/api/v1/proyectos/${id_proyecto}/calificar-asistente`,
@@ -31,10 +30,8 @@ class RatingService {
       }
 
       const data = await response.json();
-      console.log('✅ Proyecto calificado:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error al calificar proyecto:', error.message);
       throw error;
     }
   }
@@ -47,7 +44,6 @@ class RatingService {
    */
   async obtenerProyectosDelEvento(id_evento) {
     try {
-      console.log('📋 Obteniendo proyectos del evento:', id_evento);
 
       const response = await fetch(
         API_ENDPOINTS.EVENTO_PROYECTOS(id_evento),
@@ -65,10 +61,8 @@ class RatingService {
       }
 
       const data = await response.json();
-      console.log('✅ Proyectos obtenidos:', data);
       return data.data || data || [];
     } catch (error) {
-      console.error('❌ Error al obtener proyectos:', error.message);
       throw error;
     }
   }

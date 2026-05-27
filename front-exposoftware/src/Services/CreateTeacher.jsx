@@ -159,9 +159,7 @@ const separarApellidos = (apellidosCompletos) => {
  */
 export const obtenerDocentes = async () => {
   try {
-    console.log('📥 Cargando profesores desde:', API_ENDPOINTS.ADMIN_DOCENTES);
     const headers = AuthService.getAuthHeaders();
-    console.log('🔑 Headers de autenticación:', headers);
 
     const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
       credentials: 'include',
@@ -169,29 +167,17 @@ export const obtenerDocentes = async () => {
       headers: headers
     });
     
-    console.log('📡 Respuesta del servidor - Status:', response.status, response.statusText);
     
     if (response.ok) {
       const result = await response.json();
-      console.log('📦 Respuesta completa:', result);
       // El backend retorna { status, message, data, code }
       const docentes = result.data || result;
-      console.log('✅ Profesores cargados:', docentes.length);
-      if (docentes.length > 0) {
-        console.log('🔍 Estructura del primer profesor:', docentes[0]);
-        console.log('🔍 Claves del primer profesor:', Object.keys(docentes[0]));
-        if (docentes[0].usuario) {
-          console.log('🔍 Usuario del primer profesor:', docentes[0].usuario);
-        }
-      }
       return Array.isArray(docentes) ? docentes : [];
     } else {
       const errorText = await response.text();
-      console.error('❌ Error al cargar profesores:', response.status, response.statusText, errorText);
       throw new Error(`Error al cargar profesores: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('❌ Error de conexión al cargar profesores:', error);
     throw error;
   }
 };
@@ -259,8 +245,6 @@ export const crearDocente = async (datosDocente) => {
     }
   };
 
-  console.log('📤 Enviando docente al backend:', JSON.stringify(payload, null, 2));
-
   try {
     const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
       credentials: 'include',
@@ -271,11 +255,9 @@ export const crearDocente = async (datosDocente) => {
 
     if (response.status === 201) {
       const data = await response.json();
-      console.log('✅ Docente creado:', data);
       return { success: true, data };
     } else if (response.status === 400) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Solicitud incorrecta:', errorData);
       throw new Error(`Solicitud incorrecta: ${errorData.message || errorData.detail || 'Verifique los datos ingresados'}`);
     } else if (response.status === 401) {
       const errorData = await response.json().catch(() => ({}));
@@ -298,7 +280,6 @@ export const crearDocente = async (datosDocente) => {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error al crear docente:', error);
     throw new Error("Error de conexión al crear el docente. Verifique su conexión a internet.");
   }
 };
@@ -357,8 +338,6 @@ export const actualizarDocente = async (idDocente, datosDocente) => {
     payload.usuario.contrasena = datosDocente.contrasena;
   }
 
-  console.log('📤 Actualizando docente (ID: ' + idDocente + '):', JSON.stringify(payload, null, 2));
-
   try {
     const response = await fetch(`${API_ENDPOINTS.ADMIN_DOCENTES}/${idDocente}`, {
       credentials: 'include',
@@ -369,7 +348,6 @@ export const actualizarDocente = async (idDocente, datosDocente) => {
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Docente actualizado:', data);
       return { success: true, data };
     } else if (response.status === 400) {
       const errorData = await response.json().catch(() => ({}));
@@ -385,7 +363,6 @@ export const actualizarDocente = async (idDocente, datosDocente) => {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error al actualizar docente:', error);
     throw new Error("Error de conexión al actualizar el docente.");
   }
 };
@@ -396,7 +373,6 @@ export const actualizarDocente = async (idDocente, datosDocente) => {
  * @returns {Promise<Object>} Confirmación de eliminación
  */
 export const eliminarDocente = async (idDocente) => {
-  console.log('🗑️ Eliminando docente - ID:', idDocente);
 
   try {
     const response = await fetch(`${API_ENDPOINTS.ADMIN_DOCENTES}/${idDocente}`, {
@@ -406,7 +382,6 @@ export const eliminarDocente = async (idDocente) => {
     });
 
     if (response.ok) {
-      console.log('✅ Docente eliminado del backend');
       return { success: true };
     } else if (response.status === 404) {
       const errorData = await response.json().catch(() => ({}));
@@ -419,7 +394,6 @@ export const eliminarDocente = async (idDocente) => {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error al eliminar docente:', error);
     throw new Error("Error de conexión al eliminar el docente.");
   }
 };
@@ -435,7 +409,6 @@ export const eliminarDocente = async (idDocente) => {
 export const filtrarDocentes = (docentes, searchTerm) => {
   // Validar que docentes sea un array
   if (!Array.isArray(docentes)) {
-    console.warn('⚠️ filtrarDocentes: docentes no es un array:', docentes);
     return [];
   }
   
@@ -457,7 +430,6 @@ export const filtrarDocentes = (docentes, searchTerm) => {
         programa.includes(termino)
       );
     } catch (error) {
-      console.error('Error filtrando docente:', error, docente);
       return false;
     }
   });

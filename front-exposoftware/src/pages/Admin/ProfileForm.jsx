@@ -16,7 +16,7 @@ export default function ProfileForm({
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Configuración de Perfil</h2>
+        <h2 className="text-2xl font-bold text-gray-900 cursor-default">Configuración de Perfil</h2>
         {!isEditing && (
           <button
             onClick={handleEdit}

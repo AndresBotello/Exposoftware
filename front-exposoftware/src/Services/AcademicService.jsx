@@ -47,7 +47,6 @@ export const obtenerFacultades = async () => {
   try {
     const endpoint = `${API_ENDPOINTS.PUBLIC_FACULTADES}`;
     
-    console.log('🏛️ Obteniendo facultades desde:', endpoint);
     
     // Header opcional - si hay token lo incluye
     const headers = {
@@ -66,11 +65,9 @@ export const obtenerFacultades = async () => {
       headers
     });
 
-    console.log('📡 Status:', response.status, response.statusText);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Facultades obtenidas del backend:', data);
       
       // El backend devuelve { status: "success", data: [...] }
       const facultades = data.data || [];
@@ -83,11 +80,9 @@ export const obtenerFacultades = async () => {
       }));
     } else {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Error al obtener facultades:', errorData);
       throw new Error(errorData.message || 'Error al cargar facultades');
     }
   } catch (error) {
-    console.error('❌ Error de conexión al obtener facultades:', error);
     throw error;
   }
 };
@@ -101,13 +96,11 @@ export const obtenerFacultades = async () => {
 export const obtenerProgramasPorFacultad = async (facultadId) => {
   try {
     if (!facultadId) {
-      console.warn('⚠️ No se proporcionó ID de facultad');
       return [];
     }
 
     const endpoint = `${API_ENDPOINTS.PUBLIC_PROGRAMAS_BY_FACULTAD(facultadId)}`;
 
-    console.log('📚 Obteniendo programas de facultad', facultadId, 'desde:', endpoint);
     
     // Header opcional - si hay token lo incluye
     const headers = {
@@ -126,17 +119,14 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
       headers
     });
 
-    console.log('📡 Status:', response.status, response.statusText);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Programas obtenidos del backend:', data);
 
       // El backend devuelve { status: "success", data: [...] } o { status: "success", data: { programas: [...] } }
       const programasData = Array.isArray(data.data) ? data.data : (data.data?.programas || []);
       const programas = programasData;
       
-      console.log('✅ Programas cargados:', programas.length);
       
       return programas.map(programa => ({
         codigo: programa.codigo_programa || programa.codigo,
@@ -149,11 +139,9 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
       }));
     } else {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Error al obtener programas:', errorData);
       throw new Error(errorData.message || 'Error al cargar programas');
     }
   } catch (error) {
-    console.error('❌ Error de conexión al obtener programas:', error);
     throw error;
   }
 };
@@ -165,11 +153,9 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
  */
 export const obtenerTodosProgramas = async () => {
   try {
-    console.log('📚 Obteniendo todos los programas...');
     
     // Primero obtenemos todas las facultades
     const facultades = await obtenerFacultades();
-    console.log('✅ Facultades obtenidas:', facultades.length);
     
     // Luego obtenemos los programas de cada facultad
     const todasLasPromesas = facultades.map(facultad => 
@@ -181,11 +167,9 @@ export const obtenerTodosProgramas = async () => {
     // Aplanar el array de arrays en un solo array de programas
     const todosProgramas = resultadosPorFacultad.flat();
     
-    console.log('✅ Total de programas obtenidos:', todosProgramas.length);
     
     return todosProgramas;
   } catch (error) {
-    console.error('❌ Error al obtener todos los programas:', error);
     throw error;
   }
 };

@@ -57,11 +57,9 @@ const getIdIdentidadSexual = async (orientacion) => {
 const handleErrorResponse = async (response) => {
   if (response.status === 400) {
     const errorData = await response.json().catch(() => ({}));
-    console.error("❌ Solicitud incorrecta:", errorData);
     throw new Error(errorData.message || errorData.detail || "Datos incorrectos");
   } else if (response.status === 409) {
     const errorData = await response.json().catch(() => ({}));
-    console.error("❌ Conflicto:", errorData);
     throw new Error(errorData.message || errorData.detail || "El usuario ya existe");
   } else if (response.status === 422) {
     const errorData = await response.json().catch(() => ({}));
@@ -80,7 +78,6 @@ const handleErrorResponse = async (response) => {
     throw new Error(errorData.message || "Datos no válidos");
   } else {
     const errorData = await response.json().catch(() => ({}));
-    console.error("❌ Error del servidor:", errorData);
     throw new Error(errorData.message || errorData.detail || "Error al registrar");
   }
 };
@@ -125,8 +122,6 @@ export const registrarEstudiante = async (studentData) => {
     },
   };
 
-  console.log("🎓 Registrando ESTUDIANTE:", { ...payload, usuario: { ...payload.usuario, contrasena: "***" } });
-  console.log("🔗 Endpoint:", API_ENDPOINTS.REGISTRO_ESTUDIANTE);
 
   try {
     const response = await fetch(API_ENDPOINTS.REGISTRO_ESTUDIANTE, {
@@ -135,17 +130,14 @@ export const registrarEstudiante = async (studentData) => {
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
     });
-    console.log("📡 Status:", response.status, response.statusText);
     if (response.status === 201 || response.ok) {
       const data = await response.json();
-      console.log("✅ Registro de estudiante exitoso:", data);
       return { success: true, data, message: data.message || "Registro exitoso" };
     } else {
       await handleErrorResponse(response);
     }
   } catch (error) {
     if (error.message) throw error;
-    console.error("❌ Error de conexión:", error);
     throw new Error("Error de conexión. Verifique su conexión a internet.");
   }
 };
@@ -191,8 +183,6 @@ export const registrarEgresado = async (graduateData) => {
     },
   };
 
-  console.log("🎓 Registrando EGRESADO:", { ...payload, usuario: { ...payload.usuario, contrasena: "***" } });
-  console.log("🔗 Endpoint:", API_ENDPOINTS.REGISTRO_EGRESADO);
 
   try {
     const response = await fetch(API_ENDPOINTS.REGISTRO_EGRESADO, {
@@ -201,7 +191,6 @@ export const registrarEgresado = async (graduateData) => {
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
     });
-    console.log("📡 Status:", response.status, response.statusText);
     if (response.status === 201 || response.ok) {
       const data = await response.json();
       return { success: true, data, message: data.message || "Registro exitoso" };
@@ -253,8 +242,6 @@ export const registrarInvitado = async (guestData) => {
     },
   };
 
-  console.log("👥 Registrando INVITADO:", { ...payload, usuario: { ...payload.usuario, contrasena: "***" } });
-  console.log("🔗 Endpoint:", API_ENDPOINTS.REGISTRO_INVITADO);
 
   try {
     const response = await fetch(API_ENDPOINTS.REGISTRO_INVITADO, {
@@ -263,7 +250,6 @@ export const registrarInvitado = async (guestData) => {
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
     });
-    console.log("📡 Status:", response.status, response.statusText);
     if (response.status === 201 || response.ok) {
       const data = await response.json();
       return { success: true, data, message: data.message || "Registro exitoso" };

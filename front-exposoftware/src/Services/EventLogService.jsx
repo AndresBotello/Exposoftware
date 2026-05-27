@@ -15,7 +15,6 @@ class EventLogService {
       const data = localStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     } catch (error) {
-      console.error('❌ Error al obtener registros:', error);
       return [];
     }
   }
@@ -60,10 +59,8 @@ class EventLogService {
       };
       all.push(newRecord);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-      console.log('✅ Registro creado:', newRecord.id);
       return newRecord;
     } catch (error) {
-      console.error('❌ Error al crear registro:', error);
       throw error;
     }
   }
@@ -76,10 +73,8 @@ class EventLogService {
       const all = this.getAll();
       const filtered = all.filter(item => item.id !== id);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-      console.log('🗑️ Registro eliminado:', id);
       return true;
     } catch (error) {
-      console.error('❌ Error al eliminar registro:', error);
       throw error;
     }
   }

@@ -292,7 +292,6 @@ export function DashboardFacultades() {
       const datos = await FacultyService.obtenerFacultades();
       setFacultades(datos);
     } catch (error) {
-      console.error("Error:", error);
     } finally {
       setCargando(false);
     }

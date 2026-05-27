@@ -78,7 +78,6 @@ export function useStudentProjects() {
         const em = await getEventosMap();
         setEventosMap(em);
       } catch (err) {
-        console.error("⚠️ Error cargando mapas:", err);
       }
     };
     loadMaps();
@@ -98,7 +97,6 @@ export function useStudentProjects() {
         let gruposMap = new Map(); // Mapa de id_grupo -> nombre_grupo
         try {
           const carga = await getMyTeachingLoad();
-          console.log('📚 Carga docente recibida:', carga);
 
           // La respuesta puede ser un objeto con clases o un array
           const clases = Array.isArray(carga) ? carga : (carga?.clases || []);
@@ -115,12 +113,9 @@ export function useStudentProjects() {
               if (clase.id_grupo && clase.nombre_grupo) {
                 gruposMap.set(clase.id_grupo, clase.nombre_grupo);
               }
-              console.log(`  ✅ Materia mapeada: ${clase.id_docente_materia} -> ${clase.nombre_materia || clase.codigo_materia}`);
             }
           });
-          console.log(`📚 Total materias cargadas: ${teachingLoadMap.size}, grupos: ${gruposMap.size}`);
         } catch (err) {
-          console.warn("⚠️ Error cargando carga docente:", err.message || err);
           // Fallback: cargar grupos por separado si la carga docente falla
           try {
             const grupos = await getMyGroups();
@@ -130,9 +125,7 @@ export function useStudentProjects() {
                 gruposMap.set(grupo.id_grupo, grupo.nombre_grupo);
               }
             });
-            console.log(`👥 Grupos cargados como fallback: ${gruposMap.size}`);
           } catch (groupErr) {
-            console.warn("⚠️ Error cargando grupos:", groupErr.message || groupErr);
           }
         }
 
@@ -166,13 +159,7 @@ export function useStudentProjects() {
 
             // Log de detalles del primer proyecto
             if (idx === 0) {
-              console.log(`📦 Proyecto original - Campos disponibles:`, Object.keys(p));
-              console.log(`   id_docente_materia:`, p.id_docente_materia);
-              console.log(`   nombre_grupo original:`, p.nombre_grupo, `(¿es UUID? ${isUUID(p.nombre_grupo)})`);
-              console.log(`   id_grupo original:`, p.id_grupo);
-              console.log(`   materiaInfo desde teachingLoadMap:`, materiaInfo);
-              console.log(`   idGrupo después de enriquecimiento:`, idGrupo);
-              console.log(`   nombre_grupo final después de mapeo:`, nombreGrupo);
+              // Debug info removed for security
             }
 
             return {
@@ -187,12 +174,9 @@ export function useStudentProjects() {
           });
           setMyProjects(transformedProjects);
           setMyProjectsCount(transformedProjects.length);
-          console.log(`📊 Mis proyectos transformados: ${transformedProjects.length}`);
           transformedProjects.forEach(p => {
-            console.log(`  - ${p.titulo_proyecto}: ${p.nombre_materia || 'Sin materia'} - Grupo ${p.nombre_grupo}`);
           });
         } catch (err) {
-          console.warn("⚠️ Error cargando mis proyectos:", err.message || err);
           setMyProjects([]);
           setMyProjectsCount(0);
         }
@@ -215,9 +199,7 @@ export function useStudentProjects() {
             }
           }
           setProjectsForApproval(projectosAprobacion);
-          console.log(`📊 Proyectos para aprobación: ${projectosAprobacion.length}`);
         } catch (err) {
-          console.warn("⚠️ Error cargando proyectos para aprobación:", err.message || err);
           setProjectsForApproval([]);
         }
 
@@ -243,11 +225,9 @@ export function useStudentProjects() {
               const proyectosEvento = await getProyectosByEvento(eventoId);
               allProjects = [...allProjects, ...(Array.isArray(proyectosEvento) ? proyectosEvento : [])];
             } catch (err) {
-              console.warn(`⚠️ Error cargando proyectos del evento ${eventoId}:`, err.message);
             }
           }
         } catch (err) {
-          console.warn("⚠️ Error filtrando eventos activos:", err.message || err);
         }
 
         // Transformar proyectos de eventos para enriquecer con información de materias/grupos
@@ -310,9 +290,7 @@ export function useStudentProjects() {
           nombre
         }));
         setMateriasList(normalized);
-        console.log(`📚 Materias extraídas: ${normalized.length} (del teaching load: ${teachingLoadMap.size})`);
       } catch (err) {
-        console.error("❌ Error al cargar proyectos:", err);
         setError(err.message);
         setProjects([]);
       } finally {
@@ -349,7 +327,6 @@ export function useStudentProjects() {
         }));
         setGruposList(normalized);
       } catch (err) {
-        console.error("❌ Error cargando grupos:", err);
         setGruposList([]);
       }
     };
@@ -397,7 +374,6 @@ export function useStudentProjects() {
       const calificacion = await obtenerCalificacionPopular(project.id_proyecto);
       setProjectCalificacionPopular(calificacion);
     } catch (err) {
-      console.warn('⚠️ Error cargando calificación popular:', err);
       setProjectCalificacionPopular(null);
     } finally {
       setLoadingCalificacionPopular(false);
@@ -449,7 +425,6 @@ export function useStudentProjects() {
       alert(`✅ Proyecto calificado exitosamente con nota ${nota}`);
       closeGradeModal();
     } catch (err) {
-      console.error("❌ Error al calificar proyecto:", err);
       alert(`Error al calificar proyecto: ${err.message}`);
     } finally {
       setGradingProject(false);
@@ -469,7 +444,6 @@ export function useStudentProjects() {
       const calificacion = await obtenerCalificacionPopular(project.id_proyecto);
       setProjectCalificacionPopular(calificacion);
     } catch (err) {
-      console.warn('⚠️ Error cargando calificación popular:', err);
       setProjectCalificacionPopular(null);
     } finally {
       setLoadingCalificacionPopular(false);
@@ -534,7 +508,6 @@ export function useStudentProjects() {
 
       alert(`✅ Proyecto calificado exitosamente con nota ${nota}`);
     } catch (err) {
-      console.error("❌ Error al calificar proyecto:", err);
       alert(`Error al calificar proyecto: ${err.message}`);
     } finally {
       setGradingProject(false);
@@ -581,7 +554,6 @@ export function useStudentProjects() {
       alert(`✅ Proyecto aprobado exitosamente`);
       handleCloseActionModal();
     } catch (err) {
-      console.error("❌ Error al aprobar proyecto:", err);
       alert(`Error al aprobar proyecto: ${err.message}`);
     } finally {
       setApprovingProject(false);
@@ -633,7 +605,6 @@ export function useStudentProjects() {
       alert(`✅ Proyecto rechazado exitosamente`);
       handleCloseActionModal();
     } catch (err) {
-      console.error("❌ Error al rechazar proyecto:", err);
       alert(`Error al rechazar proyecto: ${err.message}`);
     } finally {
       setRejectingProject(false);
@@ -662,7 +633,6 @@ export function useStudentProjects() {
 
       alert(`✅ Proyecto aprobado exitosamente`);
     } catch (err) {
-      console.error("❌ Error al aprobar proyecto:", err);
       alert(`Error al aprobar proyecto: ${err.message}`);
     } finally {
       setApprovingProject(false);
@@ -691,7 +661,6 @@ export function useStudentProjects() {
 
       alert(`✅ Proyecto rechazado exitosamente`);
     } catch (err) {
-      console.error("❌ Error al rechazar proyecto:", err);
       alert(`Error al rechazar proyecto: ${err.message}`);
     } finally {
       setApprovingProject(false);

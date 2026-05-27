@@ -3,7 +3,6 @@ const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost');
 export const API_BASE_URL = isDevelopment ? '' : 'https://exposoftware.duckdns.org';
 
-console.log('🔧 Ambiente detectado:', { hostname, isDevelopment, API_BASE_URL });
 
 // ============================================================
 // ENDPOINTS DE LA API v1 - Basado en OpenAPI

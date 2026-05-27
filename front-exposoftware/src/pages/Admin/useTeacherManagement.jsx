@@ -92,7 +92,6 @@ export function useTeacherManagement() {
           setDepartamentos(Array.isArray(data) ? data : (data.data || data.departamentos || []));
         }
       } catch (err) {
-        console.error("Error cargando catálogos:", err);
       }
     };
     loadCatalogs();
@@ -118,8 +117,6 @@ export function useTeacherManagement() {
 
       const deptoCodigo = deptoEncontrado?.codigo || deptoEncontrado?.codigo_departamento || departamento;
 
-      console.log('📍 Buscando municipios para departamento:', departamento);
-      console.log('📍 Código encontrado:', deptoCodigo);
       console.log('📍 URL:', API_ENDPOINTS.CATALOGOS_MUNICIPIOS(deptoCodigo));
 
       fetch(API_ENDPOINTS.CATALOGOS_MUNICIPIOS(deptoCodigo))
@@ -131,11 +128,9 @@ export function useTeacherManagement() {
         })
         .then((data) => {
           const municipiosList = Array.isArray(data) ? data : (data.data || data.municipios || []);
-          console.log('✅ Municipios cargados:', municipiosList);
           setMunicipiosApi(municipiosList);
         })
         .catch((err) => {
-          console.error('❌ Error cargando municipios:', err);
           setMunicipiosApi([]);
         });
     } else {
@@ -164,12 +159,9 @@ export function useTeacherManagement() {
       setLoading(true);
       setServerError("");
       try {
-        console.log('🔄 Iniciando carga de profesores...');
         const data = await obtenerDocentes();
-        console.log('✅ Profesores cargados exitosamente:', data);
         setProfesores(data);
       } catch (error) {
-        console.error('❌ Error al cargar profesores:', error);
         setProfesores([]);
         setServerError(error.message || 'Error al cargar profesores');
       } finally {
@@ -183,13 +175,10 @@ export function useTeacherManagement() {
     setLoading(true);
     setServerError("");
     try {
-      console.log('🔄 Iniciando carga de profesores...');
       const data = await obtenerDocentes();
-      console.log('✅ Profesores cargados exitosamente:', data);
       setProfesores(data);
       setServerError("");
     } catch (error) {
-      console.error('❌ Error al cargar profesores:', error);
       setProfesores([]);
       setServerError(error.message || 'Error al cargar profesores');
     } finally {
@@ -285,7 +274,6 @@ export function useTeacherManagement() {
         onSuccess(`✅ Profesor ${nombresCompletos} creado correctamente`);
       }
     } catch (error) {
-      console.error('❌ Error creando docente:', error);
       setServerError(error.message || 'Error al crear docente');
     }
     finally {
@@ -295,7 +283,6 @@ export function useTeacherManagement() {
 
   // Iniciar edición
   const handleEdit = (profesor) => {
-    console.log('🔍 Editando profesor:', profesor);
     
     setEditingId(profesor.docente?.id_docente || profesor.id);
     
@@ -398,7 +385,6 @@ export function useTeacherManagement() {
       setServerError("");
       handleCancelEdit();
     } catch (error) {
-      console.error('❌ Error actualizando docente:', error);
       setServerError(error.message || 'Error al actualizar docente');
     }
     finally {
@@ -429,7 +415,6 @@ export function useTeacherManagement() {
         await cargarProfesores();
         setServerError("");
       } catch (error) {
-        console.error('❌ Error eliminando docente:', error);
         setServerError(error.message || 'Error al eliminar docente');
       }
       finally {

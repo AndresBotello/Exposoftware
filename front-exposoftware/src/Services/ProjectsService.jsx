@@ -17,8 +17,6 @@ const getAuthHeaders = () => {
  */
 export const obtenerProyectos = async () => {
   try {
-    console.log('📊 Obteniendo todos los proyectos...');
-    
     const response = await fetch(API_ENDPOINTS.PROYECTOS, {
       credentials: 'include',
       method: 'GET',
@@ -30,8 +28,7 @@ export const obtenerProyectos = async () => {
     }
 
     const data = await response.json();
-    console.log('✅ Proyectos obtenidos:', data);
-    
+
     return Array.isArray(data) ? data : (data.data || data.proyectos || []);
   } catch (error) {
     console.error('❌ Error obteniendo proyectos:', error);
@@ -50,8 +47,6 @@ export const obtenerProyectos = async () => {
  */
 export const obtenerMisProyectos = async (idEstudiante) => {
   try {
-    console.log('📊 Obteniendo mis proyectos del estudiante autenticado...');
-
     // Usar directamente el endpoint /api/v1/proyectos/mis-proyectos
     // Este endpoint trae los proyectos donde el usuario autenticado participa
     const response = await fetch(API_ENDPOINTS.MIS_PROYECTOS, {
@@ -60,23 +55,12 @@ export const obtenerMisProyectos = async (idEstudiante) => {
       credentials: 'include'
     });
 
-    console.log('📡 Status:', response.status);
-
     if (response.ok) {
       const data = await response.json();
       const proyectos = Array.isArray(data) ? data : (data.data || data.proyectos || []);
 
-      console.log('✅ Proyectos obtenidos:', proyectos.length);
-      console.log('📦 Respuesta del servidor:', data);
-
       if (proyectos.length > 0) {
-        console.log('🔍 Primer proyecto:', {
-          id: proyectos[0].id_proyecto,
-          titulo: proyectos[0].titulo_proyecto,
-          url_cloudinary: proyectos[0].url_cloudinary,
-          integrantes: proyectos[0].integrantes,
-          estado: proyectos[0].estado
-        });
+        // Debug info removed for security
       }
 
       return proyectos;

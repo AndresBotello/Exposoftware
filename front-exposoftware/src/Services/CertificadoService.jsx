@@ -28,11 +28,6 @@ const getAuthHeaders = () => {
  */
 export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opciones = {}) => {
   try {
-    console.log('📜 Generando certificado individual...');
-    console.log('👤 ID Estudiante:', idEstudiante, '(tipo:', typeof idEstudiante, ')');
-    console.log('📁 ID Proyecto:', idProyecto, '(tipo:', typeof idProyecto, ')');
-    console.log('⚙️ Opciones:', opciones);
-
     // Asegurar que los IDs sean strings
     const payload = {
       id_estudiante: String(idEstudiante),
@@ -41,8 +36,6 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
       director_evento: opciones.director_evento || "Alvaro Oñate",
       coordinador_general: opciones.coordinador_general || "Juan Yaneth"
     };
-
-    console.log('📦 Payload enviado:', JSON.stringify(payload, null, 2));
 
     const response = await fetch(
       API_ENDPOINTS.ADMIN_CERTIFICADOS_INDIVIDUAL,
@@ -53,27 +46,17 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
       }
     );
 
-    console.log('📡 Respuesta - Status:', response.status);
-    console.log('📡 Respuesta - Headers:', {
-      'Content-Type': response.headers.get('Content-Type'),
-      'Content-Length': response.headers.get('Content-Length')
-    });
-
     if (response.ok) {
       // Verificar que el servidor realmente está enviando un archivo PDF
       const contentType = response.headers.get('Content-Type');
       
-      console.log('📡 Verificando Content-Type:', contentType);
       
       // El backend devuelve un JSON con la URL de descarga, no el archivo directamente
       if (contentType && contentType.includes('application/json')) {
         const responseData = await response.json();
-        console.log('📋 Respuesta del servidor:', responseData);
         
         // Verificar si hay una URL de descarga en la respuesta
         if (responseData.data && responseData.data.url_descarga) {
-          console.log('🔗 URL de descarga encontrada:', responseData.data.url_descarga);
-          console.log('📦 Descargando archivo desde la URL...');
           
           // Hacer una segunda petición GET para descargar el archivo
           const downloadResponse = await fetch(responseData.data.url_descarga, {
@@ -87,9 +70,6 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
           
           if (downloadResponse.ok) {
             const blob = await downloadResponse.blob();
-            console.log('✅ Archivo descargado desde URL:');
-            console.log('   - Tamaño:', blob.size, 'bytes');
-            console.log('   - Tipo MIME:', blob.type);
             
             return blob;
           } else {
@@ -102,10 +82,6 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
       
       // Si el servidor envía el archivo directamente (caso antiguo)
       const blob = await response.blob();
-      console.log('✅ Certificado generado:');
-      console.log('   - Tamaño:', blob.size, 'bytes');
-      console.log('   - Tipo MIME:', blob.type);
-      console.log('   - Content-Type:', contentType);
       
       // Validar que el blob no esté vacío
       if (blob.size === 0) {
@@ -114,7 +90,6 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
       
       // Validar que sea un PDF válido (debe ser mayor a 100 bytes)
       if (blob.size < 100) {
-        console.warn('⚠️ El archivo es muy pequeño, puede estar dañado');
         throw new Error('El certificado generado parece estar dañado (tamaño: ' + blob.size + ' bytes)');
       }
       
@@ -125,7 +100,6 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
       
       try {
         const errorData = await response.json();
-        console.log('📋 Error del servidor:', errorData);
         
         // Extraer el mensaje de error según la estructura del backend
         if (errorData.detail) {
@@ -144,7 +118,6 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
           errorMessage += JSON.stringify(errorData);
         }
       } catch (parseError) {
-        console.error('❌ No se pudo parsear error del servidor:', parseError);
         errorMessage += 'Error al generar el certificado';
       }
 
@@ -164,7 +137,6 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
       throw new Error(errorMessage);
     }
   } catch (error) {
-    console.error('❌ Error generando certificado individual:', error);
     throw error;
   }
 };
@@ -182,10 +154,6 @@ export const generarCertificadoIndividual = async (idEstudiante, idProyecto, opc
  */
 export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) => {
   try {
-    console.log('📜 Generando certificados por proyecto...');
-    console.log('📁 ID Proyecto:', idProyecto, '(tipo:', typeof idProyecto, ')');
-    console.log('⚙️ Opciones:', opciones);
-
     // Asegurar que el ID sea string y construir payload
     const payload = {
       id_proyecto: String(idProyecto),
@@ -213,7 +181,6 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
       }
     );
 
-    console.log('📡 Respuesta - Status:', response.status);
     console.log('📡 Respuesta - Headers:', {
       'Content-Type': response.headers.get('Content-Type'),
       'Content-Length': response.headers.get('Content-Length')
@@ -223,17 +190,13 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
       // Verificar que el servidor realmente está enviando un archivo
       const contentType = response.headers.get('Content-Type');
       
-      console.log('📡 Verificando Content-Type:', contentType);
       
       // El backend devuelve un JSON con la URL de descarga, no el archivo directamente
       if (contentType && contentType.includes('application/json')) {
         const responseData = await response.json();
-        console.log('📋 Respuesta del servidor:', responseData);
         
         // Verificar si hay una URL de descarga en la respuesta
         if (responseData.data && responseData.data.url_descarga) {
-          console.log('� URL de descarga encontrada:', responseData.data.url_descarga);
-          console.log('📦 Descargando archivo desde la URL...');
           
           // Hacer una segunda petición GET para descargar el archivo
           const downloadResponse = await fetch(responseData.data.url_descarga, {
@@ -247,9 +210,6 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
           
           if (downloadResponse.ok) {
             const blob = await downloadResponse.blob();
-            console.log('✅ Archivo descargado desde URL:');
-            console.log('   - Tamaño:', blob.size, 'bytes');
-            console.log('   - Tipo MIME:', blob.type);
             
             return blob;
           } else {
@@ -263,10 +223,6 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
       // Si el servidor envía el archivo directamente (caso antiguo)
       const blob = await response.blob();
       
-      console.log('✅ Certificados generados:');
-      console.log('   - Tamaño:', blob.size, 'bytes');
-      console.log('   - Tipo MIME:', blob.type);
-      console.log('   - Content-Type del servidor:', contentType);
       
       // Validar que el blob no esté vacío
       if (blob.size === 0) {
@@ -280,7 +236,6 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
       
       try {
         const errorData = await response.json();
-        console.log('📋 Error del servidor:', errorData);
         
         if (errorData.detail) {
           if (typeof errorData.detail === 'string') {
@@ -298,7 +253,6 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
           errorMessage += JSON.stringify(errorData);
         }
       } catch (parseError) {
-        console.error('❌ No se pudo parsear error del servidor:', parseError);
         errorMessage += 'Error al generar certificados';
       }
 
@@ -316,7 +270,6 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
       throw new Error(errorMessage);
     }
   } catch (error) {
-    console.error('❌ Error generando certificados por proyecto:', error);
     throw error;
   }
 };
@@ -328,7 +281,6 @@ export const generarCertificadosPorProyecto = async (idProyecto, opciones = {}) 
  */
 export const descargarCertificado = (blob, nombreArchivo = 'certificado.pdf') => {
   try {
-    console.log('💾 Descargando certificado:', nombreArchivo);
     
     // Crear URL del blob
     const url = window.URL.createObjectURL(blob);
@@ -346,9 +298,7 @@ export const descargarCertificado = (blob, nombreArchivo = 'certificado.pdf') =>
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
     
-    console.log('✅ Certificado descargado exitosamente');
   } catch (error) {
-    console.error('❌ Error descargando certificado:', error);
     throw new Error('Error al descargar el certificado');
   }
 };
@@ -376,7 +326,6 @@ export const generarYDescargarCertificado = async (idEstudiante, idProyecto, nom
     
     return { success: true, message: 'Certificado descargado exitosamente' };
   } catch (error) {
-    console.error('❌ Error en generarYDescargarCertificado:', error);
     throw error;
   }
 };
@@ -389,7 +338,6 @@ export const generarYDescargarCertificado = async (idEstudiante, idProyecto, nom
  */
 export const generarYDescargarCertificadosPorProyecto = async (idProyecto, nombreProyecto = '', opciones = {}) => {
   try {
-    console.log('📦 Generando todos los certificados del proyecto...');
     
     // Generar certificados con las opciones proporcionadas
     const blob = await generarCertificadosPorProyecto(idProyecto, opciones);
@@ -421,14 +369,12 @@ export const generarYDescargarCertificadosPorProyecto = async (idProyecto, nombr
       ? `Certificados_${nombreProyecto.replace(/\s+/g, '_')}_${timestamp}.${extension}`
       : `Certificados_Proyecto_${idProyecto}_${timestamp}.${extension}`;
     
-    console.log('💾 Descargando como:', nombreArchivo);
     
     // Descargar
     descargarCertificado(blob, nombreArchivo);
     
     return { success: true, message: 'Certificados descargados exitosamente' };
   } catch (error) {
-    console.error('❌ Error en generarYDescargarCertificadosPorProyecto:', error);
     throw error;
   }
 };

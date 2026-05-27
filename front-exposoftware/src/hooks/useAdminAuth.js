@@ -24,10 +24,8 @@ export function useAdminAuth() {
     if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
       try {
         await AuthService.logout();
-        console.log('✅ Sesión cerrada exitosamente');
         navigate('/login');
       } catch (error) {
-        console.error('❌ Error al cerrar sesión:', error);
         navigate('/login');
       }
     }

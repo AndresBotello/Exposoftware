@@ -10,8 +10,6 @@ import * as AuthService from "./AuthService";
  * @returns {Promise<Object>} Datos completos del estudiante y usuario
  */
 export const obtenerMiPerfil = async () => {
-  console.log('👤 Obteniendo perfil del estudiante...');
-  console.log('🔗 Endpoint:', API_ENDPOINTS.ESTUDIANTE_MI_PERFIL);
 
   try {
     const response = await fetch(API_ENDPOINTS.ESTUDIANTE_MI_PERFIL, {
@@ -20,17 +18,12 @@ export const obtenerMiPerfil = async () => {
       credentials: 'include'
     });
 
-    console.log('📡 Respuesta - Status:', response.status, response.statusText);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Perfil obtenido exitosamente:', data);
-      console.log('📊 Estructura completa de data:', JSON.stringify(data, null, 2));
       
       // La respuesta tiene formato: { status, message, data, code }
       if (data.data) {
-        console.log('📦 data.data:', data.data);
-        console.log('👤 data.data.usuario:', data.data.usuario);
         return {
           success: true,
           data: data.data,
@@ -44,21 +37,17 @@ export const obtenerMiPerfil = async () => {
         message: 'Perfil obtenido correctamente'
       };
     } else if (response.status === 401) {
-      console.error('❌ No autorizado - Token inválido o expirado');
       throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
     } else if (response.status === 404) {
-      console.error('❌ Perfil no encontrado');
       throw new Error('No se encontró el perfil del estudiante.');
     } else {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Error al obtener perfil:', errorData);
       throw new Error(errorData.message || 'Error al obtener el perfil');
     }
   } catch (error) {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error de conexión:', error);
     throw new Error('Error de conexión. Verifique su conexión a internet.');
   }
 };
@@ -69,9 +58,6 @@ export const obtenerMiPerfil = async () => {
  * @returns {Promise<Object>} Datos actualizados del estudiante
  */
 export const actualizarMiPerfil = async (datosActualizados) => {
-  console.log('✏️ Actualizando perfil del estudiante...');
-  console.log('📦 Datos a actualizar:', datosActualizados);
-  console.log('🔗 Endpoint:', API_ENDPOINTS.ESTUDIANTE_MI_PERFIL);
 
   try {
     const payload = {};
@@ -96,11 +82,9 @@ export const actualizarMiPerfil = async (datosActualizados) => {
       body: JSON.stringify(payload)
     });
 
-    console.log('📡 Respuesta - Status:', response.status, response.statusText);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Perfil actualizado exitosamente:', data);
 
       if (data.data) {
         return {
@@ -117,17 +101,13 @@ export const actualizarMiPerfil = async (datosActualizados) => {
       };
     } else if (response.status === 400) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Datos incorrectos:', errorData);
       throw new Error(errorData.message || 'Datos incorrectos para actualizar');
     } else if (response.status === 401) {
-      console.error('❌ No autorizado - Token inválido o expirado');
       throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
     } else if (response.status === 404) {
-      console.error('❌ Perfil no encontrado');
       throw new Error('No se encontró el perfil del estudiante.');
     } else if (response.status === 422) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Error de validación:', errorData);
 
       if (errorData.errors && Array.isArray(errorData.errors)) {
         const errorMessages = errorData.errors.map(err =>
@@ -139,14 +119,12 @@ export const actualizarMiPerfil = async (datosActualizados) => {
       throw new Error(errorData.message || 'Datos no válidos para actualizar');
     } else {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Error al actualizar perfil:', errorData);
       throw new Error(errorData.message || 'Error al actualizar el perfil');
     }
   } catch (error) {
     if (error.message) {
       throw error;
     }
-    console.error('❌ Error de conexión:', error);
     throw new Error('Error de conexión. Verifique su conexión a internet.');
   }
 };
@@ -159,7 +137,6 @@ export const actualizarMiPerfil = async (datosActualizados) => {
 export const procesarDatosPerfil = (perfil) => {
   if (!perfil) return null;
 
-  console.log('🔄 Procesando datos del perfil:', perfil);
 
   const usuario = perfil.usuario || {};
   const estudiante = perfil.estudiante || {};
@@ -194,7 +171,6 @@ export const procesarDatosPerfil = (perfil) => {
     iniciales: getIniciales(primer_nombre, primer_apellido)
   };
 
-  console.log('✅ Datos procesados:', datosProcessados);
   return datosProcessados;
 };
 

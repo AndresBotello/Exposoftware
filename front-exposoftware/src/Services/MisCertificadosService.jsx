@@ -12,7 +12,6 @@ import * as AuthService from './AuthService';
  */
 export const obtenerMisCertificados = async () => {
   try {
-    console.log('📋 Obteniendo lista de mis certificados...');
 
     const response = await fetch(API_ENDPOINTS.MIS_CERTIFICADOS, {
       method: 'GET',
@@ -23,7 +22,6 @@ export const obtenerMisCertificados = async () => {
     if (response.ok) {
       const data = await response.json();
       const certificados = data.data || data || [];
-      console.log('✅ Certificados obtenidos:', certificados.length);
       return certificados;
     } else if (response.status === 401) {
       throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
@@ -31,7 +29,6 @@ export const obtenerMisCertificados = async () => {
       throw new Error(`Error al obtener certificados: ${response.status}`);
     }
   } catch (error) {
-    console.error('❌ Error obteniendo certificados:', error);
     throw error;
   }
 };
@@ -45,18 +42,15 @@ export const obtenerMisCertificados = async () => {
  */
 export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'certificado.pdf', urlCloudinary = null) => {
   try {
-    console.log('📥 Descargando certificado:', idCertificado);
 
     // Si ya tenemos la URL de Cloudinary, usarla directamente
     if (urlCloudinary) {
-      console.log('🔗 URL de Cloudinary directa:', urlCloudinary);
       const blob = await fetch(urlCloudinary).then(r => r.blob());
       descargarBlob(blob, nombreArchivo);
       return { success: true, message: 'Certificado descargado exitosamente' };
     }
 
     const url = API_ENDPOINTS.CERTIFICADO_DESCARGAR(idCertificado);
-    console.log('🔗 URL endpoint:', url);
 
     // El endpoint es público (sin autenticación)
     // redirect: 'manual' detiene en 302 para capturar URL de Cloudinary
@@ -67,23 +61,19 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
         redirect: 'manual'          // Capturar 302, no seguir a Cloudinary
       });
     } catch (fetchError) {
-      console.error('❌ Error en fetch:', fetchError.message);
       throw new Error(`Error de conexión: ${fetchError.message}`);
     }
 
-    console.log('📡 Status de respuesta:', response.status);
     console.log('📋 Content-Type:', response.headers.get('content-type'));
 
     // Caso 1: Redirect a Cloudinary (status 302, 301, etc)
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const urlCloudinary = response.headers.get('location');
       if (urlCloudinary) {
-        console.log('✅ Redirect detectado:', urlCloudinary);
         // Fetch a Cloudinary SIN credentials (wildcard CORS funciona sin credentials)
         const cloudinaryResponse = await fetch(urlCloudinary);
         if (cloudinaryResponse.ok) {
           const blob = await cloudinaryResponse.blob();
-          console.log('   - Tamaño:', blob.size, 'bytes');
           descargarBlob(blob, nombreArchivo);
           return { success: true, message: 'Certificado descargado exitosamente' };
         }
@@ -98,7 +88,6 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
       if (contentType.includes('application/pdf')) {
         console.log('✅ Certificado obtenido (PDF directo)');
         const blob = await response.blob();
-        console.log('   - Tamaño:', blob.size, 'bytes');
         descargarBlob(blob, nombreArchivo);
         return { success: true, message: 'Certificado descargado exitosamente' };
       }
@@ -107,7 +96,6 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
       if (contentType.includes('application/json')) {
         const data = await response.json();
         if (data.url) {
-          console.log('✅ URL de Cloudinary en JSON:', data.url);
           const cloudinaryResponse = await fetch(data.url);
           if (cloudinaryResponse.ok) {
             const blob = await cloudinaryResponse.blob();
@@ -132,7 +120,6 @@ export const descargarMiCertificado = async (idCertificado, nombreArchivo = 'cer
     throw new Error('No se pudo obtener el certificado: formato de respuesta desconocido');
 
   } catch (error) {
-    console.error('❌ Error descargando certificado:', error);
 
     if (error.message.includes('Failed to fetch')) {
       throw new Error('Error de conexión. Verifica tu conexión a internet e intenta de nuevo.');
@@ -157,10 +144,6 @@ const descargarBlob = (blob, nombreArchivo) => {
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
 
-  console.log('✅ Certificado descargado:');
-  console.log('   - Nombre:', nombreArchivo);
-  console.log('   - Tamaño:', blob.size, 'bytes');
-  console.log('   - Tipo MIME:', blob.type);
 };
 
 export default {

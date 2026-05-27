@@ -35,7 +35,6 @@ export default function CrearFacultades() {
         await AuthService.logout();
         navigate('/login');
       } catch (error) {
-        console.error('❌ Error al cerrar sesión:', error);
       }
     }
   };
@@ -66,9 +65,7 @@ export default function CrearFacultades() {
     try {
       const data = await FacultadService.obtenerFacultades();
       setFacultades(data);
-      console.log("✅ Facultades cargadas:", data.length);
     } catch (error) {
-      console.error("❌ Error al cargar facultades:", error);
       setFacultades([]);
     } finally {
       setLoadingFacultades(false);
@@ -101,7 +98,6 @@ export default function CrearFacultades() {
       nombre_facultad: nombreFacultad.trim()
     };
 
-    console.log("📤 Creando facultad:", payload);
 
     setCargando(true);
     try {
@@ -115,7 +111,6 @@ export default function CrearFacultades() {
       // Recargar lista de facultades
       cargarFacultades();
     } catch (error) {
-      console.error("❌ Error al crear facultad:", error);
       alert(`❌ Error al crear facultad: ${error.message}`);
     } finally {
       setCargando(false);
@@ -154,7 +149,6 @@ export default function CrearFacultades() {
       setNombreEditado("");
       cargarFacultades();
     } catch (error) {
-      console.error("❌ Error al actualizar facultad:", error);
       alert(`❌ Error: ${error.message}`);
     } finally {
       setCargando(false);
@@ -173,7 +167,6 @@ export default function CrearFacultades() {
       alert("✅ Facultad eliminada exitosamente");
       cargarFacultades();
     } catch (error) {
-      console.error("❌ Error al eliminar facultad:", error);
       alert(`❌ Error: ${error.message}`);
     } finally {
       setCargando(false);

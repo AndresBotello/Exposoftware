@@ -61,20 +61,16 @@ export default function GraduateDashboard() {
   useEffect(() => {
     const cargarPerfil = async () => {
       if (!user) {
-        console.log('⏳ Esperando datos del usuario...');
         return;
       }
       try {
         setLoadingPerfil(true);
-        console.log('📋 Cargando perfil completo del egresado...');
         // Usar SIEMPRE la función correcta que valida token y procesa datos
         const datos = await GraduateService.obtenerMiPerfilEgresado();
         setPerfil(datos);
         // Guardar en el contexto para acceso desde otras páginas
         setGraduateProfile(datos);
-        console.log('✅ Perfil completo del egresado cargado:', datos);
       } catch (error) {
-        console.error('❌ Error cargando perfil:', error);
         // Si falla, usar datos mínimos del contexto
         if (user) {
           setPerfil({
@@ -96,18 +92,15 @@ export default function GraduateDashboard() {
   useEffect(() => {
     const cargarProyectos = async () => {
       if (!user?.id_egresado) {
-        console.log('⏳ Esperando ID del egresado...');
         return;
       }
 
       try {
         setLoadingProyectos(true);
-        console.log('🔍 Cargando proyectos del egresado:', user.id_egresado);
         
         // Usar el mismo servicio que para estudiantes, ya que debería funcionar igual
         const misProyectos = await ProjectsService.obtenerMisProyectos(user.id_egresado);
         
-        console.log('✅ Proyectos del egresado cargados:', misProyectos.length);
         setProyectos(misProyectos);
         
         // Calcular métricas del egresado
@@ -120,14 +113,7 @@ export default function GraduateDashboard() {
           proyectosActivos,
           proyectosInactivos
         });
-        
-        console.log('📊 Métricas del egresado calculadas:', {
-          totalProyectos,
-          proyectosActivos,
-          proyectosInactivos
-        });
       } catch (error) {
-        console.error('❌ Error cargando proyectos del egresado:', error);
         setProyectos([]);
       } finally {
         setLoadingProyectos(false);
@@ -144,10 +130,8 @@ export default function GraduateDashboard() {
     if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
       try {
         await AuthService.logout();
-        console.log('✅ Sesión cerrada exitosamente');
         navigate('/login');
       } catch (error) {
-        console.error('❌ Error al cerrar sesión:', error);
         // Aunque falle, redirigir al login
         navigate('/login');
       }

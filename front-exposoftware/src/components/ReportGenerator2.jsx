@@ -31,7 +31,6 @@ export class ReportGenerator {
           reader.readAsDataURL(blob);
         });
       } catch (error) {
-        console.warn(`Intento ${i + 1} fallido para cargar imagen:`, error);
         if (i === retries - 1) return null;
         await new Promise(resolve => setTimeout(resolve, 500));
       }
@@ -55,7 +54,6 @@ export class ReportGenerator {
       try {
         pdf.addImage(logoUnicesarData, 'PNG', 15, 8, 15, 15);
       } catch (error) {
-        console.warn('Error agregando logo UNICESAR:', error);
         this.drawLogoPlaceholder(pdf, 15, 8);
       }
     } else {
@@ -66,7 +64,6 @@ export class ReportGenerator {
       try {
         pdf.addImage(logoEventData, 'PNG', pageWidth - 30, 8, 15, 15);
       } catch (error) {
-        console.warn('Error agregando logo evento:', error);
         this.drawLogoPlaceholder(pdf, pageWidth - 30, 8);
       }
     } else {
@@ -420,7 +417,6 @@ export class ReportGenerator {
       pdf.save(fileName);
 
     } catch (error) {
-      console.error('Error al exportar reporte completo:', error);
       alert('Error al generar el reporte completo');
     }
   }
@@ -447,7 +443,6 @@ export class ReportGenerator {
       link.download = `${fileName}.png`;
       link.click();
     } catch (error) {
-      console.error('Error exportando imagen:', error);
       alert('Error al exportar la imagen');
     }
   }
@@ -484,7 +479,6 @@ export class ReportGenerator {
 
       pdf.save(`${title}.pdf`);
     } catch (error) {
-      console.error('Error exportando PDF:', error);
       alert('Error al exportar el PDF');
     }
   }

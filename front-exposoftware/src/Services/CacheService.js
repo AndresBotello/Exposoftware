@@ -47,13 +47,11 @@ class CacheService {
     // Si existe en caché, devolverlo
     const cached = this.get(key);
     if (cached) {
-      console.log(`📦 Cache hit para: ${key}`);
       return cached;
     }
 
     // Si hay una petición pendiente, esperar por ella
     if (this.pendingRequests.has(key)) {
-      console.log(`⏳ Esperando petición pendiente para: ${key}`);
       return this.pendingRequests.get(key);
     }
 

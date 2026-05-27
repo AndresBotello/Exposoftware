@@ -45,20 +45,16 @@ export default function MyProjects() {
       const idEstudiante = user?.id_estudiante || user?.id_usuario;
 
       if (!user || !idEstudiante) {
-        console.log('⏳ Esperando datos del usuario...');
         return;
       }
 
       try {
         setLoadingProjects(true);
         setError(null);
-        console.log('🔍 Cargando proyectos del estudiante:', idEstudiante);
 
         let misProyectos = await ProjectsService.obtenerMisProyectos(idEstudiante);
         setProjects(misProyectos);
-        console.log('✅ Proyectos cargados:', misProyectos.length);
       } catch (err) {
-        console.error('❌ Error cargando proyectos:', err);
         setError(err.message || 'Error al cargar los proyectos');
       } finally {
         setLoadingProjects(false);
@@ -79,7 +75,6 @@ export default function MyProjects() {
 
     if (project.id_docente_materia) {
       try {
-        console.log('📚 Obteniendo detalles de materia y docente...');
         const detalles = await MisClasesService.obtenerDetallesDocente(project.id_docente_materia);
 
         if (detalles) {
@@ -92,10 +87,8 @@ export default function MyProjects() {
             id_grupo: detalles.id_grupo,
             codigo_materia: detalles.codigo_materia
           };
-          console.log('✅ Detalles enriquecidos:', projectEnriched);
         }
       } catch (error) {
-        console.warn('⚠️ No se pudieron cargar los detalles de materia/docente:', error);
       }
     }
 
@@ -104,18 +97,14 @@ export default function MyProjects() {
     // Cargar info del evento si existe
     if (project.id_evento) {
       try {
-        console.log('🔍 Cargando info del evento:', project.id_evento);
         const todosEventos = await EventosService.obtenerEventos();
         const evento = todosEventos.find(e => e.id_evento === project.id_evento);
 
         if (evento) {
-          console.log('✅ Evento encontrado:', evento);
           setEventoInfo(evento);
         } else {
-          console.warn('⚠️ Evento no encontrado:', project.id_evento);
         }
       } catch (error) {
-        console.warn('⚠️ No se pudo cargar el evento:', error);
       }
     }
   };
@@ -134,7 +123,6 @@ export default function MyProjects() {
         let misProyectos = await ProjectsService.obtenerMisProyectos(idEstudiante);
         setProjects(misProyectos);
       } catch (err) {
-        console.error('Error recargando proyectos:', err);
       }
     }
   };
@@ -146,7 +134,6 @@ export default function MyProjects() {
     }
 
     try {
-      console.log('📋 Buscando certificados del usuario...');
 
       // Obtener lista de certificados del usuario
       const certificados = await MisCertificadosService.obtenerMisCertificados();
@@ -161,7 +148,6 @@ export default function MyProjects() {
         return;
       }
 
-      console.log('✅ Certificado encontrado:', certificadoDelProyecto);
 
       // Descargar el certificado
       const nombreProyecto = proyecto.titulo_proyecto || 'Proyecto';
@@ -173,9 +159,7 @@ export default function MyProjects() {
         certificadoDelProyecto.url_cloudinary  // Pasar URL directa de Cloudinary
       );
 
-      console.log('✅ Certificado descargado exitosamente');
     } catch (error) {
-      console.error('❌ Error al descargar certificado:', error);
       alert('❌ ' + (error.message || 'Error al descargar el certificado'));
     }
   };
@@ -187,7 +171,6 @@ export default function MyProjects() {
     }
 
     try {
-      console.log('📋 Obteniendo todos los certificados del usuario...');
 
       // Obtener lista de certificados del usuario
       const certificados = await MisCertificadosService.obtenerMisCertificados();
@@ -197,7 +180,6 @@ export default function MyProjects() {
         return;
       }
 
-      console.log('✅ Certificados encontrados:', certificados.length);
 
       // Descargar todos los certificados en bucle
       for (const certificado of certificados) {
@@ -207,16 +189,12 @@ export default function MyProjects() {
             certificado.id_certificado || certificado.id,
             nombreArchivo
           );
-          console.log('✅ Descargado:', nombreArchivo);
         } catch (err) {
-          console.warn('⚠️ Error descargando certificado individual:', err);
           // Continuar con el siguiente
         }
       }
 
-      console.log('✅ Descarga de certificados completada');
     } catch (error) {
-      console.error('❌ Error al obtener certificados:', error);
       alert('❌ ' + (error.message || 'Error al obtener los certificados'));
     }
   };

@@ -92,9 +92,7 @@ export function useTeacherDashboard() {
         try {
           myProjectsData = await getMyProjects();
           asignadosCount = Array.isArray(myProjectsData) ? myProjectsData.length : 0;
-          console.log(`📊 Mis proyectos asignados: ${asignadosCount}`);
         } catch (err) {
-          console.warn("⚠️ Error cargando proyectos asignados:", err.message || err);
           asignadosCount = 0;
           myProjectsData = [];
         }
@@ -103,9 +101,7 @@ export function useTeacherDashboard() {
         try {
           const load = await getMyTeachingLoad();
           setTeachingLoad(Array.isArray(load) ? load : []);
-          console.log(`📚 Carga docente: ${Array.isArray(load) ? load.length : 0} clases`);
         } catch (err) {
-          console.warn("⚠️ Error cargando carga docente:", err.message || err);
           setTeachingLoad([]);
         }
 
@@ -113,9 +109,7 @@ export function useTeacherDashboard() {
         try {
           const grupos = await getMyGroups();
           setMyGroups(Array.isArray(grupos) ? grupos : []);
-          console.log(`👥 Grupos: ${Array.isArray(grupos) ? grupos.length : 0}`);
         } catch (err) {
-          console.warn("⚠️ Error cargando mis grupos:", err.message || err);
           setMyGroups([]);
         }
 
@@ -127,13 +121,10 @@ export function useTeacherDashboard() {
           if (docenteId) {
             const data = await getTeacherProjects(docenteId);
             allProjects = Array.isArray(data) ? data : [];
-            console.log(`📊 Proyectos obtenidos de getTeacherProjects: ${allProjects.length}`);
           } else {
-            console.warn("⚠️ No se pudo resolver docente ID, usando myProjectsData como fallback");
             allProjects = myProjectsData;
           }
         } catch (err) {
-          console.warn("⚠️ Error obteniendo proyectos del docente:", err.message || err);
           // Usar myProjectsData como fallback
           allProjects = myProjectsData;
         }
@@ -191,7 +182,6 @@ export function useTeacherDashboard() {
           return false;
         }).length;
 
-        console.log(`📊 Actualizando métricas: total=${total}, aprobados=${aprobados}, pendientes=${pendientes}, reprobados=${reprobados}, asignados=${asignadosCount}`);
         setMetricasProyectos({ total, aprobados, pendientes, reprobados, asignados: asignadosCount });
 
         if (proyectosActivos.length > 0) {
@@ -227,7 +217,6 @@ export function useTeacherDashboard() {
             });
         }
       } catch (err) {
-        console.error("❌ Error al cargar proyectos:", err);
         setError(err.message);
         setMetricasProyectos({ total: 0, aprobados: 0, pendientes: 0, reprobados: 0, asignados: 0 });
       } finally {

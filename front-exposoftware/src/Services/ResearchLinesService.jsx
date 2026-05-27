@@ -31,7 +31,6 @@ class ResearchLinesService {
    */
   static async obtenerLineas() {
     try {
-      console.log('🔍 Obteniendo líneas desde:', API_ENDPOINTS.PUBLIC_LINEAS_INVESTIGACION);
       
       const response = await fetch(API_ENDPOINTS.PUBLIC_LINEAS_INVESTIGACION, {
         credentials: 'include',
@@ -44,7 +43,6 @@ class ResearchLinesService {
       }
 
       const data = await response.json();
-      console.log('📦 Respuesta completa de líneas:', data);
       
       // El backend puede devolver: array directo, {data: array}, o {lineas: array}
       let lineas = [];
@@ -56,11 +54,9 @@ class ResearchLinesService {
         lineas = data.lineas;
       }
       
-      console.log('✅ Líneas procesadas:', lineas);
       return lineas;
       
     } catch (error) {
-      console.error('❌ Error obteniendo líneas:', error);
       throw new Error('No se pudieron cargar las líneas de investigación');
     }
   }
@@ -82,13 +78,10 @@ class ResearchLinesService {
       let codigoLinea = lineaData.codigo_linea;
       
       if (!codigoLinea) {
-        console.log('🔄 Obteniendo líneas existentes para asignar código...');
         try {
           const lineasExistentes = await ResearchLinesService.obtenerLineas();
-          console.log('📊 Total líneas existentes:', lineasExistentes.length);
           
           const codigosUsados = lineasExistentes.map(l => l.codigo_linea).filter(c => c != null);
-          console.log('📊 Códigos ya usados:', codigosUsados);
           
           // Buscar el primer código disponible entre 1 y 2
           let codigoEncontrado = false;
@@ -96,7 +89,6 @@ class ResearchLinesService {
             if (!codigosUsados.includes(i)) {
               codigoLinea = i;
               codigoEncontrado = true;
-              console.log('✅ Código disponible encontrado:', codigoLinea);
               break;
             }
           }
@@ -109,7 +101,6 @@ class ResearchLinesService {
             throw error;
           }
           // Si falla al obtener líneas, mostramos error en lugar de asumir código 1
-          console.error('⚠️ Error al obtener líneas existentes:', error);
           throw new Error('No se pudo verificar las líneas existentes. Por favor, recargue la página e intente nuevamente.');
         }
       }
@@ -129,17 +120,14 @@ class ResearchLinesService {
         body: JSON.stringify(payload)
       });
 
-      console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('📄 Response RAW text:', errorText);
         
         let errorData = {};
         try {
           errorData = JSON.parse(errorText);
         } catch (e) {
-          console.error('⚠️ No se pudo parsear el error como JSON');
           errorData = { message: errorText };
         }
         
@@ -161,12 +149,10 @@ class ResearchLinesService {
       }
 
       const resultado = await response.json();
-      console.log('✅ Línea creada:', resultado);
       
       return resultado;
       
     } catch (error) {
-      console.error('❌ Error creando línea:', error);
       throw error;
     }
   }
@@ -185,7 +171,6 @@ class ResearchLinesService {
         nombre_linea: lineaData.nombre_linea.trim()
       };
 
-      console.log(`📤 Actualizando línea ${codigoLinea}:`, payload);
 
       const response = await fetch(API_ENDPOINTS.ADMIN_LINEA_BY_CODE(codigoLinea), {
         credentials: 'include',
@@ -200,12 +185,10 @@ class ResearchLinesService {
       }
 
       const resultado = await response.json();
-      console.log('✅ Línea actualizada:', resultado);
       
       return resultado;
       
     } catch (error) {
-      console.error('❌ Error actualizando línea:', error);
       throw error;
     }
   }
@@ -216,7 +199,6 @@ class ResearchLinesService {
    */
   static async eliminarLinea(codigoLinea) {
     try {
-      console.log(`🗑️ Eliminando línea ${codigoLinea}`);
 
       const response = await fetch(API_ENDPOINTS.ADMIN_LINEA_BY_CODE(codigoLinea), {
         credentials: 'include',
@@ -229,11 +211,9 @@ class ResearchLinesService {
         throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
       }
 
-      console.log('✅ Línea eliminada');
       return true;
       
     } catch (error) {
-      console.error('❌ Error eliminando línea:', error);
       throw error;
     }
   }
@@ -260,7 +240,6 @@ class ResearchLinesService {
       return sublineas;
       
     } catch (error) {
-      console.error(`Error obteniendo sublíneas de línea ${codigoLinea}:`, error);
       throw new Error('No se pudieron cargar las sublíneas');
     }
   }
@@ -301,7 +280,6 @@ class ResearchLinesService {
       return sublineas;
       
     } catch (error) {
-      console.error('Error obteniendo todas las sublíneas:', error);
       throw new Error('No se pudieron cargar las sublíneas');
     }
   }
@@ -323,13 +301,11 @@ class ResearchLinesService {
         try {
           const sublineasExistentes = await ResearchLinesService.obtenerSublineas(codigoLinea);
           const codigosUsados = sublineasExistentes.map(s => s.codigo_sublinea);
-          console.log(`📊 Códigos de sublínea ya usados en línea ${codigoLinea}:`, codigosUsados);
           
           // Buscar el primer código disponible entre 1 y 2
           for (let i = 1; i <= 2; i++) {
             if (!codigosUsados.includes(i)) {
               codigoSublinea = i;
-              console.log('✅ Código de sublínea disponible:', codigoSublinea);
               break;
             }
           }
@@ -341,7 +317,6 @@ class ResearchLinesService {
           if (error.message.includes('No hay códigos disponibles')) {
             throw error;
           }
-          console.warn('⚠️ No se pudieron obtener sublíneas, intentando con código 1');
           codigoSublinea = 1;
         }
       }
@@ -351,7 +326,6 @@ class ResearchLinesService {
         nombre_sublinea: sublineaData.nombre_sublinea.trim()
       };
 
-      console.log(`📤 Creando sublínea en línea ${codigoLinea}:`, payload);
 
       const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEAS_BY_LINE(codigoLinea), {
         credentials: 'include',
@@ -366,12 +340,10 @@ class ResearchLinesService {
       }
 
       const resultado = await response.json();
-      console.log('✅ Sublínea creada:', resultado);
       
       return resultado;
       
     } catch (error) {
-      console.error('❌ Error creando sublínea:', error);
       throw error;
     }
   }
@@ -390,7 +362,6 @@ class ResearchLinesService {
         nombre_sublinea: sublineaData.nombre_sublinea.trim()
       };
 
-      console.log(`📤 Actualizando sublínea ${codigoSublinea}:`, payload);
 
       const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEA_BY_CODE(codigoLinea, codigoSublinea), {
         credentials: 'include',
@@ -405,12 +376,10 @@ class ResearchLinesService {
       }
 
       const resultado = await response.json();
-      console.log('✅ Sublínea actualizada:', resultado);
       
       return resultado;
       
     } catch (error) {
-      console.error('❌ Error actualizando sublínea:', error);
       throw error;
     }
   }
@@ -421,7 +390,6 @@ class ResearchLinesService {
    */
   static async eliminarSublinea(codigoLinea, codigoSublinea) {
     try {
-      console.log(`🗑️ Eliminando sublínea ${codigoSublinea}`);
 
       const response = await fetch(API_ENDPOINTS.ADMIN_SUBLINEA_BY_CODE(codigoLinea, codigoSublinea), {
         credentials: 'include',
@@ -434,11 +402,9 @@ class ResearchLinesService {
         throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
       }
 
-      console.log('✅ Sublínea eliminada');
       return true;
       
     } catch (error) {
-      console.error('❌ Error eliminando sublínea:', error);
       throw error;
     }
   }
@@ -465,7 +431,6 @@ class ResearchLinesService {
       return areas;
       
     } catch (error) {
-      console.error(`Error obteniendo áreas de sublínea ${codigoSublinea}:`, error);
       throw new Error('No se pudieron cargar las áreas temáticas');
     }
   }
@@ -511,7 +476,6 @@ class ResearchLinesService {
       return areas;
       
     } catch (error) {
-      console.error('Error obteniendo todas las áreas:', error);
       throw new Error('No se pudieron cargar las áreas temáticas');
     }
   }
@@ -525,7 +489,6 @@ class ResearchLinesService {
    */
   static async obtenerArbolCompleto() {
     try {
-      console.log('🌳 Obteniendo árbol completo de investigación...');
       
       const response = await fetch(API_ENDPOINTS.PUBLIC_ARBOL_COMPLETO_INVESTIGACION, {
         credentials: 'include',
@@ -540,11 +503,9 @@ class ResearchLinesService {
       const data = await response.json();
       const arbol = Array.isArray(data) ? data : (data.data || data.lineas || []);
       
-      console.log('✅ Árbol de investigación obtenido:', arbol);
       return arbol;
       
     } catch (error) {
-      console.error('❌ Error obteniendo árbol de investigación:', error);
       throw new Error('No se pudo cargar la estructura de investigación');
     }
   }
@@ -556,7 +517,6 @@ class ResearchLinesService {
    */
   static async obtenerMapasInvestigacion() {
     try {
-      console.log('📊 Creando mapas de investigación...');
       
       const arbol = await ResearchLinesService.obtenerArbolCompleto();
       
@@ -583,7 +543,6 @@ class ResearchLinesService {
         }
       });
       
-      console.log(`✅ Mapas creados: ${lineasMap.size} líneas, ${sublineasMap.size} sublíneas, ${areasMap.size} áreas`);
       
       return {
         lineasMap,
@@ -592,7 +551,6 @@ class ResearchLinesService {
       };
       
     } catch (error) {
-      console.error('❌ Error creando mapas de investigación:', error);
       // Retornar mapas vacíos en caso de error
       return {
         lineasMap: new Map(),
@@ -619,13 +577,11 @@ class ResearchLinesService {
         try {
           const areasExistentes = await ResearchLinesService.obtenerAreas(codigoLinea, codigoSublinea);
           const codigosUsados = areasExistentes.map(a => a.codigo_area);
-          console.log(`📊 Códigos de área ya usados en sublínea ${codigoSublinea}:`, codigosUsados);
           
           // Buscar el primer código disponible entre 1 y 2
           for (let i = 1; i <= 2; i++) {
             if (!codigosUsados.includes(i)) {
               codigoArea = i;
-              console.log('✅ Código de área disponible:', codigoArea);
               break;
             }
           }
@@ -637,7 +593,6 @@ class ResearchLinesService {
           if (error.message.includes('No hay códigos disponibles')) {
             throw error;
           }
-          console.warn('⚠️ No se pudieron obtener áreas, intentando con código 1');
           codigoArea = 1;
         }
       }
@@ -647,7 +602,6 @@ class ResearchLinesService {
         nombre_area: areaData.nombre_area.trim()
       };
 
-      console.log(`📤 Creando área en sublínea ${codigoSublinea}:`, payload);
 
       const response = await fetch(API_ENDPOINTS.ADMIN_AREAS_BY_SUBLINEA(codigoLinea, codigoSublinea), {
         credentials: 'include',
@@ -662,12 +616,10 @@ class ResearchLinesService {
       }
 
       const resultado = await response.json();
-      console.log('✅ Área temática creada:', resultado);
       
       return resultado;
       
     } catch (error) {
-      console.error('❌ Error creando área temática:', error);
       throw error;
     }
   }
@@ -686,7 +638,6 @@ class ResearchLinesService {
         nombre_area: areaData.nombre_area.trim()
       };
 
-      console.log(`📤 Actualizando área ${codigoArea}:`, payload);
 
       const response = await fetch(API_ENDPOINTS.ADMIN_AREA_BY_CODE(codigoLinea, codigoSublinea, codigoArea), {
         credentials: 'include',
@@ -701,12 +652,10 @@ class ResearchLinesService {
       }
 
       const resultado = await response.json();
-      console.log('✅ Área temática actualizada:', resultado);
       
       return resultado;
       
     } catch (error) {
-      console.error('❌ Error actualizando área temática:', error);
       throw error;
     }
   }
@@ -717,7 +666,6 @@ class ResearchLinesService {
    */
   static async eliminarArea(codigoLinea, codigoSublinea, codigoArea) {
     try {
-      console.log(`🗑️ Eliminando área ${codigoArea}`);
 
       const response = await fetch(API_ENDPOINTS.ADMIN_AREA_BY_CODE(codigoLinea, codigoSublinea, codigoArea), {
         credentials: 'include',
@@ -730,11 +678,9 @@ class ResearchLinesService {
         throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
       }
 
-      console.log('✅ Área temática eliminada');
       return true;
       
     } catch (error) {
-      console.error('❌ Error eliminando área temática:', error);
       throw error;
     }
   }

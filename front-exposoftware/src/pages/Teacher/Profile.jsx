@@ -41,10 +41,8 @@ export default function TeacherProfile() {
         setLoading(true);
         setError(null);
 
-        console.log('📋 Cargando perfil del docente...');
         const datos = await getTeacherProfile();
 
-        console.log('✅ Datos del perfil recibidos:', datos);
 
         // Mapear directamente desde la estructura del endpoint
         setProfileData({
@@ -60,7 +58,6 @@ export default function TeacherProfile() {
           codigo_programa: datos.docente?.codigo_programa || ""
         });
       } catch (err) {
-        console.error('❌ Error al cargar perfil:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -119,11 +116,9 @@ export default function TeacherProfile() {
 
   const handleLogout = async () => {
     try {
-      console.log("🚪 Cerrando sesión del docente...");
       await logout();
       navigate("/login");
     } catch (error) {
-      console.error("❌ Error al cerrar sesión:", error);
       alert("❌ Error al cerrar sesión");
     }
   };

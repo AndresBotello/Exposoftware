@@ -69,7 +69,6 @@ export default function PublicProjects() {
       await logout();
       navigate('/');
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
       navigate('/');
     }
   };

@@ -143,18 +143,15 @@ export function useGuestAndGraduateManagement(userType = 'invitado') {
         if (sectoresRes.ok) {
           const data = await sectoresRes.json();
           const sectoresData = Array.isArray(data) ? data : (data.data || data.sectores || []);
-          console.log('📍 Sectores cargados:', sectoresData);
           setSectores(sectoresData);
         }
 
         if (facultadesRes.ok) {
           const data = await facultadesRes.json();
           const facultadesData = Array.isArray(data) ? data : (data.data || data.facultades || []);
-          console.log('📍 Facultades cargadas:', facultadesData);
           setFacultades(facultadesData);
         }
       } catch (err) {
-        console.error("Error cargando catálogos:", err);
         setServerError("Error al cargar catálogos");
       }
     };
@@ -176,7 +173,6 @@ export function useGuestAndGraduateManagement(userType = 'invitado') {
             setMunicipiosApi(Array.isArray(data) ? data : (data.data || data.municipios || []));
           }
         } catch (err) {
-          console.error("Error cargando municipios:", err);
         }
       };
 
@@ -197,11 +193,9 @@ export function useGuestAndGraduateManagement(userType = 'invitado') {
           if (response.ok) {
             const data = await response.json();
             const programasData = Array.isArray(data) ? data : (data.data || data.programas || []);
-            console.log('📍 Programas cargados para facultad', idFacultad, ':', programasData);
             setProgramas(programasData);
           }
         } catch (err) {
-          console.error('Error loading programas:', err);
           setProgramas([]);
         }
       };
@@ -224,14 +218,10 @@ export function useGuestAndGraduateManagement(userType = 'invitado') {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('📊 Respuesta completa del API:', data);
-        console.log('📊 Tipo de usuario:', userType);
 
         const usuarios = Array.isArray(data) ? data : (data.data || data.usuarios || []);
-        console.log('📊 Usuarios procesados:', usuarios);
 
         if (usuarios.length > 0) {
-          console.log('📊 Primer usuario estructura:', usuarios[0]);
         }
 
         setUsuarios(usuarios);
@@ -239,7 +229,6 @@ export function useGuestAndGraduateManagement(userType = 'invitado') {
         setServerError("Error al cargar la lista");
       }
     } catch (err) {
-      console.error('Error:', err);
       setServerError(err.message);
     } finally {
       setLoading(false);
@@ -266,7 +255,6 @@ export function useGuestAndGraduateManagement(userType = 'invitado') {
     setServerError("");
 
     try {
-      console.log('🔍 Estado actual - pais:', pais, 'nacionalidad:', nacionalidad);
       const endpoint = userType === 'invitado' ? API_ENDPOINTS.ADMIN_INVITADOS : API_ENDPOINTS.ADMIN_EGRESADOS;
 
       const payload = {
@@ -307,7 +295,6 @@ export function useGuestAndGraduateManagement(userType = 'invitado') {
       };
 
       console.log('📤 Enviando payload:', JSON.stringify(payload, null, 2));
-      console.log('📍 Endpoint:', endpoint);
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -317,7 +304,6 @@ export function useGuestAndGraduateManagement(userType = 'invitado') {
         credentials: 'include',
         body: JSON.stringify(payload)
       });
-      console.log('📥 Respuesta del API:', response.status, response.statusText);
       const responseData = await response.json();
       console.log('📥 Datos de respuesta:', JSON.stringify(responseData, null, 2));
 
@@ -326,7 +312,6 @@ export function useGuestAndGraduateManagement(userType = 'invitado') {
         handleCancel();
         loadUsuarios();
       } else {
-        console.error('❌ Error de API:', response.status, responseData);
         setServerError(responseData.detail || responseData.message || JSON.stringify(responseData) || `Error al crear ${userType === 'invitado' ? 'invitado' : 'egresado'}`);
       }
     } catch (err) {

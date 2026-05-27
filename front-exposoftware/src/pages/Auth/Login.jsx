@@ -79,7 +79,6 @@ export default function LoginPage() {
     setError("");
 
     try {
-      console.log("📤 Intentando iniciar sesión con:", correo);
       
       // ✅ Usar el contexto de autenticación para hacer login
       const resultado = await loginContext({
@@ -87,7 +86,6 @@ export default function LoginPage() {
         password: password
       });
       
-      console.log("✅ Login exitoso:", resultado);
 
       if (!resultado.success) {
         throw new Error(resultado.error || "Error al iniciar sesión");
@@ -103,7 +101,6 @@ export default function LoginPage() {
       // Obtener rol del usuario
       const userRole = AuthService.getUserRole();
       
-      console.log("👤 userRole obtenido:", userRole);
       
       if (!userRole) {
         throw new Error("No se pudo obtener el rol del usuario");
@@ -114,7 +111,6 @@ export default function LoginPage() {
 
       // Redirigir según el rol
       const rol = userRole.toLowerCase();
-      console.log("🔀 Redirigiendo usuario con rol:", rol);
 
       switch(rol) {
         case 'estudiante':
@@ -135,12 +131,10 @@ export default function LoginPage() {
           navigate('/guest/dashboard');
           break;
         default:
-          console.warn("⚠️ Rol no reconocido:", rol);
           navigate('/');
       }
 
     } catch (err) {
-      console.error("❌ Error en login:", err);
 
       if (err.message.includes('502') || err.message.includes('503')) {
         setError("El servidor no está disponible temporalmente. Por favor, intenta más tarde.");
@@ -182,7 +176,6 @@ export default function LoginPage() {
       setLoadingGuest(true);
       setError("");
 
-      console.log("📤 Intentando iniciar sesión como invitado...");
 
       // Usar el contexto de autenticación para hacer login como invitado
       const resultado = await loginAsGuestContext();
@@ -193,7 +186,6 @@ export default function LoginPage() {
 
       navigate('/invited');
     } catch (err) {
-      console.error("❌ Error en login de invitado:", err);
       setError(err.message || "Error al iniciar sesión como invitado");
     } finally {
       setLoadingGuest(false);

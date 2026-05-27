@@ -41,14 +41,10 @@ export default function GuestDashboard() {
       // Guardar en el contexto de autenticación para acceso desde otras páginas
       setGuestProfile(datos);
 
-      console.log('✅ Perfil del invitado cargado exitosamente:', datos);
-      console.log('📦 Perfil guardado en AuthContext para otras páginas');
     } catch (err) {
-      console.error('❌ Error cargando perfil:', err);
       setError(err.message);
       // Si no hay token o falla la autenticación, redirigir al login
       if (err.message.includes('token') || err.message.includes('Sesión')) {
-        console.log('🔐 Redirigiendo al login - se requiere autenticación');
         setTimeout(() => {
           navigate('/login');
         }, 2000);
@@ -71,7 +67,6 @@ export default function GuestDashboard() {
       const lineas = await ResearchLinesService.obtenerLineas();
       setLineasInvestigacion(lineas);
     } catch (error) {
-      console.error('❌ Error cargando datos para gráficas:', error);
     } finally {
       setCargandoGraficas(false);
     }
@@ -618,7 +613,6 @@ const coloresLineas = [
                 error={null}
                 columns={3}
                 onProjectClick={(project) => {
-                  console.log('Proyecto seleccionado:', project);
                   // Aquí puedes agregar funcionalidad para ver detalles del proyecto
                 }}
               />

@@ -40,14 +40,12 @@ export default function AsistenciaForm() {
                             await AssistanceService.registrarAsistencia(idEvento, userData.correo);
                             setAsistenciaRegistrada(true);
                         } catch (err) {
-                            console.log('ℹ️ Asistencia ya registrada o error:', err.message);
                             // Mostrar form de calificación de todas formas
                             setAsistenciaRegistrada(true);
                         }
                     }
                 }
             } catch (error) {
-                console.error("❌ Error al obtener evento:", error);
             }
         };
 
@@ -74,7 +72,6 @@ export default function AsistenciaForm() {
 
         try {
             const response = await AssistanceService.registrarAsistencia(idEvento, email);
-            console.log("✅ Asistencia registrada:", response);
             setAsistenciaRegistrada(true);
 
         } catch (error) {

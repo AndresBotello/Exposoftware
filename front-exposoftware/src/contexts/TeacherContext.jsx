@@ -49,13 +49,10 @@ export const TeacherProvider = ({ children }) => {
 
     try {
       setLoadingProfile(true);
-      console.log('👨‍🏫 Cargando perfil del docente...');
 
       const perfil = await getTeacherProfile();
       setTeacherProfile(perfil);
-      console.log('✅ Perfil del docente cargado:', perfil);
     } catch (error) {
-      console.error('❌ Error cargando perfil del docente:', error);
     } finally {
       setLoadingProfile(false);
     }
@@ -67,7 +64,6 @@ export const TeacherProvider = ({ children }) => {
 
     try {
       setLoadingProjects(true);
-      console.log('📚 Cargando proyectos del docente...');
 
       let docenteId = user.id_docente || user.user?.id_usuario || user.id_usuario || user.uid;
 
@@ -81,12 +77,10 @@ export const TeacherProvider = ({ children }) => {
             docenteId = perfilCompleto.docente.id_docente;
           }
         } catch (err) {
-          console.warn('⚠️ No se pudo obtener perfil completo:', err.message);
         }
       }
 
       if (!docenteId) {
-        console.error('❌ No se encontró ID del docente');
         return;
       }
 
@@ -129,9 +123,7 @@ export const TeacherProvider = ({ children }) => {
         reprobados
       });
 
-      console.log('✅ Proyectos del docente cargados:', data.length);
     } catch (error) {
-      console.error('❌ Error cargando proyectos del docente:', error);
     } finally {
       setLoadingProjects(false);
     }
@@ -143,7 +135,6 @@ export const TeacherProvider = ({ children }) => {
 
     try {
       setLoadingMaps(true);
-      console.log('🗺️ Cargando mapas de investigación...');
 
       const mapas = await ResearchLinesService.obtenerMapasInvestigacion();
       setLineasMap(mapas.lineasMap);
@@ -151,9 +142,7 @@ export const TeacherProvider = ({ children }) => {
       setAreasMap(mapas.areasMap);
       setMapasCargados(true);
 
-      console.log('✅ Mapas de investigación cargados');
     } catch (error) {
-      console.warn('⚠️ No se pudieron cargar los mapas de investigación:', error.message);
       // Crear mapas básicos como fallback
       const lineasUnicas = new Map();
       const sublineasUnicas = new Map();
@@ -183,7 +172,6 @@ export const TeacherProvider = ({ children }) => {
   const loadAllTeacherData = useCallback(async () => {
     if (!user || !hasRole('docente') || dataLoaded) return;
 
-    console.log('🚀 Iniciando carga completa de datos del docente...');
 
     // Cargar datos en paralelo para mejor rendimiento
     await Promise.all([
@@ -197,7 +185,6 @@ export const TeacherProvider = ({ children }) => {
     }
 
     setDataLoaded(true);
-    console.log('✅ Todos los datos del docente cargados');
   }, [user, hasRole, dataLoaded, loadTeacherProfile, loadTeacherProjects, loadResearchMaps, proyectos.length]);
 
   // Función para refrescar datos (útil después de cambios)

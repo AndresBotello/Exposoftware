@@ -28,18 +28,14 @@ export const AuthProvider = ({ children }) => {
           const userData = AuthService.getUserData();
           const userRole = AuthService.getUserRole();
           
-          console.log('🔐 Usuario autenticado detectado:');
-          console.log('   - Rol:', userRole);
           
           if (userData) {
             // 🚀 CARGAR DATOS INMEDIATAMENTE desde localStorage
-            console.log('⚡ Cargando datos inmediatamente desde localStorage');
             setUser(userData);
             setLoading(false); // ← Liberar el loading INMEDIATAMENTE
             
             // Si es estudiante, cargar perfil completo desde el backend en SEGUNDO PLANO
             if (userRole === 'estudiante') {
-              console.log('📚 Actualizando perfil en segundo plano...');
               
               // Esta llamada NO bloquea la UI
               StudentProfileService.obtenerMiPerfil()
@@ -47,27 +43,20 @@ export const AuthProvider = ({ children }) => {
                   if (resultado.success && resultado.data) {
                     const perfilProcesado = StudentProfileService.procesarDatosPerfil(resultado.data);
                     setUser(perfilProcesado);
-                    console.log('✅ ¡PERFIL ACTUALIZADO EN SEGUNDO PLANO!');
-                    console.log('   - Nombre completo:', perfilProcesado.nombre_completo);
                   } else {
-                    console.warn('⚠️ Backend respondió pero sin datos válidos, manteniendo datos de localStorage');
                   }
                 })
                 .catch(error => {
-                  console.error('❌ Error actualizando perfil en segundo plano:', error.message);
                   console.log('✅ Manteniendo datos de localStorage (ya mostrados)');
                 });
             }
           } else {
-            console.warn('⚠️ No hay datos de usuario en localStorage');
             setLoading(false);
           }
         } else {
-          console.log('🔓 No hay sesión activa');
           setLoading(false);
         }
       } catch (error) {
-        console.error('❌ Error crítico cargando datos del usuario:', error);
         setLoading(false);
       }
     };
@@ -80,7 +69,6 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      console.log('🔐 AuthContext - Iniciando login...');
 
       // Usar AuthService para hacer login
       const resultado = await AuthService.login(credentials);
@@ -88,18 +76,14 @@ export const AuthProvider = ({ children }) => {
       if (resultado.success && resultado.data) {
         const userRole = AuthService.getUserRole();
 
-        console.log('✅ AuthContext - Login exitoso, rol:', userRole);
-        console.log('📦 AuthContext - Datos del usuario:', resultado.data);
 
         // 🚀 ACTUALIZAR EL ESTADO INMEDIATAMENTE
         setUser(resultado.data);
         setLoading(false);
 
-        console.log('✅ AuthContext - Estado de usuario actualizado');
 
         // Si es estudiante, cargar perfil completo en SEGUNDO PLANO
         if (userRole === 'estudiante') {
-          console.log('📚 AuthContext - Actualizando perfil completo en segundo plano tras login...');
 
           // Esta llamada NO bloquea la UI
           StudentProfileService.obtenerMiPerfil()
@@ -109,12 +93,9 @@ export const AuthProvider = ({ children }) => {
                 setUser(perfilProcesado);
                 // Guardar en localStorage para próximas cargas
                 localStorage.setItem('user_data', JSON.stringify(perfilProcesado));
-                console.log('✅ AuthContext - Perfil completo actualizado y guardado tras login');
               }
             })
             .catch(error => {
-              console.error('❌ AuthContext - Error al cargar perfil tras login:', error.message);
-              console.log('✅ AuthContext - Manteniendo datos básicos del login');
             });
         }
 
@@ -124,7 +105,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: false, error: 'Error en el login' };
     } catch (error) {
-      console.error('❌ AuthContext - Error en login:', error);
       setLoading(false);
       return { success: false, error: error.message };
     }
@@ -135,20 +115,16 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      console.log('👥 AuthContext - Iniciando login como invitado...');
 
       // Usar AuthService para hacer login como invitado
       const resultado = await AuthService.loginAsGuest();
 
       if (resultado.success && resultado.data) {
-        console.log('✅ AuthContext - Login como invitado exitoso');
-        console.log('📦 AuthContext - Datos del invitado:', resultado.data);
 
         // 🚀 ACTUALIZAR EL ESTADO INMEDIATAMENTE
         setUser(resultado.data);
         setLoading(false);
 
-        console.log('✅ AuthContext - Estado de invitado actualizado');
 
         return { success: true, user: resultado.data };
       }
@@ -156,7 +132,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: false, error: 'Error en login de invitado' };
     } catch (error) {
-      console.error('❌ AuthContext - Error en login de invitado:', error);
       setLoading(false);
       return { success: false, error: error.message };
     }
@@ -165,13 +140,10 @@ export const AuthProvider = ({ children }) => {
   // Función para hacer logout
   const logout = async () => {
     try {
-      console.log('🚪 Cerrando sesión desde AuthContext...');
       // Llamar al servicio de logout que cierra sesión en el backend
       await AuthService.logout();
       setUser(null);
-      console.log('✅ Sesión cerrada correctamente');
     } catch (error) {
-      console.error('❌ Error al cerrar sesión:', error);
       // Limpiar de todas formas aunque falle el backend
       setUser(null);
       localStorage.clear();
@@ -189,7 +161,6 @@ export const AuthProvider = ({ children }) => {
   // Función para recargar el perfil del usuario (útil después de actualizar datos)
   const reloadUserProfile = async () => {
     try {
-      console.log('🔄 Recargando perfil del usuario...');
       setLoading(true);
       
       const userRole = AuthService.getUserRole();
@@ -199,14 +170,12 @@ export const AuthProvider = ({ children }) => {
         if (resultado.success && resultado.data) {
           const perfilProcesado = StudentProfileService.procesarDatosPerfil(resultado.data);
           setUser(perfilProcesado);
-          console.log('✅ Perfil recargado exitosamente:', perfilProcesado);
           return { success: true, data: perfilProcesado };
         }
       }
       
       return { success: false, error: 'No se pudo recargar el perfil' };
     } catch (error) {
-      console.error('❌ Error al recargar perfil:', error);
       return { success: false, error: error.message };
     } finally {
       setLoading(false);
@@ -260,7 +229,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('guest_profile', JSON.stringify(perfilData));
       // Actualizar el estado del usuario con los datos completos del perfil
       setUser(prev => ({ ...prev, ...perfilData }));
-      console.log('✅ Perfil del invitado guardado en AuthContext');
     }
   };
 
@@ -277,7 +245,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('graduate_profile', JSON.stringify(perfilData));
       // Actualizar el estado del usuario con los datos completos del perfil
       setUser(prev => ({ ...prev, ...perfilData }));
-      console.log('✅ Perfil del egresado guardado en AuthContext');
     }
   };
 

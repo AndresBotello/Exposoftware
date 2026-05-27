@@ -70,42 +70,34 @@ export function useResearchLinesManagement() {
 
   const cargarSublineasPorLinea = async (codigoLinea) => {
     try {
-      console.log(`📥 Cargando sublíneas para línea ${codigoLinea}...`);
       const data = await obtenerSublineas(codigoLinea);
       setSublineasPorLinea(data);
-      console.log(`✅ ${data.length} sublíneas cargadas para línea ${codigoLinea}`);
       
       // Si aún no hemos cargado TODAS las sublíneas, hacerlo solo una vez
       if (sublineas.length === 0) {
         console.log(`📥 Cargando TODAS las sublíneas (por primera vez)...`);
         const todasSublineas = await obtenerTodasSublineas();
         setSublineas(todasSublineas);
-        console.log(`✅ ${todasSublineas.length} sublíneas totales cargadas`);
       }
     } catch (error) {
-      console.error(`Error al cargar sublíneas de línea ${codigoLinea}:`, error);
       setSublineasPorLinea([]);
     }
   };
 
   const cargarAreasPorSublinea = async (codigoSublinea) => {
     try {
-      console.log(`📥 Cargando áreas para sublínea ${codigoSublinea}...`);
       // Aquí necesitamos obtener las áreas de la sublínea correcta
       // Como no tenemos un endpoint específico, extraemos del árbol completo
       const todasAreas = await obtenerTodasAreas();
       const areasFiltradas = todasAreas.filter(a => a.codigo_sublinea === codigoSublinea);
       setAreasPorSublinea(areasFiltradas);
-      console.log(`✅ ${areasFiltradas.length} áreas cargadas para sublínea ${codigoSublinea}`);
       
       // Si aún no hemos cargado TODAS las áreas, hacerlo solo una vez
       if (areas.length === 0) {
         console.log(`📥 Cargando TODAS las áreas (por primera vez)...`);
         setAreas(todasAreas);
-        console.log(`✅ ${todasAreas.length} áreas totales cargadas`);
       }
     } catch (error) {
-      console.error(`Error al cargar áreas de sublínea ${codigoSublinea}:`, error);
       setAreasPorSublinea([]);
     }
   };
@@ -115,10 +107,8 @@ export function useResearchLinesManagement() {
       const data = await obtenerLineas();
       setLineas(data);
       if (data.length === 0) {
-        console.log('ℹ️ No hay líneas registradas aún. Puedes crear la primera línea.');
       }
     } catch (error) {
-      console.error(error);
       // No mostrar alerta, solo registrar el error
       setLineas([]);
     }
@@ -129,7 +119,6 @@ export function useResearchLinesManagement() {
       const data = await obtenerTodasSublineas();
       setSublineas(data);
     } catch (error) {
-      console.error(error);
       alert("Error al cargar las sublíneas");
     }
   };
@@ -139,7 +128,6 @@ export function useResearchLinesManagement() {
       const data = await obtenerTodasAreas();
       setAreas(data);
     } catch (error) {
-      console.error(error);
       alert("Error al cargar las áreas");
     }
   };
@@ -256,7 +244,6 @@ export function useResearchLinesManagement() {
     try {
       // Convertir a número si es string
       const codigoLinea = typeof idLineaParaSublinea === 'string' ? parseInt(idLineaParaSublinea) : idLineaParaSublinea;
-      console.log(`📤 Creando sublínea en línea ${codigoLinea}:`, { nombre_sublinea: nombreSublinea });
       await crearSublinea(codigoLinea, { nombre_sublinea: nombreSublinea });
       alert("Sublínea creada");
       setNombreSublinea("");
@@ -288,7 +275,6 @@ export function useResearchLinesManagement() {
       // Convertir a números si son strings
       const codigoLinea = typeof editingSublineaLineaCodigo === 'string' ? parseInt(editingSublineaLineaCodigo) : editingSublineaLineaCodigo;
       const codigoSublinea = typeof editingSublineaCodigo === 'string' ? parseInt(editingSublineaCodigo) : editingSublineaCodigo;
-      console.log(`📝 Actualizando sublínea en línea ${codigoLinea}: ${codigoSublinea}`);
       await actualizarSublinea(codigoLinea, codigoSublinea, { nombre_sublinea: nombreSublinea });
       alert("Sublínea actualizada");
       setShowEditSublineaModal(false);
@@ -321,7 +307,6 @@ export function useResearchLinesManagement() {
       // Convertir a números si son strings
       const codigoLinea = typeof sublinea.codigo_linea === 'string' ? parseInt(sublinea.codigo_linea) : sublinea.codigo_linea;
       const codigoSub = typeof codigoSublinea === 'string' ? parseInt(codigoSublinea) : codigoSublinea;
-      console.log(`🗑️ Eliminando sublínea ${codigoSub} de línea ${codigoLinea}`);
       await eliminarSublinea(codigoLinea, codigoSub);
       alert("Sublínea eliminada");
       // Invalidar caché y recargar
@@ -360,7 +345,6 @@ export function useResearchLinesManagement() {
       
       // Convertir a números
       const codigoLinea = typeof sublinea.codigo_linea === 'string' ? parseInt(sublinea.codigo_linea) : sublinea.codigo_linea;
-      console.log(`📤 Creando área en sublínea ${codigoSublinea} de línea ${codigoLinea}:`, { nombre_area: nombreArea });
       await crearArea(codigoLinea, codigoSublinea, { nombre_area: nombreArea });
       alert("Área creada");
       setNombreArea("");
@@ -393,7 +377,6 @@ export function useResearchLinesManagement() {
       const codigoLinea = typeof editingAreaLineaCodigo === 'string' ? parseInt(editingAreaLineaCodigo) : editingAreaLineaCodigo;
       const codigoSublinea = typeof editingAreaSublineaCodigo === 'string' ? parseInt(editingAreaSublineaCodigo) : editingAreaSublineaCodigo;
       const codigoArea = typeof editingAreaCodigo === 'string' ? parseInt(editingAreaCodigo) : editingAreaCodigo;
-      console.log(`📝 Actualizando área ${codigoArea} en sublínea ${codigoSublinea} de línea ${codigoLinea}`);
       await actualizarArea(codigoLinea, codigoSublinea, codigoArea, { nombre_area: nombreArea });
       alert("Área actualizada");
       setShowEditAreaModal(false);
@@ -428,7 +411,6 @@ export function useResearchLinesManagement() {
       const codigoLinea = typeof area.codigo_linea === 'string' ? parseInt(area.codigo_linea) : area.codigo_linea;
       const codigoSublinea = typeof area.codigo_sublinea === 'string' ? parseInt(area.codigo_sublinea) : area.codigo_sublinea;
       const codigoAreaDelete = typeof codigoArea === 'string' ? parseInt(codigoArea) : codigoArea;
-      console.log(`🗑️ Eliminando área ${codigoAreaDelete} de sublínea ${codigoSublinea} de línea ${codigoLinea}`);
       await eliminarArea(codigoLinea, codigoSublinea, codigoAreaDelete);
       alert("Área eliminada");
       // Invalidar caché y recargar

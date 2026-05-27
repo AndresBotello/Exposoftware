@@ -15,15 +15,11 @@ const procesarRespuesta = async (response) => {
   const contentType = response.headers.get("content-type");
   let responseData = {};
 
-  console.log('📡 Status de respuesta:', response.status);
-  console.log('📡 Content-Type:', contentType);
 
   if (contentType && contentType.includes("application/json")) {
     try {
       responseData = await response.json();
-      console.log('📦 Datos de respuesta:', responseData);
     } catch (error) {
-      console.error('❌ Error al parsear JSON:', error);
       if (!response.ok) {
         throw new Error(`Error del servidor (${response.status})`);
       }
@@ -31,7 +27,6 @@ const procesarRespuesta = async (response) => {
   } else {
     // Si no es JSON, intentar leer como texto
     const textData = await response.text();
-    console.log('📄 Respuesta como texto:', textData);
   }
 
   if (response.ok) {
@@ -64,11 +59,7 @@ export const obtenerEstudiantes = async (params = {}) => {
     // El endpoint no acepta parámetros, devuelve todos los estudiantes
     const url = API_ENDPOINTS.ADMIN_ESTUDIANTES;
     const headers = AuthService.getAuthHeaders();
-    
-    console.log('👥 Obteniendo estudiantes desde:', url);
-    console.log('🔑 Headers enviados:', headers);
-    console.log('🔑 Token presente:', AuthService.getToken() ? 'Sí' : 'No');
-    
+
     const response = await fetch(url, {
       credentials: 'include',
       method: 'GET',
@@ -76,7 +67,6 @@ export const obtenerEstudiantes = async (params = {}) => {
     });
 
     const result = await procesarRespuesta(response);
-    console.log('✅ Estudiantes obtenidos:', result);
     
     // Normalizar respuesta para que siempre tenga estructura consistente
     if (result.data) {
@@ -89,7 +79,6 @@ export const obtenerEstudiantes = async (params = {}) => {
       };
     }
   } catch (error) {
-    console.error('❌ Error al obtener estudiantes:', error);
     throw error;
   }
 };
@@ -103,7 +92,6 @@ export const obtenerEstudiantePorId = async (studentId) => {
   try {
     const url = API_ENDPOINTS.ADMIN_ESTUDIANTE_BY_ID(studentId);
     
-    console.log('👤 Obteniendo estudiante:', studentId);
     
     const response = await fetch(url, {
       credentials: 'include',
@@ -112,11 +100,9 @@ export const obtenerEstudiantePorId = async (studentId) => {
     });
 
     const result = await procesarRespuesta(response);
-    console.log('✅ Estudiante obtenido:', result.data);
     
     return result;
   } catch (error) {
-    console.error('❌ Error al obtener estudiante:', error);
     throw error;
   }
 };
@@ -130,7 +116,6 @@ export const obtenerEstudianteCompleto = async (studentId) => {
   try {
     const url = API_ENDPOINTS.ADMIN_ESTUDIANTE_BY_ID(studentId);
     
-    console.log('👤📋 Obteniendo estudiante completo:', studentId);
     
     const response = await fetch(url, {
       credentials: 'include',
@@ -139,11 +124,9 @@ export const obtenerEstudianteCompleto = async (studentId) => {
     });
 
     const result = await procesarRespuesta(response);
-    console.log('✅ Estudiante completo obtenido:', result.data);
     
     return result;
   } catch (error) {
-    console.error('❌ Error al obtener estudiante completo:', error);
     throw error;
   }
 };
@@ -159,7 +142,6 @@ export const obtenerEstudiantesPorPrograma = async (codigoPrograma, params = {})
     // El endpoint no acepta parámetros de paginación
     const url = `/api/v1/admin/estudiantes/programa/${codigoPrograma}`;
     
-    console.log('🎓 Obteniendo estudiantes del programa:', codigoPrograma);
     
     const response = await fetch(url, {
       credentials: 'include',
@@ -168,7 +150,6 @@ export const obtenerEstudiantesPorPrograma = async (codigoPrograma, params = {})
     });
 
     const result = await procesarRespuesta(response);
-    console.log('✅ Estudiantes del programa obtenidos:', result);
     
     // Normalizar respuesta
     if (result.data) {
@@ -180,7 +161,6 @@ export const obtenerEstudiantesPorPrograma = async (codigoPrograma, params = {})
       };
     }
   } catch (error) {
-    console.error('❌ Error al obtener estudiantes por programa:', error);
     throw error;
   }
 };
@@ -199,7 +179,6 @@ export const actualizarEstudiante = async (studentId, studentData) => {
   try {
     const url = API_ENDPOINTS.ADMIN_ESTUDIANTE_BY_ID(studentId);
     
-    console.log('✏️ Actualizando estudiante:', studentId, studentData);
     
     const response = await fetch(url, {
       credentials: 'include',
@@ -209,11 +188,9 @@ export const actualizarEstudiante = async (studentId, studentData) => {
     });
 
     const result = await procesarRespuesta(response);
-    console.log('✅ Estudiante actualizado:', result.data);
     
     return result;
   } catch (error) {
-    console.error('❌ Error al actualizar estudiante:', error);
     throw error;
   }
 };
@@ -227,7 +204,6 @@ export const activarEstudiante = async (studentId) => {
   try {
     const url = API_ENDPOINTS.ADMIN_ESTUDIANTE_ACTIVAR(studentId);
     
-    console.log('✅ Activando estudiante:', studentId);
     
     const response = await fetch(url, {
       credentials: 'include',
@@ -236,11 +212,9 @@ export const activarEstudiante = async (studentId) => {
     });
 
     const result = await procesarRespuesta(response);
-    console.log('✅ Estudiante activado exitosamente');
     
     return result;
   } catch (error) {
-    console.error('❌ Error al activar estudiante:', error);
     throw error;
   }
 };
@@ -254,7 +228,6 @@ export const desactivarEstudiante = async (studentId) => {
   try {
     const url = API_ENDPOINTS.ADMIN_ESTUDIANTE_DESACTIVAR(studentId);
     
-    console.log('❌ Desactivando estudiante:', studentId);
     
     const response = await fetch(url, {
       credentials: 'include',
@@ -263,11 +236,9 @@ export const desactivarEstudiante = async (studentId) => {
     });
 
     const result = await procesarRespuesta(response);
-    console.log('✅ Estudiante desactivado exitosamente');
     
     return result;
   } catch (error) {
-    console.error('❌ Error al desactivar estudiante:', error);
     throw error;
   }
 };
@@ -286,7 +257,6 @@ export const asignarEstudianteExistente = async (data) => {
   try {
     const url = `/api/v1/admin/estudiantes/asignar-existente`;
     
-    console.log('🔗 Asignando rol de estudiante a usuario existente:', data);
     
     const response = await fetch(url, {
       credentials: 'include',
@@ -296,11 +266,9 @@ export const asignarEstudianteExistente = async (data) => {
     });
 
     const result = await procesarRespuesta(response);
-    console.log('✅ Estudiante asignado exitosamente:', result.data);
     
     return result;
   } catch (error) {
-    console.error('❌ Error al asignar estudiante existente:', error);
     throw error;
   }
 };

@@ -88,7 +88,6 @@ export default function EventLog() {
       setShowForm(false);
       loadRecords();
     } catch (error) {
-      console.error("❌ Error al guardar registro:", error);
       alert("Error al guardar el registro. El archivo puede ser demasiado grande.");
     } finally {
       setLoading(false);

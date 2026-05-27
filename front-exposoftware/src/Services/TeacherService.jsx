@@ -10,24 +10,18 @@ import CacheService from "./CacheService";
  */
 export const getTeacherProfile = async () => {
   try {
-    console.log('📋 Cargando perfil del docente autenticado...');
 
     const url = API_ENDPOINTS.DOCENTE_MI_PERFIL;
-    console.log('🌐 URL:', url);
 
     const response = await fetch(url, {
       method: 'GET',
       credentials: 'include'
     });
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     if (response.ok) {
       const result = await response.json();
       const docente = result.data || result;
-
-      console.log('✅ Información del docente obtenida:', docente);
-      console.log('📦 Estructura completa:', JSON.stringify(docente, null, 2));
 
       return docente;
     } else if (response.status === 404) {
@@ -39,7 +33,6 @@ export const getTeacherProfile = async () => {
       throw new Error(errorData.detail || errorData.message || `Error al cargar perfil: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('❌ Error al cargar perfil del docente:', error);
     throw error;
   }
 };
@@ -55,11 +48,9 @@ export const getMyTeachingLoad = async () => {
     'teaching_load',
     async () => {
       try {
-        console.log('📚 Obteniendo mi carga docente...');
         const headers = AuthService.getAuthHeaders();
 
         const url = API_ENDPOINTS.DOCENTE_MI_CARGA;
-        console.log('🌐 URL:', url);
 
         const response = await fetch(url, {
           method: 'GET',
@@ -67,23 +58,19 @@ export const getMyTeachingLoad = async () => {
           credentials: 'include'
         });
 
-        console.log('📡 Respuesta - Status:', response.status);
 
         if (response.ok) {
           const result = await response.json();
           const carga = result.data || result;
           const clases = Array.isArray(carga) ? carga : (carga?.clases || []);
-          console.log(`✅ Carga docente obtenida: ${clases.length} clases`);
           return clases;
         } else if (response.status === 404) {
-          console.warn('⚠️ No se encontró información de carga');
           return [];
         } else {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.detail || errorData.message || 'Error al obtener mi carga');
         }
       } catch (error) {
-        console.error('❌ Error al obtener mi carga:', error);
         throw error;
       }
     },
@@ -99,11 +86,9 @@ export const getMyTeachingLoad = async () => {
  */
 export const getMySubjectAssignments = async () => {
   try {
-    console.log('📚 Obteniendo mis asignaciones de materias...');
     const headers = AuthService.getAuthHeaders();
 
     const url = API_ENDPOINTS.DOCENTE_MIS_MATERIAS;
-    console.log('🌐 URL:', url);
 
     const response = await fetch(url, {
       method: 'GET',
@@ -111,22 +96,18 @@ export const getMySubjectAssignments = async () => {
       credentials: 'include'
     });
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     if (response.ok) {
       const result = await response.json();
       const asignaciones = result.data || result;
-      console.log(`✅ Asignaciones obtenidas: ${Array.isArray(asignaciones) ? asignaciones.length : 0}`);
       return Array.isArray(asignaciones) ? asignaciones : [];
     } else if (response.status === 404) {
-      console.warn('⚠️ No se encontraron asignaciones');
       return [];
     } else {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || errorData.message || 'Error al obtener mis asignaciones');
     }
   } catch (error) {
-    console.error('❌ Error al obtener mis asignaciones:', error);
     throw error;
   }
 };
@@ -143,11 +124,9 @@ export const getMyGroups = async () => {
     'my_groups',
     async () => {
       try {
-        console.log('👥 Obteniendo mis grupos...');
         const headers = AuthService.getAuthHeaders();
 
         const url = API_ENDPOINTS.DOCENTE_MIS_GRUPOS;
-        console.log('🌐 URL:', url);
 
         const response = await fetch(url, {
           method: 'GET',
@@ -155,22 +134,18 @@ export const getMyGroups = async () => {
           credentials: 'include'
         });
 
-        console.log('📡 Respuesta - Status:', response.status);
 
         if (response.ok) {
           const result = await response.json();
           const grupos = result.data || result;
-          console.log(`✅ Grupos obtenidos: ${Array.isArray(grupos) ? grupos.length : 0}`);
           return Array.isArray(grupos) ? grupos : [];
         } else if (response.status === 404) {
-          console.warn('⚠️ No se encontraron grupos');
           return [];
         } else {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.detail || errorData.message || 'Error al obtener mis grupos');
         }
       } catch (error) {
-        console.error('❌ Error al obtener mis grupos:', error);
         throw error;
       }
     },
@@ -186,11 +161,9 @@ export const getMyGroups = async () => {
  */
 export const getTeacherProfileById = async (teacherId) => {
   try {
-    console.log('Obteniendo perfil del docente:', teacherId);
     const headers = AuthService.getAuthHeaders();
     
     const url = API_ENDPOINTS.TEACHER_PROFILE_BY_ID(teacherId);
-    console.log('URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -200,7 +173,6 @@ export const getTeacherProfileById = async (teacherId) => {
     if (response.ok) {
       const result = await response.json();
       const perfil = result.data || result;
-      console.log('Perfil del docente:', perfil);
       return perfil;
     } else if (response.status === 404) {
       throw new Error("Docente no encontrado");
@@ -209,7 +181,6 @@ export const getTeacherProfileById = async (teacherId) => {
       throw new Error(errorData.detail || errorData.message || 'Error al obtener perfil');
     }
   } catch (error) {
-    console.error('Error al obtener perfil del docente:', error);
     throw error;
   }
 };
@@ -222,27 +193,20 @@ export const getTeacherProfileById = async (teacherId) => {
  */
 export const getTeacherProfileByAdmin = async (teacherId) => {
   try {
-    console.log('📚 Obteniendo perfil completo del docente desde admin:', teacherId);
     const headers = AuthService.getAuthHeaders();
     
     const url = API_ENDPOINTS.ADMIN_DOCENTE_BY_ID(teacherId);
-    console.log('🔗 URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',
       headers: headers
     });
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     if (response.ok) {
       const result = await response.json();
-      console.log('📦 Respuesta completa:', result);
       
       const perfil = result.data || result;
-      console.log('✅ Perfil del docente obtenido:', perfil);
-      console.log('🔍 id_docente:', perfil.id_docente);
-      console.log('🔍 id_usuario:', perfil.id_usuario);
       
       return perfil;
     } else if (response.status === 404) {
@@ -254,7 +218,6 @@ export const getTeacherProfileByAdmin = async (teacherId) => {
       throw new Error(errorData.detail || errorData.message || 'Error al obtener perfil del docente');
     }
   } catch (error) {
-    console.error('❌ Error al obtener perfil del docente desde admin:', error);
     throw error;
   }
 };
@@ -270,13 +233,10 @@ export const getTeacherProfileByAdmin = async (teacherId) => {
  */
 export const getTeacherSubjects = async (teacherId, proyectos = null) => {
   try {
-    console.log('📚 Obteniendo materias del docente:', teacherId);
     const headers = AuthService.getAuthHeaders();
     
     // ESTRATEGIA 1: Intentar obtener grupos del docente
-    console.log('🔄 Estrategia 1: Intentando obtener grupos del docente...');
     let url = API_ENDPOINTS.GRUPOS_BY_TEACHER(teacherId);
-    console.log('🌐 URL (intento público):', url);
     
     let response = await fetch(url, {
       method: 'GET',
@@ -285,9 +245,7 @@ export const getTeacherSubjects = async (teacherId, proyectos = null) => {
 
     // Si falla con 403, intentar endpoint admin
     if (response.status === 403) {
-      console.log('⚠️ Endpoint público falló, intentando endpoint admin...');
       url = API_ENDPOINTS.ADMIN_GRUPOS_BY_TEACHER(teacherId);
-      console.log('🌐 URL (admin):', url);
       
       response = await fetch(url, {
         method: 'GET',
@@ -295,12 +253,10 @@ export const getTeacherSubjects = async (teacherId, proyectos = null) => {
       });
     }
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     // Si obtuvimos grupos exitosamente, extraer materias
     if (response.ok) {
       const result = await response.json();
-      console.log('📦 Respuesta completa grupos:', result);
       
       let grupos = [];
       if (result.data && Array.isArray(result.data)) {
@@ -310,7 +266,6 @@ export const getTeacherSubjects = async (teacherId, proyectos = null) => {
       }
       
       if (grupos.length > 0) {
-        console.log(`📋 Total de grupos del docente: ${grupos.length}`);
         
         // Extraer materias únicas de los grupos
         const materiasMap = new Map();
@@ -329,8 +284,6 @@ export const getTeacherSubjects = async (teacherId, proyectos = null) => {
         });
         
         const materias = Array.from(materiasMap.values());
-        console.log(`✅ Materias extraídas de grupos: ${materias.length}`);
-        console.log('📚 Materias:', materias.map(m => `${m.codigo} - ${m.nombre}`).join(', '));
         return materias;
       }
     }
@@ -340,7 +293,6 @@ export const getTeacherSubjects = async (teacherId, proyectos = null) => {
       return [];
     }
     
-    console.log(`📋 Proyectos del docente: ${proyectos.length}`);
     
     // Extraer materias únicas de los proyectos
     const materiasMap = new Map();
@@ -359,14 +311,10 @@ export const getTeacherSubjects = async (teacherId, proyectos = null) => {
     });
     
     const materias = Array.from(materiasMap.values());
-    console.log(`✅ Materias extraídas de proyectos: ${materias.length}`);
-    console.log('📚 Materias:', materias.map(m => `${m.codigo} - ${m.nombre}`).join(', '));
     
     return materias;
     
   } catch (error) {
-    console.error('❌ Error al obtener materias del docente:', error);
-    console.warn('🔄 Retornando array vacío por error');
     return [];
   }
 };
@@ -383,13 +331,10 @@ export const getTeacherSubjects = async (teacherId, proyectos = null) => {
  */
 export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos = null) => {
   try {
-    console.log(`👥 Obteniendo grupos del docente ${teacherId} para materia ${subjectCode}`);
     const headers = AuthService.getAuthHeaders();
     
     // ESTRATEGIA 1: Intentar obtener grupos del endpoint
-    console.log('🔄 Estrategia 1: Intentando obtener grupos del docente...');
     let url = API_ENDPOINTS.GRUPOS_BY_TEACHER(teacherId);
-    console.log('🌐 URL (intento público):', url);
     
     let response = await fetch(url, {
       method: 'GET',
@@ -398,9 +343,7 @@ export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos 
 
     // Si falla con 403, intentar endpoint admin
     if (response.status === 403) {
-      console.log('⚠️ Endpoint público falló, intentando endpoint admin...');
       url = API_ENDPOINTS.ADMIN_GRUPOS_BY_TEACHER(teacherId);
-      console.log('🌐 URL (admin):', url);
       
       response = await fetch(url, {
         method: 'GET',
@@ -408,12 +351,10 @@ export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos 
       });
     }
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     // Si obtuvimos grupos exitosamente, filtrar por materia
     if (response.ok) {
       const result = await response.json();
-      console.log('📦 Respuesta completa grupos:', result);
       
       let grupos = [];
       if (result.data && Array.isArray(result.data)) {
@@ -423,7 +364,6 @@ export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos 
       }
       
       if (grupos.length > 0) {
-        console.log(`📋 Total de grupos del docente: ${grupos.length}`);
         
         // Filtrar grupos por código de materia
         const gruposFiltrados = grupos.filter(g => {
@@ -431,7 +371,6 @@ export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos 
           return codigoMateria === subjectCode;
         });
         
-        console.log(`✅ Grupos filtrados para materia ${subjectCode}: ${gruposFiltrados.length}`);
         
         // Formatear respuesta
         return gruposFiltrados.map(g => ({
@@ -450,18 +389,14 @@ export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos 
 
     
     if (!proyectos || !Array.isArray(proyectos) || proyectos.length === 0) {
-      console.warn('⚠️ No hay proyectos proporcionados para extraer grupos');
       return [];
     }
     
-    console.log(`📋 Proyectos del docente: ${proyectos.length}`);
     
     // Filtrar proyectos por código de materia
     const proyectosFiltrados = proyectos.filter(p => p.codigo_materia === subjectCode);
-    console.log(`📋 Proyectos de la materia ${subjectCode}: ${proyectosFiltrados.length}`);
     
     if (proyectosFiltrados.length === 0) {
-      console.warn('⚠️ No hay proyectos de esta materia para extraer grupos');
       return [];
     }
     
@@ -486,13 +421,10 @@ export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos 
     });
     
     const grupos = Array.from(gruposMap.values());
-    console.log(`✅ Grupos únicos extraídos de proyectos: ${grupos.length}`);
-    console.log('👥 Grupos:', grupos.map(g => `${g.id} - ${g.nombre}`).join(', '));
     
     return grupos;
     
   } catch (error) {
-    console.error('❌ Error al obtener grupos de la materia:', error);
     return [];
   }
 };
@@ -505,33 +437,27 @@ export const getTeacherSubjectGroups = async (teacherId, subjectCode, proyectos 
  */
 export const getTeacherProjects = async (teacherId) => {
   try {
-    console.log('📚 Obteniendo proyectos del docente:', teacherId);
     const headers = AuthService.getAuthHeaders();
     
     const url = API_ENDPOINTS.TEACHER_PROYECTOS(teacherId);
-    console.log('🌐 URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',
       headers: headers
     });
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     if (response.ok) {
       const result = await response.json();
       const proyectos = result.data || result;
-      console.log(`✅ Proyectos obtenidos: ${proyectos.length}`);
       return proyectos;
     } else if (response.status === 404) {
-      console.warn('⚠️ No se encontraron proyectos para el docente');
       return [];
     } else {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || errorData.message || 'Error al obtener proyectos');
     }
   } catch (error) {
-    console.error('❌ Error al obtener proyectos del docente:', error);
     throw error;
   }
 };
@@ -546,11 +472,9 @@ export const getMyProjects = async () => {
     'my_projects',
     async () => {
       try {
-        console.log('📚 Obteniendo mis proyectos...');
         const headers = AuthService.getAuthHeaders();
 
         const url = API_ENDPOINTS.MIS_PROYECTOS;
-        console.log('🌐 URL:', url);
 
         const response = await fetch(url, {
           method: 'GET',
@@ -558,22 +482,18 @@ export const getMyProjects = async () => {
           credentials: 'include'
         });
 
-        console.log('📡 Respuesta - Status:', response.status);
 
         if (response.ok) {
           const result = await response.json();
           const proyectos = result.data || result;
-          console.log(`✅ Mis proyectos obtenidos: ${Array.isArray(proyectos) ? proyectos.length : 0}`);
           return Array.isArray(proyectos) ? proyectos : [];
         } else if (response.status === 404) {
-          console.warn('⚠️ No se encontraron proyectos asignados');
           return [];
         } else {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.detail || errorData.message || 'Error al obtener mis proyectos');
         }
       } catch (error) {
-        console.error('❌ Error al obtener mis proyectos:', error);
         throw error;
       }
     },
@@ -589,11 +509,9 @@ export const getMyProjects = async () => {
  */
 export const getProyectosByEvento = async (eventoId) => {
   try {
-    console.log(`📚 Obteniendo proyectos del evento ${eventoId}...`);
     const headers = AuthService.getAuthHeaders();
 
     const url = API_ENDPOINTS.PROYECTOS_BY_EVENTO(eventoId);
-    console.log('🌐 URL:', url);
 
     const response = await fetch(url, {
       method: 'GET',
@@ -601,22 +519,18 @@ export const getProyectosByEvento = async (eventoId) => {
       credentials: 'include'
     });
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     if (response.ok) {
       const result = await response.json();
       const proyectos = result.data || result;
-      console.log(`✅ Proyectos del evento obtenidos: ${Array.isArray(proyectos) ? proyectos.length : 0}`);
       return Array.isArray(proyectos) ? proyectos : [];
     } else if (response.status === 404) {
-      console.warn(`⚠️ No se encontraron proyectos para el evento ${eventoId}`);
       return [];
     } else {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || errorData.message || 'Error al obtener proyectos del evento');
     }
   } catch (error) {
-    console.error('❌ Error al obtener proyectos del evento:', error);
     throw error;
   }
 };
@@ -630,11 +544,9 @@ export const getProyectosByEvento = async (eventoId) => {
  */
 export const updateProyectoStatus = async (proyectId, datosActualizacion) => {
   try {
-    console.log(`📝 Actualizando estado del proyecto ${proyectId}...`, datosActualizacion);
     const headers = AuthService.getAuthHeaders();
 
     const url = `${API_ENDPOINTS.PROYECTO_BY_ID(proyectId)}/estado`;
-    console.log('🌐 URL:', url);
 
     const response = await fetch(url, {
       method: 'PATCH',
@@ -646,19 +558,16 @@ export const updateProyectoStatus = async (proyectId, datosActualizacion) => {
       credentials: 'include'
     });
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     if (response.ok) {
       const result = await response.json();
       const proyecto = result.data || result;
-      console.log('✅ Proyecto actualizado exitosamente:', proyecto);
       return proyecto;
     } else {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || errorData.message || 'Error al actualizar proyecto');
     }
   } catch (error) {
-    console.error('❌ Error al actualizar proyecto:', error);
     throw error;
   }
 };
@@ -679,11 +588,9 @@ export const updateProyectoStatus = async (proyectId, datosActualizacion) => {
  */
 export const calificarProyecto = async (proyectId, calificacion, comentario = '') => {
   try {
-    console.log(`📝 Calificando proyecto ${proyectId} como asistente con nota: ${calificacion}`);
     const headers = AuthService.getAuthHeaders();
 
     const url = `${API_ENDPOINTS.PROYECTO_BY_ID(proyectId)}/calificar_asistente`;
-    console.log('🌐 URL:', url);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -698,19 +605,16 @@ export const calificarProyecto = async (proyectId, calificacion, comentario = ''
       credentials: 'include'
     });
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     if (response.ok) {
       const result = await response.json();
       const data = result.data || result;
-      console.log('✅ Proyecto calificado exitosamente:', data);
       return data;
     } else {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || errorData.message || 'Error al calificar proyecto');
     }
   } catch (error) {
-    console.error('❌ Error al calificar proyecto:', error);
     throw error;
   }
 };
@@ -724,11 +628,9 @@ export const calificarProyecto = async (proyectId, calificacion, comentario = ''
  */
 export const getTeacherProjectDetail = async (teacherId, projectId) => {
   try {
-    console.log(`Obteniendo detalle del proyecto ${projectId} para docente ${teacherId}`);
     const headers = AuthService.getAuthHeaders();
     
     const url = API_ENDPOINTS.TEACHER_PROYECTO_BY_ID(teacherId, projectId);
-    console.log('URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -738,7 +640,6 @@ export const getTeacherProjectDetail = async (teacherId, projectId) => {
     if (response.ok) {
       const result = await response.json();
       const proyecto = result.data || result;
-      console.log('Detalle del proyecto obtenido:', proyecto);
       return proyecto;
     } else if (response.status === 404) {
       throw new Error("Proyecto no encontrado");
@@ -747,7 +648,6 @@ export const getTeacherProjectDetail = async (teacherId, projectId) => {
       throw new Error(errorData.detail || errorData.message || 'Error al obtener detalle del proyecto');
     }
   } catch (error) {
-    console.error('Error al obtener detalle del proyecto:', error);
     throw error;
   }
 };
@@ -759,11 +659,9 @@ export const getTeacherProjectDetail = async (teacherId, projectId) => {
  */
 export const getAllProjects = async () => {
   try {
-    console.log('Obteniendo todos los proyectos...');
     const headers = AuthService.getAuthHeaders();
     
     const url = API_ENDPOINTS.TEACHER_PROYECTOS;
-    console.log('URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -773,17 +671,14 @@ export const getAllProjects = async () => {
     if (response.ok) {
       const result = await response.json();
       const proyectos = result.data || result;
-      console.log(`Total de proyectos: ${proyectos.length}`);
       return proyectos;
     } else if (response.status === 404) {
-      console.warn('No se encontraron proyectos');
       return [];
     } else {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || errorData.message || 'Error al obtener proyectos');
     }
   } catch (error) {
-    console.error('Error al obtener proyectos:', error);
     throw error;
   }
 };
@@ -796,11 +691,9 @@ export const getAllProjects = async () => {
  */
 export const procesarDatosDocente = (datosCrudos) => {
   if (!datosCrudos) {
-    console.warn('⚠️ No hay datos crudos para procesar');
     return {};
   }
 
-  console.log('🔄 Procesando datos del docente:', datosCrudos);
 
   // Extraer objetos anidados
   const docente = datosCrudos.docente || datosCrudos;
@@ -863,7 +756,6 @@ export const procesarDatosDocente = (datosCrudos) => {
     rol: usuario.rol || "Docente"
   };
 
-  console.log('✅ Datos procesados:', datosProcesados);
   return datosProcesados;
 };
 
@@ -876,7 +768,6 @@ export const procesarDatosDocente = (datosCrudos) => {
  */
 export const updateTeacherProfile = async (identificacion, datosActualizados) => {
   try {
-    console.log('Actualizando perfil del docente:', identificacion);
     const headers = AuthService.getAuthHeaders();
 
     const nombres = datosActualizados.nombres?.split(' ') || [];
@@ -905,7 +796,6 @@ export const updateTeacherProfile = async (identificacion, datosActualizados) =>
       codigo_programa: datosActualizados.codigo_programa || ""
     };
 
-    console.log('Payload:', payload);
 
     const response = await fetch(
       API_ENDPOINTS.TEACHER_PROFILE_BY_IDENTIFICATION(identificacion),
@@ -918,14 +808,12 @@ export const updateTeacherProfile = async (identificacion, datosActualizados) =>
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Perfil actualizado:', data);
       return { success: true, data };
     } else {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(`Error al actualizar perfil (${response.status}): ${errorData.message || errorData.detail || 'Error desconocido'}`);
     }
   } catch (error) {
-    console.error('Error al actualizar perfil:', error);
     throw error;
   }
 };
@@ -948,7 +836,6 @@ export const getUserInfo = async (userId) => {
   }
 
   try {
-    console.log(`👤 Obteniendo información del usuario: ${userId}`);
 
     const response = await fetch(`/api/v1/usuarios/buscar?q=${userId}`, {
       method: 'GET',
@@ -959,33 +846,23 @@ export const getUserInfo = async (userId) => {
 
     if (response.ok) {
       const result = await response.json();
-      console.log(`📡 Respuesta búsqueda de usuario - Status: ${response.status}`);
-      console.log(`   Respuesta completa:`, JSON.stringify(result, null, 2));
       usuarios = result.data || result.results || (Array.isArray(result) ? result : []);
-      console.log(`   Usuarios extraídos:`, usuarios.length, usuarios);
 
       // Buscar el usuario exacto por ID
       const usuario = usuarios.find(u => u.id === userId || u.id_usuario === userId);
 
       if (usuario) {
         userInfoCache.set(userId, usuario);
-        console.log(`✅ Usuario encontrado:`, usuario);
-        console.log(`   Campos disponibles:`, Object.keys(usuario));
-        console.log(`   p_nombre: ${usuario.p_nombre}, p_apellido: ${usuario.p_apellido}`);
-        console.log(`   nombre: ${usuario.nombre}, nombre_completo: ${usuario.nombre_completo}`);
         return usuario;
       } else {
         console.warn(`⚠️ Usuario ${userId} no encontrado en resultados. IDs encontrados:`, usuarios.map(u => u.id || u.id_usuario));
       }
     } else {
-      console.warn(`⚠️ Búsqueda retornó status ${response.status}`);
       const errorData = await response.json().catch(() => ({}));
-      console.warn(`   Error:`, errorData);
     }
 
     return null;
   } catch (error) {
-    console.error(`❌ Error obteniendo usuario ${userId}:`, error);
     return null;
   }
 };
@@ -1013,7 +890,6 @@ export const obtenerCalificacionPopular = async (projectId) => {
       throw new Error("El ID del proyecto es obligatorio");
     }
 
-    console.log(`📊 Obteniendo calificación popular del proyecto ${projectId}...`);
 
     const response = await fetch(`/api/v1/proyectos/${projectId}/calificacion_popular`, {
       method: 'GET',
@@ -1024,10 +900,8 @@ export const obtenerCalificacionPopular = async (projectId) => {
     if (response.ok) {
       const data = await response.json();
       const calificacionPopular = data.data || data;
-      console.log(`✅ Calificación popular obtenida:`, calificacionPopular);
       return calificacionPopular;
     } else if (response.status === 404) {
-      console.warn(`⚠️ Proyecto ${projectId} no tiene calificación popular aún`);
       return {
         promedio_ponderado: 0,
         total_votos: 0,
@@ -1037,7 +911,6 @@ export const obtenerCalificacionPopular = async (projectId) => {
       throw new Error(`Error al obtener calificación popular: ${response.statusText}`);
     }
   } catch (error) {
-    console.error(`❌ Error obteniendo calificación popular:`, error);
     throw error;
   }
 };

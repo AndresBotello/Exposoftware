@@ -57,8 +57,6 @@ export const useSubjectManagement = () => {
   const getDocenteNombre = (docenteId) => {
     if (!docenteId) return "Sin asignar";
     
-    console.log('🔍 Buscando docente con ID:', docenteId);
-    console.log('🔍 Total profesores disponibles:', profesores.length);
     
     // Buscar en el array de profesores (estructura anidada del backend)
     const profesorInfo = profesores.find(item => {
@@ -74,11 +72,9 @@ export const useSubjectManagement = () => {
       const correo = usuario?.correo || '';
       const nombre = nombreCompleto || correo?.split('@')[0] || 'Docente asignado';
       
-      console.log('✅ Docente encontrado:', nombre);
       return nombre;
     }
     
-    console.log('⚠️ Docente no encontrado, mostrando ID parcial');
     return `Docente ${docenteId.substring(0, 8)}...`;
   };
 
@@ -94,25 +90,18 @@ export const useSubjectManagement = () => {
    */
   const agregarGrupoSeleccionado = (codigoGrupo) => {
     if (!codigoGrupo) return;
-    
-    console.log('🔍 Buscando grupo con código:', codigoGrupo, 'tipo:', typeof codigoGrupo);
-    console.log('🔍 Grupos disponibles:', gruposDisponibles.map(g => ({ codigo: g.codigo_grupo, tipo: typeof g.codigo_grupo })));
-    
+
     // Comparar como strings ya que el backend devuelve strings
     const grupo = gruposDisponibles.find(g => String(g.codigo_grupo) === String(codigoGrupo));
     
-    console.log('🔍 Grupo encontrado:', grupo);
     
     if (grupo && !gruposSeleccionados.find(g => String(g.codigo_grupo) === String(grupo.codigo_grupo))) {
-      console.log('✅ Agregando grupo:', grupo.codigo_grupo);
       setGruposSeleccionados([...gruposSeleccionados, { 
         codigo_grupo: grupo.codigo_grupo, 
         id_docente: grupo.id_docente 
       }]);
     } else if (!grupo) {
-      console.warn('⚠️ No se encontró el grupo con código:', codigoGrupo);
     } else {
-      console.warn('⚠️ El grupo ya está seleccionado');
     }
   };
 
@@ -120,7 +109,6 @@ export const useSubjectManagement = () => {
    * Eliminar grupo seleccionado
    */
   const eliminarGrupoSeleccionado = (codigoGrupo) => {
-    console.log('🗑️ Eliminando grupo:', codigoGrupo);
     setGruposSeleccionados(gruposSeleccionados.filter(g => String(g.codigo_grupo) !== String(codigoGrupo)));
   };
 
@@ -138,12 +126,9 @@ export const useSubjectManagement = () => {
    */
   const cargarMaterias = async () => {
     try {
-      console.log('🔄 Iniciando carga de materias...');
       const data = await SubjectService.obtenerMaterias();
-      console.log('✅ Materias cargadas exitosamente:', data);
       setMaterias(data);
     } catch (error) {
-      console.error('❌ Error al cargar materias:', error);
       // No mostrar alert para no bloquear la UI
       setMaterias([]);
     }
@@ -157,7 +142,6 @@ export const useSubjectManagement = () => {
       const data = await SubjectService.obtenerGrupos();
       setGruposDisponibles(data);
     } catch (error) {
-      console.log('⚠️ Error al cargar grupos del backend');
       setGruposDisponibles([]);
     }
   };
@@ -167,41 +151,16 @@ export const useSubjectManagement = () => {
    */
   const cargarProfesores = async () => {
     try {
-      console.log('🔄 Iniciando carga de profesores...');
       const data = await SubjectService.obtenerDocentes();
-      
-      // 🔍 DEBUG: Ver estructura de profesores cargados
-      if (data && data.length > 0) {
-        console.log('✅ Profesores cargados:', data.length);
-        console.log('🔍 Estructura del primer profesor:', data[0]);
-        console.log('🔍 Claves disponibles:', Object.keys(data[0]));
-        
-        // Verificar estructura anidada
-        if (data[0].docente) {
-          console.log('🔍 Docente anidado - ID:', data[0].docente.id_docente);
-        }
-        if (data[0].usuario) {
-          console.log('🔍 Usuario anidado - Nombre:', data[0].usuario.nombre_completo);
-        }
-      }
-      
       setProfesores(data);
     } catch (error) {
-      console.log('⚠️ Error al cargar profesores del backend');
       setProfesores([]);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    console.log('📝 Iniciando creación de materia...');
-    console.log('📋 Datos del formulario:', {
-      codigo_materia: codigoMateria,
-      nombre_materia: nombreMateria,
-      ciclo_semestral: cicloSemestral
-    });
-    
+
     // Validar campos usando el servicio
     const validacion = SubjectService.validarDatosMateria({
       codigo_materia: codigoMateria,
@@ -210,7 +169,6 @@ export const useSubjectManagement = () => {
     });
 
     if (!validacion.valido) {
-      console.error('❌ Validación fallida:', validacion.errores);
       alert('⚠️ Por favor complete todos los campos requeridos:\n\n' + validacion.errores.join('\n'));
       return;
     }
@@ -223,13 +181,11 @@ export const useSubjectManagement = () => {
       });
 
       if (resultado.success) {
-        console.log('✅ Materia creada, recargando lista...');
         await cargarMaterias();
         alert("✅ " + resultado.message + "\n\nLa materia ha sido creada exitosamente. Ahora puede asignarle grupos desde la pestaña 'Editar Materias'.");
         limpiarFormulario();
       }
     } catch (error) {
-      console.error('❌ Error en handleSubmit:', error);
       alert("❌ Error al crear la materia:\n\n" + error.message);
     }
   };
@@ -238,8 +194,6 @@ export const useSubjectManagement = () => {
    * Iniciar edición de materia (para asignar grupos)
    */
   const handleEdit = (materia) => {
-    console.log('🔄 Editando materia:', materia);
-    console.log('🔍 Código de materia:', materia.codigo_materia);
     
     // El ID de la materia ES su codigo_materia (no tiene campo "id")
     setEditingId(materia.codigo_materia);
@@ -249,20 +203,17 @@ export const useSubjectManagement = () => {
     
     // Cargar grupos asignados - convertir de códigos a objetos completos
     const gruposAsignados = materia.grupos_asignados || [];
-    console.log('📋 Códigos de grupos asignados:', gruposAsignados);
     
     // Buscar los objetos completos de grupo en gruposDisponibles
     const gruposCompletos = gruposAsignados
       .map(codigoGrupo => gruposDisponibles.find(g => String(g.codigo_grupo) === String(codigoGrupo)))
       .filter(Boolean); // Eliminar undefined
     
-    console.log('📋 Grupos completos encontrados:', gruposCompletos);
     setGruposSeleccionados(gruposCompletos);
     
     setIsEditing(true);
     setShowEditModal(true);
     
-    console.log('✅ Estado de edición configurado para materia:', materia.codigo_materia);
   };
 
   /**
@@ -270,10 +221,6 @@ export const useSubjectManagement = () => {
    */
   const handleSaveEdit = async (e) => {
     e.preventDefault();
-
-    console.log('💾 Guardando cambios de materia...');
-    console.log('📋 ID de materia (codigo_materia):', editingId);
-    console.log('📋 Ciclo semestral:', cicloSemestral);
 
     if (!cicloSemestral) {
       alert('Por favor selecciona un ciclo semestral');
@@ -284,20 +231,17 @@ export const useSubjectManagement = () => {
       // Convertir ciclo a ID numérico
       const idCiclo = CICLOS_ID_MAP[cicloSemestral];
 
-      console.log('1️⃣ Actualizando ciclo de la materia...');
       await SubjectService.actualizarMateria(editingId, {
         nombre_materia: nombreMateria,
         id_ciclo: idCiclo
       });
 
       // 2. Recargar materias para actualizar la UI
-      console.log('2️⃣ Recargando lista de materias...');
       await cargarMaterias();
       alert("✅ Ciclo actualizado exitosamente");
       handleCancelEdit();
       
     } catch (error) {
-      console.error('❌ Error al actualizar la materia:', error);
       alert("❌ Error al actualizar la materia: " + error.message);
     }
   };
@@ -340,7 +284,6 @@ export const useSubjectManagement = () => {
    * Abrir modal de asignaciones de materia
    */
   const handleAbrirAsignaciones = (materia) => {
-    console.log('🔓 Abriendo modal de asignaciones para materia:', materia.codigo_materia);
     setMateriaSeleccionada(materia);
     setShowAsignacionesModal(true);
   };
@@ -349,7 +292,6 @@ export const useSubjectManagement = () => {
    * Cerrar modal de asignaciones
    */
   const handleCerrarAsignaciones = () => {
-    console.log('🔐 Cerrando modal de asignaciones');
     setShowAsignacionesModal(false);
     setMateriaSeleccionada(null);
   };

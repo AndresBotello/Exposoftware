@@ -29,7 +29,6 @@ class EventosService {
    */
   static async obtenerEventos() {
     try {
-      console.log('📅 Obteniendo todos los eventos...');
       
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS, {
         credentials: 'include',
@@ -42,7 +41,6 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log('✅ Eventos obtenidos:', data);
       
       let eventos = [];
       if (Array.isArray(data)) {
@@ -56,7 +54,6 @@ class EventosService {
       return eventos;
       
     } catch (error) {
-      console.error('❌ Error obteniendo eventos:', error);
       throw new Error('No se pudieron cargar los eventos');
     }
   }
@@ -67,7 +64,6 @@ class EventosService {
    */
   static async obtenerEventoPorId(eventoId) {
     try {
-      console.log(`📅 Obteniendo evento con ID ${eventoId}...`);
       
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
         credentials: 'include',
@@ -80,12 +76,10 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log(`✅ Evento ${eventoId} obtenido:`, data);
       
       return data.data || data;
       
     } catch (error) {
-      console.error(`❌ Error obteniendo evento ${eventoId}:`, error);
       throw new Error('No se pudo cargar el evento');
     }
   }
@@ -96,7 +90,6 @@ class EventosService {
    */
   static async crearEvento(eventoData) {
     try {
-      console.log('📤 Creando nuevo evento...', eventoData);
       
       // Validar campos requeridos según OpenAPI: nombre_evento, fecha_inicio, fecha_fin
       if (!eventoData.nombre_evento || !eventoData.fecha_inicio || !eventoData.fecha_fin) {
@@ -129,7 +122,6 @@ class EventosService {
       // Validar y convertir cupo_maximo correctamente
       if (eventoData.cupo_maximo !== null && eventoData.cupo_maximo !== undefined && eventoData.cupo_maximo !== '') {
         const cupoParsed = parseInt(eventoData.cupo_maximo);
-        console.log(`🔍 Validando cupo_maximo: valor=${eventoData.cupo_maximo}, tipo=${typeof eventoData.cupo_maximo}, parsed=${cupoParsed}`);
         
         if (isNaN(cupoParsed)) {
           throw new Error(`cupo_maximo debe ser un número válido, recibido: ${eventoData.cupo_maximo}`);
@@ -153,18 +145,14 @@ class EventosService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ Error del servidor - Status:', response.status);
-        console.error('❌ Error del servidor - Response:', errorData);
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Evento creado exitosamente:', data);
       
       return data.data || data;
       
     } catch (error) {
-      console.error('❌ Error creando evento:', error);
       throw error;
     }
   }
@@ -175,7 +163,6 @@ class EventosService {
    */
   static async actualizarEvento(eventoId, eventoData) {
     try {
-      console.log(`📝 Actualizando evento ${eventoId}...`, eventoData);
 
       console.log('📦 Payload final:', JSON.stringify(eventoData, null, 2));
 
@@ -188,14 +175,11 @@ class EventosService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Error del servidor - Status:', response.status);
-        console.error('❌ Error del servidor - Response completa:', errorData);
         console.error('❌ Payload enviado:', JSON.stringify(eventoData, null, 2));
 
         let mensajeError = errorData.message || errorData.detail || `Error ${response.status}: ${response.statusText}`;
 
         if (errorData.errors) {
-          console.error('❌ Errores:', errorData.errors);
           if (Array.isArray(errorData.errors)) {
             // Si es un array de errores
             console.error('❌ Errores en array:', JSON.stringify(errorData.errors, null, 2));
@@ -209,17 +193,14 @@ class EventosService {
             mensajeError = Object.entries(errorData.errors).map(([key, val]) => `${key}: ${val}`).join(', ');
           }
         }
-        console.error('❌ Mensaje de error final:', mensajeError);
         throw new Error(mensajeError);
       }
 
       const data = await response.json();
-      console.log(`✅ Evento ${eventoId} actualizado:`, data);
 
       return data.data || data;
 
     } catch (error) {
-      console.error(`❌ Error actualizando evento ${eventoId}:`, error);
       throw error;
     }
   }
@@ -230,7 +211,6 @@ class EventosService {
    */
   static async eliminarEvento(eventoId) {
     try {
-      console.log(`🗑️ Eliminando evento ${eventoId}...`);
       
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
         credentials: 'include',
@@ -243,11 +223,9 @@ class EventosService {
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
 
-      console.log(`✅ Evento ${eventoId} eliminado exitosamente`);
       return true;
       
     } catch (error) {
-      console.error(`❌ Error eliminando evento ${eventoId}:`, error);
       throw error;
     }
   }
@@ -258,7 +236,6 @@ class EventosService {
    */
   static async obtenerAsistentes(eventoId) {
     try {
-      console.log(`👥 Obteniendo asistentes del evento ${eventoId}...`);
       
       const response = await fetch(API_ENDPOINTS.EVENTO_ASISTENTES(eventoId), {
         credentials: 'include',
@@ -276,7 +253,6 @@ class EventosService {
       return Array.isArray(data) ? data : (data.data || data.asistentes || []);
       
     } catch (error) {
-      console.error(`❌ Error obteniendo asistentes del evento ${eventoId}:`, error);
       throw error;
     }
   }
@@ -287,7 +263,6 @@ class EventosService {
    */
   static async obtenerEventosAdmin() {
     try {
-      console.log('📅 [Admin] Obteniendo todos los eventos...');
 
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS, {
         credentials: 'include',
@@ -300,7 +275,6 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log('✅ Eventos admin obtenidos:', data);
 
       return Array.isArray(data) ? data : (data.data || data.eventos || []);
 
@@ -316,7 +290,6 @@ class EventosService {
    */
   static async obtenerEventoPorIdAdmin(eventoId) {
     try {
-      console.log(`📅 [Admin] Obteniendo evento ${eventoId}...`);
       
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
         credentials: 'include',
@@ -329,12 +302,10 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log(`✅ Evento ${eventoId} obtenido:`, data);
       
       return data.data || data;
       
     } catch (error) {
-      console.error(`❌ Error obteniendo evento ${eventoId}:`, error);
       throw error;
     }
   }
@@ -345,7 +316,6 @@ class EventosService {
    */
   static async cambiarEstadoEvento(eventoId, estado) {
     try {
-      console.log(`🔄 Cambiando estado del evento ${eventoId} a ${estado}...`);
 
       const payload = {
         estado: estado.toLowerCase(),
@@ -367,12 +337,10 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log(`✅ Estado del evento ${eventoId} actualizado:`, data);
 
       return data;
 
     } catch (error) {
-      console.error(`❌ Error cambiando estado del evento ${eventoId}:`, error);
       throw error;
     }
   }
@@ -383,7 +351,6 @@ class EventosService {
    */
   static async verificarCapacidad(eventoId) {
     try {
-      console.log(`📊 Verificando capacidad del evento ${eventoId}...`);
       
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_CAPACIDAD(eventoId), {
         credentials: 'include',
@@ -396,12 +363,10 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log(`✅ Capacidad del evento ${eventoId}:`, data);
       
       return data;
       
     } catch (error) {
-      console.error(`❌ Error verificando capacidad del evento ${eventoId}:`, error);
       throw error;
     }
   }
@@ -412,7 +377,6 @@ class EventosService {
    */
   static async obtenerEventosProximos() {
     try {
-      console.log('📅 Obteniendo eventos próximos...');
       
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS_PROXIMOS, {
         credentials: 'include',
@@ -425,12 +389,10 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log('✅ Eventos próximos obtenidos:', data);
       
       return Array.isArray(data) ? data : (data.data || data.eventos || []);
       
     } catch (error) {
-      console.error('❌ Error obteniendo eventos próximos:', error);
       throw error;
     }
   }
@@ -441,7 +403,6 @@ class EventosService {
    */
   static async obtenerEstadisticasGenerales() {
     try {
-      console.log('📊 Obteniendo estadísticas generales...');
 
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS_ESTADISTICAS, {
         credentials: 'include',
@@ -454,12 +415,10 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log('✅ Estadísticas generales obtenidas:', data);
 
       return data;
 
     } catch (error) {
-      console.error('❌ Error obteniendo estadísticas generales:', error);
       throw error;
     }
   }
@@ -470,7 +429,6 @@ class EventosService {
    */
   static async archivarEvento(eventoId) {
     try {
-      console.log(`📦 Archivando evento ${eventoId}...`);
 
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_ARCHIVAR(eventoId), {
         credentials: 'include',
@@ -484,12 +442,10 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log(`✅ Evento ${eventoId} archivado:`, data);
 
       return data.data || data;
 
     } catch (error) {
-      console.error(`❌ Error archivando evento ${eventoId}:`, error);
       throw error;
     }
   }

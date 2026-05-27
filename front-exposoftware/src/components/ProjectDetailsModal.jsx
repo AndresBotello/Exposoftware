@@ -39,7 +39,6 @@ export default function ProjectDetailsModal({
         );
         setInvestigacionNames(names);
       } catch (error) {
-        console.warn('⚠️ No se pudieron cargar los nombres de investigación:', error.message);
         setInvestigacionNames({ linea: null, sublinea: null, area: null });
       }
     };

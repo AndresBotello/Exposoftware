@@ -50,7 +50,6 @@ const StudentDetails = () => {
         await AuthService.logout();
         navigate('/login');
       } catch (error) {
-        console.error('❌ Error al cerrar sesión:', error);
       }
     }
   };
@@ -69,7 +68,6 @@ const StudentDetails = () => {
       setEstudiante(resultadoEstudiante.data);
       setProgramas(resultadoProgramas);
     } catch (err) {
-      console.error('Error al cargar estudiante:', err);
       setError(err.message || 'Error al cargar los detalles del estudiante');
     } finally {
       setCargando(false);

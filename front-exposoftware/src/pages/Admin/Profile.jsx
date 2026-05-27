@@ -89,7 +89,6 @@ export default function AdminProfile() {
       alert("Por favor completa los campos obligatorios");
       return;
     }
-    console.log("📤 Datos a guardar:", profileData);
     setIsEditing(false);
     alert("✅ Cambios guardados exitosamente");
   };
@@ -117,12 +116,17 @@ export default function AdminProfile() {
     setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
   };
 
+  const handleProfileClick = () => {
+    navigate('/admin/dashboard');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader
         userName={getUserName()}
         userInitials={getUserInitials()}
         onLogout={handleLogout}
+        onProfileClick={handleProfileClick}
       />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

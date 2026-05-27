@@ -42,7 +42,6 @@ const getAuthHeaders = () => {
  */
 export const obtenerInformacionUsuario = async () => {
   try {
-    console.log('👤 Obteniendo información del usuario desde /api/v1/auth/me...');
     
     const token = getAuthToken();
     if (!token) {
@@ -55,7 +54,6 @@ export const obtenerInformacionUsuario = async () => {
       headers: getAuthHeaders()
     });
 
-    console.log('📡 Respuesta /api/v1/auth/me - Status:', response.status);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -67,12 +65,10 @@ export const obtenerInformacionUsuario = async () => {
     }
 
     const userData = await response.json();
-    console.log('✅ Información del usuario obtenida:', userData);
     
     return userData;
     
   } catch (error) {
-    console.error('❌ Error obteniendo información del usuario:', error);
     throw error;
   }
 };
@@ -83,21 +79,15 @@ export const obtenerInformacionUsuario = async () => {
  */
 export const obtenerMiPerfilInvitado = async () => {
   try {
-    console.log('👤 Obteniendo información completa del usuario invitado desde /api/v1/invitados/mi-perfil...');
 
     const token = getAuthToken();
     const headers = getAuthHeaders();
-    console.log('🔐 Token disponible:', !!token);
-    console.log('📤 Headers siendo enviados:', headers);
 
     const response = await fetch(API_ENDPOINTS.INVITADO_MI_PERFIL, {
       credentials: 'include',
       method: 'GET',
       headers: headers
     });
-
-    console.log('📡 Respuesta /api/v1/invitados/mi-perfil - Status:', response.status);
-    console.log('📄 Response body:', await response.clone().text());
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -108,14 +98,9 @@ export const obtenerMiPerfilInvitado = async () => {
     }
 
     const userData = await response.json();
-    console.log('✅ Información completa del usuario obtenida desde /api/v1/invitados/mi-perfil:', userData);
-    console.log('📊 Estructura completa de data:', JSON.stringify(userData, null, 2));
 
     // La respuesta tiene formato: { status, message, data: { invitado, usuario }, code }
     if (userData.data && userData.data.invitado && userData.data.usuario) {
-      console.log('📦 userData.data.invitado:', userData.data.invitado);
-      console.log('👤 userData.data.usuario:', userData.data.usuario);
-      console.log('✅ Perfil de invitado validado');
 
       // Procesar y retornar todos los datos del invitado
       return procesarDatosInvitado(userData.data);
@@ -124,7 +109,6 @@ export const obtenerMiPerfilInvitado = async () => {
     throw new Error('Respuesta inválida del servidor: estructura de datos no esperada');
     
   } catch (error) {
-    console.error('❌ Error obteniendo perfil del invitado:', error);
     throw error;
   }
 };
@@ -134,7 +118,6 @@ export const obtenerMiPerfilInvitado = async () => {
  */
 export const obtenerPerfilInvitadoPorId = async (guestId) => {
   try {
-    console.log('📞 Obteniendo perfil del invitado con ID:', guestId);
     
     const response = await fetch(API_ENDPOINTS.ADMIN_INVITADO_BY_ID(guestId), {
       credentials: 'include',
@@ -142,11 +125,9 @@ export const obtenerPerfilInvitadoPorId = async (guestId) => {
       headers: getAuthHeaders()
     });
 
-    console.log('📡 Respuesta - Status:', response.status);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Perfil del invitado obtenido:', data);
       
       // La respuesta puede venir en data.data o directamente
       const perfil = data.data || data;
@@ -160,7 +141,6 @@ export const obtenerPerfilInvitadoPorId = async (guestId) => {
       throw new Error(errorData.message || errorData.detail || 'Error al obtener perfil');
     }
   } catch (error) {
-    console.error('❌ Error obteniendo perfil del invitado por ID:', error);
     throw error;
   }
 };
@@ -170,8 +150,6 @@ export const obtenerPerfilInvitadoPorId = async (guestId) => {
  */
 export const actualizarPerfilInvitado = async (guestId, datosInvitado) => {
   try {
-    console.log('💾 Actualizando perfil del invitado...');
-    console.log('Datos a enviar:', datosInvitado);
     
     const datosProcesados = prepararDatosParaBackend(datosInvitado);
     
@@ -182,19 +160,15 @@ export const actualizarPerfilInvitado = async (guestId, datosInvitado) => {
       body: JSON.stringify(datosProcesados)
     });
 
-    console.log('📡 Respuesta actualización - Status:', response.status);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Perfil actualizado exitosamente:', data);
       return procesarDatosInvitado(data.data || data);
     } else {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Error en respuesta:', errorData);
       throw new Error(errorData.message || errorData.detail || 'Error al actualizar perfil');
     }
   } catch (error) {
-    console.error('❌ Error actualizando perfil del invitado:', error);
     throw error;
   }
 };
@@ -205,20 +179,14 @@ export const actualizarPerfilInvitado = async (guestId, datosInvitado) => {
  */
 const procesarDatosInvitado = (perfil) => {
   if (!perfil) {
-    console.warn('⚠️ No hay datos del invitado para procesar');
     return {};
   }
 
-  console.log('🔄 PERFIL COMPLETO RECIBIDO PARA PROCESAR:', perfil);
-  console.log('🔍 usuario:', perfil.usuario);
-  console.log('🔍 invitado:', perfil.invitado);
 
   // Extraer datos del usuario e invitado
   const usuario = perfil.usuario || {};
   const invitado = perfil.invitado || {};
 
-  console.log('👤 Datos del usuario:', usuario);
-  console.log('🎓 Datos del invitado:', invitado);
 
   // Procesar nombres (p_nombre, p_apellido)
   const p_nombre = usuario.p_nombre || '';
@@ -252,7 +220,6 @@ const procesarDatosInvitado = (perfil) => {
     iniciales: getIniciales(p_nombre, p_apellido)
   };
 
-  console.log('✅ DATOS PROCESADOS FINALES:', datosProcesados);
   return datosProcesados;
 };
 
@@ -270,7 +237,6 @@ const getIniciales = (primerNombre, primerApellido) => {
  * Solo envía los campos que el backend acepta
  */
 const prepararDatosParaBackend = (datosInvitado) => {
-  console.log('📦 Preparando datos para backend:', datosInvitado);
 
   const payload = {
     p_nombre: datosInvitado.p_nombre || '',
@@ -281,7 +247,6 @@ const prepararDatosParaBackend = (datosInvitado) => {
     es_profesor_extranjero: datosInvitado.es_profesor_extranjero || false
   };
 
-  console.log('✅ Payload preparado:', payload);
   return payload;
 };
 
@@ -290,7 +255,6 @@ const prepararDatosParaBackend = (datosInvitado) => {
  */
 export const obtenerTodosLosProyectos = async () => {
   try {
-    console.log('📚 Obteniendo todos los proyectos...');
     
     const response = await fetch(API_ENDPOINTS.PROYECTOS, {
       credentials: 'include',
@@ -298,11 +262,9 @@ export const obtenerTodosLosProyectos = async () => {
       headers: getAuthHeaders()
     });
 
-    console.log('📡 Respuesta proyectos - Status:', response.status);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Proyectos obtenidos:', data);
       
       // La respuesta puede venir en diferentes formatos
       let proyectos = data.data || data.proyectos || data;
@@ -311,7 +273,6 @@ export const obtenerTodosLosProyectos = async () => {
         proyectos = Object.values(data).find(val => Array.isArray(val)) || [];
       }
       
-      console.log('📊 Total de proyectos:', proyectos.length);
       return proyectos;
     } else if (response.status === 401) {
       throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
@@ -322,7 +283,6 @@ export const obtenerTodosLosProyectos = async () => {
       throw new Error(errorData.message || errorData.detail || 'Error al obtener proyectos');
     }
   } catch (error) {
-    console.error('❌ Error obteniendo proyectos:', error);
     throw error;
   }
 };

@@ -30,7 +30,6 @@ class AssistanceService {
    */
   static async generarQrEvento(idEvento, urlFront = 'https://exposoftware2026.netlify.app') {
     try {
-      console.log('🔄 Generando QR para evento:', idEvento);
 
       const response = await fetch(
         `${API_ENDPOINTS.GENERAR_QR(idEvento)}?url_front=${urlFront}`,
@@ -46,10 +45,8 @@ class AssistanceService {
       }
 
       const data = await response.json();
-      console.log('✅ QR generado exitosamente');
       return data;
     } catch (error) {
-      console.error('❌ Error al generar QR:', error);
       throw error;
     }
   }
@@ -62,7 +59,6 @@ class AssistanceService {
    */
   static async registrarAsistencia(idEvento, correoUsuario) {
     try {
-      console.log('📝 Registrando asistencia para:', correoUsuario);
 
       const response = await fetch(API_ENDPOINTS.REGISTRAR_ASISTENCIA(idEvento), {
         credentials: 'include',
@@ -81,7 +77,6 @@ class AssistanceService {
       }
       return data;
     } catch (error) {
-      console.error('❌ Error al registrar asistencia:', error);
       if (!error.status) {
         throw error;
       }
@@ -98,7 +93,6 @@ class AssistanceService {
    */
   static async obtenerAsistenciasEvento(idEvento, limit = 100) {
     try {
-      console.log('📊 Obteniendo asistencias del evento:', idEvento);
 
       const response = await fetch(
         `${API_ENDPOINTS.ASISTENCIAS_EVENTO(idEvento)}?limit=${limit}`,
@@ -114,10 +108,8 @@ class AssistanceService {
       }
 
       const data = await response.json();
-      console.log('✅ Asistencias obtenidas:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error al obtener asistencias:', error);
       throw error;
     }
   }

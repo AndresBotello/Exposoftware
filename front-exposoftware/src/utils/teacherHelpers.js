@@ -13,7 +13,6 @@ export const resolveDocenteId = async (user) => {
         docenteId = perfilCompleto.docente.id_docente;
       }
     } catch (err) {
-      console.warn("⚠️ No se pudo obtener perfil completo:", err?.message);
     }
   }
 

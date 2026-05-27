@@ -20,7 +20,6 @@ export default function GraduateMyProjects() {
   useEffect(() => {
     const cargarMisProyectos = async () => {
       if (!user || loading) {
-        console.log('⏳ Esperando datos del usuario...');
         return;
       }
 
@@ -29,7 +28,6 @@ export default function GraduateMyProjects() {
         setError(null);
 
         // 1. Obtener datos completos del usuario desde el contexto (ya fue cargado en Dashboard)
-        console.log('📋 Obteniendo datos del usuario desde contexto...');
         const perfilCompleto = getGraduateProfile();
 
         if (!perfilCompleto) {
@@ -41,30 +39,19 @@ export default function GraduateMyProjects() {
         const idEgresado = perfilCompleto.id_egresado || perfilCompleto.identificacion;
         
         if (!idEgresado) {
-          console.error('❌ No se pudo obtener el ID del egresado');
           setError('No se pudo identificar al usuario. Por favor, recarga la página.');
           return;
         }
-        
-        console.log('🔍 Cargando proyectos del egresado:', idEgresado);
-        console.log('📋 Datos del perfil completo:', { 
-          id_egresado: perfilCompleto.id_egresado,
-          identificacion: perfilCompleto.identificacion,
-          nombre_completo: perfilCompleto.nombre_completo
-        });
-        
+
         // 3. Los egresados también usan obtenerMisProyectos (el backend debe manejar ambos roles)
         let misProyectos = await ProjectsService.obtenerMisProyectos(idEgresado);
         
-        console.log('🔍 DEBUG - Proyectos recibidos del backend:', misProyectos);
         if (misProyectos.length > 0) {
           console.log('🔍 DEBUG - Primer proyecto completo:', JSON.stringify(misProyectos[0], null, 2));
         }
         
         setProjects(misProyectos);
-        console.log('✅ Proyectos cargados:', misProyectos.length);
       } catch (err) {
-        console.error('❌ Error cargando proyectos:', err);
         setError(err.message || 'Error al cargar los proyectos');
       } finally {
         setLoadingProjects(false);
@@ -81,7 +68,6 @@ export default function GraduateMyProjects() {
       await logout();
       navigate('/login', { replace: true });
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
       navigate('/login', { replace: true });
     }
   };
@@ -93,16 +79,13 @@ export default function GraduateMyProjects() {
     
     if (project.id_evento) {
       try {
-        console.log('🔍 Cargando info del evento:', project.id_evento);
         const todosEventos = await EventosService.obtenerEventos();
         const evento = todosEventos.find(e => e.id_evento === project.id_evento);
         
         if (evento) {
-          console.log('✅ Evento encontrado:', evento);
           setEventoInfo(evento);
         }
       } catch (error) {
-        console.warn('⚠️ No se pudo cargar el evento:', error);
       }
     }
   };

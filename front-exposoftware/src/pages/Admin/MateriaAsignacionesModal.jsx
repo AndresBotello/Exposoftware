@@ -39,10 +39,8 @@ export default function MateriaAsignacionesModal({
       }));
 
       setGruposDisponibles(grupos);
-      console.log('✅ Asignaciones cargadas:', grupos);
     } catch (err) {
       setError(err.message || 'Error al cargar las asignaciones');
-      console.error('❌ Error:', err);
     } finally {
       setCargando(false);
     }
@@ -81,7 +79,6 @@ export default function MateriaAsignacionesModal({
       onAsignacionCreada();
     } catch (err) {
       alert('❌ Error al asignar docente: ' + err.message);
-      console.error('❌ Error:', err);
     } finally {
       setAsignando(false);
     }

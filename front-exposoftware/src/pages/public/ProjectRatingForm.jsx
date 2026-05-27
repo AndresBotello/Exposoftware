@@ -33,7 +33,6 @@ export default function ProjectRatingForm({ idEvento, email, onComplete }) {
       setCalificaciones({});
     } catch (err) {
       setError('No se pudieron cargar los proyectos para calificar');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -57,7 +56,6 @@ export default function ProjectRatingForm({ idEvento, email, onComplete }) {
             await RatingService.calificarProyecto(idProyecto, calificacion);
             calificacionesEnviadas++;
           } catch (err) {
-            console.error(`Error calificando proyecto ${idProyecto}:`, err);
           }
         }
       }
@@ -71,7 +69,6 @@ export default function ProjectRatingForm({ idEvento, email, onComplete }) {
       }
     } catch (err) {
       setError('Error al enviar calificaciones');
-      console.error(err);
     } finally {
       setEnviando(false);
     }

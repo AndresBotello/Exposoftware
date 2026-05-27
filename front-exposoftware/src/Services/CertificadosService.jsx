@@ -3,7 +3,6 @@ import * as AuthService from './AuthService';
 
 const getAuthHeaders = () => {
   const token = AuthService.getToken();
-  console.log('🔐 Token disponible:', !!token, token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
   return {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` })
@@ -20,7 +19,6 @@ class CertificadosService {
    */
   async obtenerLotesCertificados() {
     try {
-      console.log('🔍 Obteniendo lotes de certificados...');
       const response = await fetch(
         API_ENDPOINTS.ADMIN_LOTES_CERTIFICADOS,
         {
@@ -35,10 +33,8 @@ class CertificadosService {
       }
 
       const data = await response.json();
-      console.log('✅ Lotes obtenidos:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error al obtener lotes de certificados:', error.message);
       throw error;
     }
   }
@@ -52,7 +48,6 @@ class CertificadosService {
    */
   async enviarCertificadosPorCorreo(id_proyecto, asunto, mensaje_personalizado) {
     try {
-      console.log('📧 Enviando certificados por correo...', { id_proyecto, asunto });
 
       const payload = {
         id_proyecto: id_proyecto,
@@ -77,10 +72,8 @@ class CertificadosService {
       }
 
       const data = await response.json();
-      console.log('✅ Certificados enviados:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error al enviar certificados:', error.message);
       throw error;
     }
   }
@@ -92,7 +85,6 @@ class CertificadosService {
    */
   async descargarLoteCertificados(id_proyecto) {
     try {
-      console.log('📥 Descargando certificados del proyecto...', id_proyecto);
 
       const response = await fetch(
         API_ENDPOINTS.ADMIN_DESCARGAR_CERTIFICADOS_ZIP(id_proyecto),
@@ -111,7 +103,6 @@ class CertificadosService {
 
       // Verificar si realmente es un archivo ZIP
       const contentType = response.headers.get('content-type');
-      console.log('📦 Content-Type recibido:', contentType);
 
       if (contentType && !contentType.includes('application/zip') && !contentType.includes('application/octet-stream')) {
         throw new Error(`Tipo de archivo inesperado: ${contentType}. Se esperaba un archivo ZIP.`);
@@ -140,10 +131,8 @@ class CertificadosService {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      console.log('✅ Certificados descargados:', fileName);
       return { success: true, fileName };
     } catch (error) {
-      console.error('❌ Error al descargar certificados:', error.message);
       throw error;
     }
   }
@@ -158,7 +147,6 @@ class CertificadosService {
    */
   async generarCertificadosPorProyecto(id_proyecto, incluir_calificacion = false, director_evento = '', coordinador_general = '') {
     try {
-      console.log('📄 Generando certificados por proyecto...', { id_proyecto, incluir_calificacion, director_evento, coordinador_general });
 
       const payload = {
         id_proyecto,
@@ -184,10 +172,8 @@ class CertificadosService {
       }
 
       const data = await response.json();
-      console.log('✅ Certificados generados:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error al generar certificados:', error.message);
       throw error;
     }
   }
@@ -201,7 +187,6 @@ class CertificadosService {
    */
   async generarCertificadoIndividual(id_estudiante, id_proyecto, formato_salida = 'pdf') {
     try {
-      console.log('📄 Generando certificado individual...', { id_estudiante, id_proyecto, formato_salida });
 
       const payload = {
         id_estudiante,
@@ -226,10 +211,8 @@ class CertificadosService {
       }
 
       const data = await response.json();
-      console.log('✅ Certificado individual generado:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error al generar certificado individual:', error.message);
       throw error;
     }
   }

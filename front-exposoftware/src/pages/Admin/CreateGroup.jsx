@@ -49,7 +49,6 @@ export default function CreateGroup() {
       const data = await obtenerMaterias();
       setMaterias(data);
     } catch (error) {
-      console.error('❌ Error al cargar materias:', error);
       setMaterias([]);
     } finally {
       setLoadingMaterias(false);
@@ -72,15 +71,10 @@ export default function CreateGroup() {
     setLoadingGrupos(true);
     try {
       const data = await obtenerGrupos();
-      console.log('✅ Grupos cargados completos:', data);
       if (data && data.length > 0) {
-        console.log('🔍 ESTRUCTURA COMPLETA PRIMER GRUPO:', data[0]);
-        console.log('🔍 JSON COMPLETO PRIMER GRUPO:', JSON.stringify(data[0], null, 2));
-        console.log('🔍 CLAVES DEL GRUPO:', Object.keys(data[0]));
       }
       setGrupos(data);
     } catch (error) {
-      console.error('❌ Error al cargar grupos:', error);
       setGrupos([]);
     } finally {
       setLoadingGrupos(false);
@@ -93,7 +87,6 @@ export default function CreateGroup() {
       const data = await obtenerProfesores();
       setProfesores(data);
     } catch (error) {
-      console.error('❌ Error al cargar profesores:', error);
       setProfesores([]);
     } finally {
       setLoadingProfesores(false);
@@ -179,7 +172,6 @@ export default function CreateGroup() {
         const clases = await obtenerClasesMateria(codigo, profesores, grupos);
         setClasesMateria(clases);
       } catch (error) {
-        console.error('❌ Error al cargar clases:', error);
         setClasesMateria([]);
       } finally {
         setLoadingClases(false);

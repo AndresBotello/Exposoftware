@@ -203,13 +203,11 @@ export const handlePhoneChange = (
     
     // 🚫 Si ya tiene dígitos y el primero NO es 3, bloqueamos el cambio
     if (number.length > 0 && !number.startsWith("3")) {
-      console.warn("⚠️ Número colombiano debe comenzar con 3");
       return; // NO actualizar el estado
     }
     
     // 🚫 Si intenta escribir más de 10 dígitos, bloqueamos
     if (number.length > 10) {
-      console.warn("⚠️ Número colombiano debe tener máximo 10 dígitos");
       return; // NO actualizar el estado
     }
   }
@@ -261,7 +259,6 @@ export const handleSubmit = async (
     setMensajeError("❌ Por favor corrige los errores en el formulario.");
     setCargando(false);
 
-    console.warn("Errores en el formulario:", allErrors);
 
     // Hacer scroll al primer error
     const firstErrorField = Object.keys(allErrors)[0];
@@ -277,8 +274,6 @@ export const handleSubmit = async (
   try {
     let resultado;
 
-    console.log("📤 Enviando registro para rol:", rol);
-    console.log("📦 Datos del formulario:", formData);
 
     switch (rol.toLowerCase()) {
       case "estudiante":
@@ -298,7 +293,6 @@ export const handleSubmit = async (
     }
 
     // Si llegamos aquí, el registro fue exitoso
-    console.log("✅ Registro exitoso:", resultado);
     setMensajeExito(resultado.message || "✅ ¡Registro exitoso! Revisa tu correo para activar tu cuenta.");
     
     // Limpiar el formulario después de 2 segundos
@@ -307,7 +301,6 @@ export const handleSubmit = async (
     }, 3000);
 
   } catch (error) {
-    console.error("❌ Error en el registro:", error);
     setMensajeError(error.message || "❌ Error al registrar. Intenta nuevamente.");
     
     // Hacer scroll hacia arriba para mostrar el mensaje de error

@@ -34,9 +34,7 @@ export default function GuestProjects() {
       }
 
       // Obtener eventos en curso
-      console.log('🎪 Obteniendo eventos en curso...');
       const eventosEnCurso = await getEventosEnCurso();
-      console.log(`✅ ${eventosEnCurso.length} eventos en curso encontrados`);
 
       // Obtener proyectos aprobados de cada evento en curso
       const todosLosProyectos = [];
@@ -45,14 +43,11 @@ export default function GuestProjects() {
           const proyectosDelEvento = await getProyectosEventoAprobados(evento.id || evento.id_evento);
           todosLosProyectos.push(...proyectosDelEvento);
         } catch (err) {
-          console.warn(`⚠️ Error obteniendo proyectos del evento ${evento.id_evento}:`, err);
         }
       }
 
       setProyectos(todosLosProyectos);
-      console.log('✅ Datos cargados - Perfil:', datosPerfil, 'Total Proyectos:', todosLosProyectos.length);
     } catch (err) {
-      console.error('❌ Error cargando datos:', err);
       setError(err.message);
     } finally {
       setCargando(false);

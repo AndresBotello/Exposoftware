@@ -24,20 +24,23 @@ export default function AddMemberModal({ project, onClose, onMemberAdded, isOpen
       setLoadingStudents(true);
       setError("");
       try {
-        console.log(`🔍 Buscando usuarios con: ${searchTerm}`);
+        const token = localStorage.getItem('auth_token');
+        const headers = {
+          "Content-Type": "application/json",
+          ...(token && { "Authorization": `Bearer ${token}` })
+        };
 
         const response = await fetch(
           `${API_BASE_URL}/api/v1/usuarios/buscar?q=${encodeURIComponent(searchTerm)}`,
           {
             method: "GET",
-            headers: { "Accept": "application/json" },
+            headers: headers,
             credentials: "include"
           }
         );
 
         if (response.ok) {
           const data = await response.json();
-          console.log("✅ Usuarios encontrados:", data);
 
           // La respuesta es directamente un array o tiene estructura data
           const usuariosList = Array.isArray(data) ? data : (data.data || data.usuarios || []);
@@ -54,7 +57,6 @@ export default function AddMemberModal({ project, onClose, onMemberAdded, isOpen
           setError("Error al buscar estudiantes");
         }
       } catch (err) {
-        console.error("❌ Error buscando estudiantes:", err);
         setError("Error al conectar con el servidor");
       } finally {
         setLoadingStudents(false);
@@ -103,7 +105,6 @@ export default function AddMemberModal({ project, onClose, onMemberAdded, isOpen
         setError(errorData.message || "Error al agregar integrante");
       }
     } catch (err) {
-      console.error("Error agregando integrante:", err);
       setError("Error al agregar integrante");
     } finally {
       setLoadingAdd(false);

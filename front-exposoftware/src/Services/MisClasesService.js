@@ -8,7 +8,6 @@ class MisClasesService {
   async obtenerMisClases() {
     // Usar caché si ya fue obtenido
     if (this.clasesCache) {
-      console.log('📚 Usando caché de clases disponibles');
       return this.clasesCache;
     }
 
@@ -28,10 +27,8 @@ class MisClasesService {
 
       const result = await response.json();
       this.clasesCache = result.data || [];
-      console.log('✅ Clases disponibles cargadas:', this.clasesCache.length);
       return this.clasesCache;
     } catch (error) {
-      console.error('❌ Error al obtener clases disponibles:', error.message);
       throw error;
     }
   }
@@ -43,7 +40,6 @@ class MisClasesService {
       const clase = clases.find(c => c.id_docente_materia === idDocenteMateria);
 
       if (!clase) {
-        console.warn('⚠️ Clase no encontrada para id_docente_materia:', idDocenteMateria);
         return null;
       }
 
@@ -56,7 +52,6 @@ class MisClasesService {
         codigo_materia: clase.codigo_materia
       };
     } catch (error) {
-      console.error('❌ Error al obtener detalles de docente:', error.message);
       throw error;
     }
   }

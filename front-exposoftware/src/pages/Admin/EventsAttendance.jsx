@@ -41,7 +41,6 @@ export default function EventsAttendance() {
       }
       setEventos(todosLosEventos);
     } catch (error) {
-      console.error('❌ Error cargando eventos:', error);
       setError('No se pudieron cargar los eventos. Por favor, inténtelo de nuevo.');
     } finally {
       setLoading(false);
@@ -57,7 +56,6 @@ export default function EventsAttendance() {
       const response = await AssistanceService.obtenerAsistenciasEvento(id);
       setRegisteredPeople(response?.data?.asistencias || []);
     } catch (error) {
-      console.error("❌ Error al obtener asistencias:", error);
       setRegisteredPeople([]);
     }
   };

@@ -36,9 +36,7 @@ export default function AttendanceAdmin() {
         const response = await EventosService.obtenerEventosAdmin();
         const eventosEnCurso = (response || []).filter(evento => evento.estado === 'en_curso');
         setEventos(eventosEnCurso);
-        console.log('✅ Eventos en curso cargados:', eventosEnCurso);
       } catch (error) {
-        console.error("❌ Error al obtener eventos:", error);
         setEventos([]);
       }
     };
@@ -77,7 +75,6 @@ export default function AttendanceAdmin() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
-      console.error("❌ Error al generar QR:", error);
       alert("Hubo un error al generar el código QR");
     } finally {
       setIsGenerating(false);
@@ -100,7 +97,6 @@ export default function AttendanceAdmin() {
       const response = await AssistanceService.obtenerAsistenciasEvento(id);
       setRegisteredPeople(response?.data?.asistencias || []);
     } catch (error) {
-      console.error("❌ Error al obtener asistencias:", error);
       setRegisteredPeople([]);
     }
   };

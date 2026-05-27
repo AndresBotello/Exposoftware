@@ -97,7 +97,6 @@ export default function GestionCertificados() {
     setLoading(true);
     try {
       const response = await CertificadosService.obtenerLotesCertificados();
-      console.log('📦 Respuesta completa:', response);
 
       let lotesData = [];
 
@@ -107,7 +106,6 @@ export default function GestionCertificados() {
         } else if (Array.isArray(response.data)) {
           lotesData = response.data;
         } else {
-          console.warn('⚠️ Estructura de datos inesperada:', response.data);
           lotesData = [];
         }
       } else if (Array.isArray(response)) {
@@ -115,7 +113,6 @@ export default function GestionCertificados() {
       }
 
       setLotes(lotesData);
-      console.log('✅ Lotes procesados:', lotesData);
 
       toast.current?.show({
         severity: 'success',
@@ -124,7 +121,6 @@ export default function GestionCertificados() {
         life: 3000
       });
     } catch (error) {
-      console.error('Error al cargar lotes:', error);
       setLotes([]);
       toast.current?.show({
         severity: 'error',
@@ -141,7 +137,6 @@ export default function GestionCertificados() {
     setLoadingProyectos(true);
     try {
       const proyectosData = await obtenerProyectos();
-      console.log('📦 Todos los proyectos:', proyectosData);
 
       // Obtener eventos para filtrar por estado
       const eventosResponse = await fetch(
@@ -164,7 +159,6 @@ export default function GestionCertificados() {
           eventosMap[eventoId] = evento;
         });
 
-        console.log('📅 Eventos cargados:', eventosMap);
       }
 
       // Filtrar proyectos cuyo evento esté en_curso o finalizado
@@ -173,25 +167,16 @@ export default function GestionCertificados() {
         const evento = eventosMap[idEvento];
 
         if (!evento) {
-          console.warn(`⚠️ Evento no encontrado para proyecto: ${proyecto.titulo_proyecto}`);
           return false;
         }
 
         const estadoValido = evento.estado === 'en_curso' || evento.estado === 'finalizado';
 
-        if (estadoValido) {
-          console.log(`✅ Proyecto válido: ${proyecto.titulo_proyecto} (evento: ${evento.estado})`);
-        } else {
-          console.log(`❌ Proyecto descartado: ${proyecto.titulo_proyecto} (evento: ${evento.estado})`);
-        }
-
         return estadoValido;
       });
 
       setProyectos(proyectosFiltrados);
-      console.log(`✅ ${proyectosFiltrados.length} proyectos cargados (filtrados)`);
     } catch (error) {
-      console.error('Error al cargar proyectos:', error);
       setProyectos([]);
       toast.current?.show({
         severity: 'error',
@@ -235,7 +220,6 @@ export default function GestionCertificados() {
         coordinadorGeneral
       );
 
-      console.log('✅ Respuesta generación:', response);
 
       toast.current?.show({
         severity: 'success',
@@ -253,7 +237,6 @@ export default function GestionCertificados() {
       // Recargar lotes para mostrar el nuevo
       cargarLotes();
     } catch (error) {
-      console.error('Error al generar certificados:', error);
 
       let errorMessage = 'No se pudieron generar los certificados';
       if (error.response?.data?.detail) {
@@ -305,7 +288,6 @@ export default function GestionCertificados() {
         life: 3000
       });
     } catch (error) {
-      console.error('Error al descargar lote:', error);
 
       let errorMessage = 'No se pudo descargar el lote de certificados';
 
@@ -369,7 +351,6 @@ export default function GestionCertificados() {
         mensajePersonalizado
       );
 
-      console.log('📨 Respuesta de envío:', response);
 
       const totalEnviados = response.data?.enviados_exitosamente || 0;
       const totalFallidos = response.data?.envios_fallidos || 0;
@@ -414,16 +395,11 @@ export default function GestionCertificados() {
 
       cargarLotes();
     } catch (error) {
-      console.error('Error al enviar certificados:', error);
-      console.error('Error response:', error.response);
-      console.error('Error response data:', error.response?.data);
 
       let errorMessage = 'No se pudieron enviar los certificados por correo';
 
       if (error.response?.status === 400) {
         const errorData = error.response.data;
-        console.log('Error data type:', typeof errorData);
-        console.log('Error data:', errorData);
 
         if (typeof errorData === 'string') {
           errorMessage = errorData;

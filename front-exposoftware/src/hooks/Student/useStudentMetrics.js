@@ -37,7 +37,6 @@ export function useStudentMetrics(user) {
                   enriched.nombre_materia = detalles.nombre_materia;
                 }
               } catch (error) {
-                console.warn('⚠️ Error enriqueciendo materia:', error);
               }
             }
 
@@ -52,7 +51,6 @@ export function useStudentMetrics(user) {
                   enriched.nombre_sublinea = nombres.sublinea;
                 }
               } catch (error) {
-                console.warn('⚠️ Error enriqueciendo sublínea:', error);
               }
             }
 
@@ -85,7 +83,6 @@ export function useStudentMetrics(user) {
 
         setMetricasEstudiante({ totalProyectos, proyectosAprobados, proyectosReprobados, proyectosPendientes });
       } catch (err) {
-        console.error('❌ Error al cargar métricas:', err);
         setMetricasEstudiante({ totalProyectos: 0, proyectosAprobados: 0, proyectosReprobados: 0, proyectosPendientes: 0 });
         setProyectos([]);
       } finally {

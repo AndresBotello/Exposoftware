@@ -30,9 +30,7 @@ export default function AdminDashboard() {
     const user = AuthService.getUserData();
     if (user) {
       setUserData(user);
-      console.log('👤 Usuario autenticado:', user);
     } else {
-      console.warn('⚠️ No hay usuario autenticado');
       navigate('/login');
     }
   }, [navigate]);
@@ -55,9 +53,7 @@ export default function AdminDashboard() {
       setLoadingEstadisticas(true);
       const stats = await DashboardService.getEstadisticasCompletas();
       setEstadisticas(stats);
-      console.log('📊 Estadísticas cargadas:', stats);
     } catch (error) {
-      console.error('❌ Error al cargar estadísticas:', error);
     } finally {
       setLoadingEstadisticas(false);
     }
@@ -70,7 +66,6 @@ export default function AdminDashboard() {
         await AuthService.logout();
         navigate('/login');
       } catch (error) {
-        console.error('❌ Error al cerrar sesión:', error);
       }
     }
   };
@@ -420,7 +415,6 @@ export default function AdminDashboard() {
                     </h4>
                     <div className="space-y-3">
                       {estadisticas.proyectosPorTipo?.proyectos.slice(0, 5).map((proyecto, index) => {
-                        console.log('📋 Proyecto completo:', proyecto);
                         const nombreProyecto = proyecto.titulo_proyecto || 
                                               proyecto.titulo_proyecto || 
                                               proyecto.titulo_proyecto || 

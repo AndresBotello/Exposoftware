@@ -36,7 +36,6 @@ class DashboardService {
         this.getAuthConfig()
       );
       
-      console.log('📊 Respuesta proyectos:', response.data);
       
       // La respuesta puede ser un array directo o un objeto con data
       const proyectos = Array.isArray(response.data) 
@@ -45,7 +44,6 @@ class DashboardService {
       
       return proyectos.length;
     } catch (error) {
-      console.error('❌ Error al obtener proyectos:', error);
       return 0;
     }
   }
@@ -62,7 +60,6 @@ class DashboardService {
         this.getAuthConfig()
       );
       
-      console.log('👨‍🎓 Respuesta estudiantes:', response.data);
       
       // La API devuelve un array directamente
       if (Array.isArray(response.data)) {
@@ -79,10 +76,8 @@ class DashboardService {
         return response.data.estudiantes.length;
       }
       
-      console.warn('⚠️ Formato de respuesta de estudiantes inesperado:', response.data);
       return 0;
     } catch (error) {
-      console.error('❌ Error al obtener estudiantes:', error);
       return 0;
     }
   }
@@ -99,7 +94,6 @@ class DashboardService {
         this.getAuthConfig()
       );
       
-      console.log('👨‍🏫 Respuesta profesores:', response.data);
       
       // La API devuelve un array directamente
       if (Array.isArray(response.data)) {
@@ -116,10 +110,8 @@ class DashboardService {
         return response.data.profesores.length;
       }
       
-      console.warn('⚠️ Formato de respuesta de profesores inesperado:', response.data);
       return 0;
     } catch (error) {
-      console.error('❌ Error al obtener profesores:', error);
       return 0;
     }
   }
@@ -139,7 +131,6 @@ class DashboardService {
         ? response.data 
         : response.data?.data || response.data?.proyectos || [];
       
-      console.log('📊 Proyectos obtenidos para gráfica:', proyectos.length);
       
       // Mapeo de tipo_actividad a nombres descriptivos
       const tiposActividad = {
@@ -161,7 +152,6 @@ class DashboardService {
       const labels = Object.keys(conteo);
       const valores = Object.values(conteo);
       
-      console.log('📊 Proyectos por tipo:', conteo);
       
       return {
         labels,
@@ -170,7 +160,6 @@ class DashboardService {
         proyectos: proyectos.slice(0, 5) // Los 5 más recientes para mostrar en lista
       };
     } catch (error) {
-      console.error('❌ Error al obtener proyectos por tipo:', error);
       return {
         labels: [],
         valores: [],
@@ -200,7 +189,6 @@ class DashboardService {
         proyectosPorTipo
       };
     } catch (error) {
-      console.error('❌ Error al obtener estadísticas completas:', error);
       return {
         totalProyectos: 0,
         totalEstudiantes: 0,
