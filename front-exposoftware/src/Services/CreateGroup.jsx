@@ -19,24 +19,34 @@ import * as AuthService from "./AuthService";
 export const obtenerGrupos = async () => {
   try {
     const headers = AuthService.getAuthHeaders();
-    
-    const response = await fetch(API_ENDPOINTS.GRUPOS, {
-      credentials: 'include',
-      method: 'GET',
-      headers: headers
-    });
-    
-    
-    if (response.ok) {
+    const allGrupos = [];
+    let page = 1;
+    const limit = 100;
+
+    while (true) {
+      const url = `${API_ENDPOINTS.GRUPOS}?page=${page}&limit=${limit}`;
+      const response = await fetch(url, {
+        credentials: 'include',
+        method: 'GET',
+        headers: headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error al cargar grupos: ${response.statusText}`);
+      }
+
       const result = await response.json();
-      
-      // El backend puede retornar { data: [...] } o directamente [...]
       const grupos = result.data || result;
-      return Array.isArray(grupos) ? grupos : [];
-    } else {
-      const errorText = await response.text();
-      throw new Error(`Error al cargar grupos: ${response.statusText}`);
+      if (!Array.isArray(grupos)) break;
+
+      allGrupos.push(...grupos);
+
+      const pagination = result.pagination;
+      if (!pagination?.has_next) break;
+      page += 1;
     }
+
+    return allGrupos;
   } catch (error) {
     throw error;
   }

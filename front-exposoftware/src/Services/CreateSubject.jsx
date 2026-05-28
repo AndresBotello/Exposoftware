@@ -93,13 +93,28 @@ export const obtenerMaterias = async () => {
  */
 export const obtenerGrupos = async () => {
   try {
-    const response = await fetch(API_ENDPOINTS.GRUPOS, {
-      credentials: 'include',
-      method: 'GET',
-      headers: AuthService.getAuthHeaders()
-    });
-    const resultado = await procesarRespuesta(response);
-    return resultado.data || [];
+    const allGrupos = [];
+    let page = 1;
+    const limit = 100;
+
+    while (true) {
+      const url = `${API_ENDPOINTS.GRUPOS}?page=${page}&limit=${limit}`;
+      const response = await fetch(url, {
+        credentials: 'include',
+        method: 'GET',
+        headers: AuthService.getAuthHeaders()
+      });
+      const resultado = await procesarRespuesta(response);
+      const grupos = resultado.data || [];
+      if (!Array.isArray(grupos)) break;
+
+      allGrupos.push(...grupos);
+
+      if (!resultado.pagination?.has_next) break;
+      page += 1;
+    }
+
+    return allGrupos;
   } catch (error) {
     throw error;
   }
