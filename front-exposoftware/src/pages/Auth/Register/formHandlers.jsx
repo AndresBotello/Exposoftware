@@ -256,6 +256,7 @@ export const handleSubmit = async (
 
   // Si hay errores, detener el proceso
   if (hasErrors(allErrors)) {
+    console.log("Errores de validación:", allErrors);
     setMensajeError("❌ Por favor corrige los errores en el formulario.");
     setCargando(false);
 

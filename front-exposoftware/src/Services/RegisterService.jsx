@@ -125,7 +125,6 @@ export const registrarEstudiante = async (studentData) => {
 
   try {
     const response = await fetch(API_ENDPOINTS.REGISTRO_ESTUDIANTE, {
-      credentials: 'include',
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
@@ -186,7 +185,6 @@ export const registrarEgresado = async (graduateData) => {
 
   try {
     const response = await fetch(API_ENDPOINTS.REGISTRO_EGRESADO, {
-      credentials: 'include',
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
@@ -245,7 +243,6 @@ export const registrarInvitado = async (guestData) => {
 
   try {
     const response = await fetch(API_ENDPOINTS.REGISTRO_INVITADO, {
-      credentials: 'include',
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),

@@ -16,6 +16,7 @@ function NavbarWrapper() {
 
   // Rutas donde el Navbar debe estar oculto
   const hideNavbarOn = [
+    "/verificar-cuenta",
     "/student/dashboard",
     "/student/profile",
     "/student/proyectos",

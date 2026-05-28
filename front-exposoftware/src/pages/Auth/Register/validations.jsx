@@ -31,7 +31,6 @@ export const validateField = (name, value, formData = {}, rol = "") => {
     "confirmarcontraseña",
     "programa",
     "semestre",
-    "materia",
     "tipoDocente",
     "sector",
     "nombreEmpresa",
@@ -224,7 +223,7 @@ export const validateAllFields = (formData, rol) => {
 
   // Dependiendo del rol, se agregan campos extra
   if (rol === "estudiante") {
-    ["correo", "semestre", "materia", "fechaIngreso", "periodo"].forEach(
+    ["correo", "semestre", "fechaIngreso", "periodo"].forEach(
       (f) => {
         const err = validateField(f, formData[f], formData, rol);
         if (err) errors[f] = err;

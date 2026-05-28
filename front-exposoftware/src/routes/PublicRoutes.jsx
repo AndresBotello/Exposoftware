@@ -6,6 +6,7 @@ import Contacto from "../pages/Home/Contact";
 import Projects from "../pages/Home/Projects";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
+import VerifyEmail from "../pages/Auth/VerifyEmail";
 import AsistenciaForm from "../pages/public/AttendanceForm.jsx";
 import InvitedPage from "../pages/Public/InvitedPage";
 import ProjectCalificacion from "../pages/ProjectCalificacion";
@@ -34,6 +35,7 @@ export default function PublicRoutes() {
       {/* 🔐 Autenticación */}
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
+      <Route path="verificar-cuenta" element={<VerifyEmail />} />
       
       {/* 📂 Proyectos públicos */}
       <Route path="projects" element={<Projects />} />

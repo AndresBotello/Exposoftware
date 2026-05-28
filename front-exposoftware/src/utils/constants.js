@@ -1,7 +1,7 @@
-// Detectar el ambiente y configurar la URL de la API
+// Detectar si es desarrollo local y usar URL relativa, sino usar variable de entorno
 const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost');
-export const API_BASE_URL = isDevelopment ? '' : 'https://exposoftware.duckdns.org';
+const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
+export const API_BASE_URL = isDevelopment ? '' : (import.meta.env.VITE_API_BASE_URL || '');
 
 
 // ============================================================
