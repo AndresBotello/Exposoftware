@@ -107,7 +107,10 @@ export function useRegisterProject() {
         // 2️⃣.5️⃣ Todos los grupos (para enriquecer asignaciones)
         let todosLosGruposData = [];
         try {
-          const response = await fetch(`/api/v1/admin/grupos`, {
+          // Usa /list (catalogo completo) — el endpoint base /admin/grupos
+          // pagina a 20 ítems y rompía el enriquecimiento de asignaciones
+          // para grupos que no entraban en la primera página.
+          const response = await fetch(API_ENDPOINTS.ADMIN_GRUPOS_LIST, {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
             credentials: 'include'
