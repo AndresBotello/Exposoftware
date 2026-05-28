@@ -1,0 +1,36 @@
+# ============================================================
+# docker-compose para el FRONTEND de ExpoSoftware
+#
+# IMPORTANTE: el puerto se publica SOLO en 127.0.0.1 (loopback),
+# nunca en 0.0.0.0. Esto cumple con tu capa de "Servicios
+# internos aislados (Docker bound to localhost)".
+# El Nginx del HOST (con SSL de Let's Encrypt) es el único
+# que habla con este contenedor.
+# ============================================================
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # URL del backend (se queda hardcodeada en el bundle de Vite).
+        # Puedes sobreescribirla desde un .env en el VPS.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://exposoftware.duckdns.org}
+    image: exposoftware-frontend:latest
+    container_name: exposoftware-frontend
+    restart: unless-stopped
+    ports:
+      # host:container -> SOLO loopback, nada de 0.0.0.0
+      - "127.0.0.1:8080:80"
+    networks:
+      - frontend-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  frontend-net:
+    driver: bridge
