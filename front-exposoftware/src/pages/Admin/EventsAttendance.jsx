@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/Logo-unicesar.png";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
-import AssistanceService from "../../services/AssistanceService";
+import AssistanceService from "../../Services/AssistanceService";
 import EventosService from "../../Services/EventosService";
 import * as AuthService from "../../Services/AuthService";
 import ReportGenerator from "../../components/ReportGenerator2";
