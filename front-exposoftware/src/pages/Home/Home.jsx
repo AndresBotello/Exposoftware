@@ -101,7 +101,7 @@ export default function Home() {
               {/* Stats rápidos - completamente responsive */}
               <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 py-3 sm:py-4">
                 <div className="text-center">
-                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">XXI</div>
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">XXII</div>
                   <div className="text-xs sm:text-sm text-gray-600">Edición</div>
                 </div>
                 <div className="text-center">

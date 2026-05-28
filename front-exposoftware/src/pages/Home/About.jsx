@@ -92,31 +92,54 @@ export default function About() {
       <section className="py-16 px-6 text-center">
         <h2 className="text-2xl font-bold text-green-700 mb-4">Equipo de Desarrollo</h2>
         <p className="text-gray-700 mb-6">
-          Este proyecto fue desarrollado por estudiantes de Ingeniería de Sistemas 
-          de la Universidad Popular del Cesar, con el acompañamiento de docentes 
+          Este proyecto fue desarrollado por estudiantes de Ingeniería de Sistemas
+          de la Universidad Popular del Cesar, con el acompañamiento de docentes
           y coordinadores académicos.
         </p>
 
-        <div className="flex justify-center gap-10 flex-wrap">
-          <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
-            <h3 className="font-semibold text-lg text-green-700">Hugo Paz Rojas</h3>
-            <p className="text-gray-600 text-sm">Líder Front-end</p>
+        {/* Líder General */}
+        <div className="mb-12">
+          <h3 className="text-xl font-bold text-green-700 mb-6">Liderazgo General</h3>
+          <div className="flex justify-center gap-10 flex-wrap">
+            <div className="bg-green-50 border-2 border-green-700 p-6 rounded-lg shadow-md w-60">
+              <h4 className="font-semibold text-lg text-green-700">Jhon Roca Mazenet</h4>
+              <p className="text-gray-600 text-sm font-semibold">Líder General</p>
+            </div>
           </div>
-          <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
-            <h3 className="font-semibold text-lg text-green-700">Ana Claudia</h3>
-            <p className="text-gray-600 text-sm">Líder Back-end</p>
-          </div>
-          <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
-            <h3 className="font-semibold text-lg text-green-700">Luis Mario</h3>
-            <p className="text-gray-600 text-sm">Líder Diccionario de Datos</p>
-          </div>
-          <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
-            <h3 className="font-semibold text-lg text-green-700">Valentina Doncel</h3>
-            <p className="text-gray-600 text-sm">Líder Analisis de Datos</p>
-          </div>
-          <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
-            <h3 className="font-semibold text-lg text-green-700">Equipo Exposoftware</h3>
-            <p className="text-gray-600 text-sm">Desarrollo y Diseño</p>
+        </div>
+
+        {/* Equipos por área */}
+        <div className="mb-12">
+          <h3 className="text-xl font-bold text-green-700 mb-6">Líderes por Área</h3>
+          <div className="flex justify-center gap-10 flex-wrap">
+            <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
+              <h4 className="font-semibold text-lg text-green-700">Andres Botello Nuñez</h4>
+              <p className="text-gray-600 text-sm">Líder Front-end</p>
+            </div>
+            <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
+              <h4 className="font-semibold text-lg text-green-700">Miguel Cañate</h4>
+              <p className="text-gray-600 text-sm">Líder Back-end</p>
+            </div>
+            <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
+              <h4 className="font-semibold text-lg text-green-700">Mateo Lopez Patiño</h4>
+              <p className="text-gray-600 text-sm">Líder Back-end</p>
+            </div>
+            <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
+              <h4 className="font-semibold text-lg text-green-700">Jesus Castillo</h4>
+              <p className="text-gray-600 text-sm">Líder Diccionario de Datos</p>
+            </div>
+            <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
+              <h4 className="font-semibold text-lg text-green-700">Dahianna Torres Montenegro</h4>
+              <p className="text-gray-600 text-sm">Líder Análisis de Datos</p>
+            </div>
+            <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
+              <h4 className="font-semibold text-lg text-green-700">Valentina Doncel Zarate</h4>
+              <p className="text-gray-600 text-sm">Líder Análisis de Datos</p>
+            </div>
+            <div className="bg-gray-100 p-6 rounded-lg shadow-md w-60">
+              <h4 className="font-semibold text-lg text-green-700">Equipo Exposoftware</h4>
+              <p className="text-gray-600 text-sm">Desarrollo y Diseño</p>
+            </div>
           </div>
         </div>
       </section>
