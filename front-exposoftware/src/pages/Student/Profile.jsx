@@ -30,16 +30,20 @@ export default function Profile() {
   };
 
   const handleSaveProfile = async () => {
-    if (!profileData.p_nombre || !profileData.p_apellido || !profileData.telefono) {
-      alert("Por favor completa los campos obligatorios: Nombre, Apellido y Teléfono");
+    // p_nombre y p_apellido NO se incluyen en el payload: el backend
+    // (UsuarioPerfilUpdate) los ignora silenciosamente, solo admin puede
+    // cambiarlos. Si estan vacios en BD, el usuario debe contactar admin
+    // (el banner amarillo ya se lo dice).
+    if (!profileData.telefono) {
+      alert("El teléfono es obligatorio.");
       return;
     }
 
     try {
       const datosActualizar = {
-        p_nombre: profileData.p_nombre,
-        p_apellido: profileData.p_apellido,
-        telefono: profileData.telefono
+        s_nombre: profileData.s_nombre,
+        s_apellido: profileData.s_apellido,
+        telefono: profileData.telefono,
       };
 
       await handleSave(datosActualizar);
