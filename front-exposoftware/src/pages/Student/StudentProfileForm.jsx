@@ -28,35 +28,37 @@ export default function StudentProfileForm({
             />
           </div>
 
-          {/* Nombre */}
+          {/* Nombre — solo lectura. El backend (UsuarioPerfilUpdate) NO permite
+              que el estudiante modifique p_nombre desde mi-perfil. Solo un
+              admin puede corregirlo desde el panel. Mostrar el input deshabilitado
+              evitar dar la falsa sensación de que se guardo cuando en realidad
+              el backend lo ignora silenciosamente. */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre <span className="text-red-500">*</span>
+              Nombre <span className="text-gray-400 text-xs">(no editable — contactá admin para cambios)</span>
             </label>
             <input
               type="text"
               value={profileData.p_nombre}
-              onChange={(e) => handleInputChange('p_nombre', e.target.value)}
-              className={`w-full border border-gray-300 rounded-lg px-4 py-2 ${
-                isEditing ? 'focus:outline-none focus:ring-2 focus:ring-teal-500' : 'bg-gray-50'
-              }`}
-              disabled={!isEditing || loading}
+              readOnly
+              disabled
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+              title="Este dato solo puede cambiarlo un administrador"
             />
           </div>
 
-          {/* Apellido */}
+          {/* Apellido — mismo motivo que Nombre arriba. */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Apellido <span className="text-red-500">*</span>
+              Apellido <span className="text-gray-400 text-xs">(no editable — contactá admin para cambios)</span>
             </label>
             <input
               type="text"
               value={profileData.p_apellido}
-              onChange={(e) => handleInputChange('p_apellido', e.target.value)}
-              className={`w-full border border-gray-300 rounded-lg px-4 py-2 ${
-                isEditing ? 'focus:outline-none focus:ring-2 focus:ring-teal-500' : 'bg-gray-50'
-              }`}
-              disabled={!isEditing || loading}
+              readOnly
+              disabled
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+              title="Este dato solo puede cambiarlo un administrador"
             />
           </div>
 
