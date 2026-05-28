@@ -12,11 +12,7 @@ dist
 dist-ssr
 *.local
 
-<<<<<<< HEAD
-# Environment variables
-=======
 # Variables de entorno (NUNCA commitearlas)
->>>>>>> b004050 (feat(deploy): Docker + Nginx setup para VPS Hostinger)
 .env
 .env.local
 .env.*.local

@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://exposoftware.duckdns.org',
+        target: 'https://expounicesar.duckdns.org',
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: { '*': 'localhost' },

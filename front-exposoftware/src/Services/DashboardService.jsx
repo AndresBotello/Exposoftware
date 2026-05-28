@@ -56,7 +56,7 @@ class DashboardService {
   static async getTotalEstudiantes() {
     try {
       const response = await axios.get(
-        `${API_ENDPOINTS.ADMIN_ESTUDIANTES}`,
+        `${API_ENDPOINTS.ADMIN_ESTUDIANTES}?limit=100`,
         this.getAuthConfig()
       );
       
@@ -90,7 +90,7 @@ class DashboardService {
   static async getTotalProfesores() {
     try {
       const response = await axios.get(
-        `${API_ENDPOINTS.ADMIN_DOCENTES}`,
+        `${API_ENDPOINTS.ADMIN_DOCENTES}?limit=100`,
         this.getAuthConfig()
       );
       
