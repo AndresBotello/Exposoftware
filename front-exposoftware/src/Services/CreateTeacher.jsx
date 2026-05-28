@@ -3,7 +3,7 @@ import * as AuthService from "./AuthService";
 
 export const TIPOS_DOCUMENTO = ["CC", "TI", "CE", "PEP", "Pasaporte"];
 
-export const GENEROS = ["Hombre", "Mujer", "Hermafrodita"];
+export const GENEROS = ["Hombre", "Mujer", "Prefiero no decirlo"];
 
 export const IDENTIDADES_SEXUALES = [
   "Heterosexual",
@@ -44,7 +44,7 @@ const TIPO_DOCUMENTO_MAP = {
 const GENERO_MAP = {
   "Hombre": 1,
   "Mujer": 2,
-  "Hermafrodita": 3
+  "Prefiero no decirlo": 3
 };
 
 const IDENTIDAD_MAP = {

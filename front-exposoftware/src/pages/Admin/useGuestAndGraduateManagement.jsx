@@ -48,7 +48,7 @@ export const TIPOS_DOCUMENTO = [
 export const GENEROS = [
   { value: 1, label: "Masculino" },
   { value: 2, label: "Femenino" },
-  { value: 3, label: "Otro" }
+  { value: 3, label: "Prefiero no decirlo" }
 ];
 
 export const TIPOS_VIA = [
