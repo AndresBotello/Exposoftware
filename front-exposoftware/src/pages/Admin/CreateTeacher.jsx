@@ -59,7 +59,10 @@ export default function CreateTeacher() {
               try {
                 const progRes = await fetch(
                   API_ENDPOINTS.ADMIN_PROGRAMAS_BY_FACULTAD(facultyId),
-                  { headers: AuthService.getAuthHeaders() }
+                  {
+                    credentials: 'include',
+                    headers: AuthService.getAuthHeaders(),
+                  }
                 );
                 if (progRes.ok) {
                   const progData = await progRes.json();
