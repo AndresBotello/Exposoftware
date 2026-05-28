@@ -244,18 +244,27 @@ export const login = async (credentials) => {
       }
       
       
-      // Guardar token si se obtuvo
+      // Guardar token si se obtuvo. Si NO se obtuvo (el backend hoy responde
+      // solo con cookie HttpOnly), eliminamos el TOKEN viejo de localStorage
+      // para evitar que `getAuthHeaders()` siga mandando un Bearer rancio
+      // que el backend prioriza sobre la cookie nueva y rechaza con 401.
       if (token) {
         localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-        
+
         // Intentar extraer el nombre del JWT
         const jwtInfo = extraerInfoJWT(token);
         if (jwtInfo && jwtInfo.name) {
           userData.name = jwtInfo.name;
           userData.nombre_completo = jwtInfo.name;
         }
+      } else {
+        // No vino token en el body → backend usa solo cookie HttpOnly.
+        // BORRAR el token viejo para que getAuthHeaders() NO mande Bearer
+        // rancio (el backend prioriza Bearer sobre cookie y un Bearer
+        // invalido tira 401 INVALID_TOKEN aunque la cookie sea valida).
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
       }
-      
+
       // Guardar datos del usuario (ahora incluye el nombre si estaba en el JWT)
       localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
       
