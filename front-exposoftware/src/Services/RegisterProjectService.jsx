@@ -59,6 +59,7 @@ class RegisterProjectService {
       // 🔥 Intentar primero endpoint público (para estudiantes)
       let response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
         method: 'GET',
+        credentials: 'include',
         headers: getAuthHeaders(),
       });
 
@@ -66,6 +67,7 @@ class RegisterProjectService {
       if (response.status === 403 || response.status === 405) {
         response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
           method: 'GET',
+          credentials: 'include',
           headers: getAuthHeaders(),
         });
       }

@@ -463,11 +463,12 @@ export const getCurrentUserInfo = async () => {
   try {
     const response = await fetch(API_ENDPOINTS.AUTH_ME, {
       method: 'GET',
+      credentials: 'include', // CRITICO: la cookie auth_token es cross-site
       headers: getAuthHeaders()
     });
 
     const resultado = await procesarRespuesta(response);
-    
+
     // Actualizar datos en localStorage
     if (resultado.success && resultado.data) {
       localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(resultado.data));
@@ -488,6 +489,7 @@ export const refreshToken = async () => {
   try {
     const response = await fetch(API_ENDPOINTS.AUTH_REFRESH, {
       method: 'POST',
+      credentials: 'include', // CRITICO: el refresh_token vive en cookie HttpOnly
       headers: getAuthHeaders()
     });
 
