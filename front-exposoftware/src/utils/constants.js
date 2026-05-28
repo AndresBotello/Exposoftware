@@ -70,10 +70,10 @@ export const API_ENDPOINTS = {
   ADMIN_ASIGNACION_DELETE: (asignacionId) => `${API_BASE_URL}/api/v1/admin/materias/asignaciones/${asignacionId}`,
   
   // Grupos (Admin)
-  GRUPOS: `${API_BASE_URL}/api/v1/admin/grupos/groups`,
-  ADMIN_GRUPOS: `${API_BASE_URL}/api/v1/admin/grupos/groups`,
-  ADMIN_GRUPOS_LIST: `${API_BASE_URL}/api/v1/admin/grupos/groups/list`,
-  ADMIN_GRUPO_BY_ID: (groupId) => `${API_BASE_URL}/api/v1/admin/grupos/groups/${groupId}`,
+  GRUPOS: `${API_BASE_URL}/api/v1/admin/grupos`,
+  ADMIN_GRUPOS: `${API_BASE_URL}/api/v1/admin/grupos`,
+  ADMIN_GRUPOS_LIST: `${API_BASE_URL}/api/v1/admin/grupos/list`,
+  ADMIN_GRUPO_BY_ID: (groupId) => `${API_BASE_URL}/api/v1/admin/grupos/${groupId}`,
   ADMIN_GRUPO_BY_CODE: (codigoMateria, codigoGrupo) => `${API_BASE_URL}/api/v1/admin/materias/${codigoMateria}/grupos/${codigoGrupo}`,
   
   // ═══════════════════════════════════════════════════════════

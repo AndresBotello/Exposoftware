@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import EventosService from "../../Services/EventosService";
 import * as AuthService from "../../Services/AuthService";
-import AssistanceService from "../../services/AssistanceService";
+import AssistanceService from "../../Services/AssistanceService";
 
 export default function AsistenciaForm() {
     const [email, setEmail] = useState("");
