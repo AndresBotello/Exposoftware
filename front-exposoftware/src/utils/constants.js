@@ -60,6 +60,7 @@ export const API_ENDPOINTS = {
   // Materias (Admin)
   MATERIAS: `${API_BASE_URL}/api/v1/admin/materias`,
   ADMIN_MATERIAS: `${API_BASE_URL}/api/v1/admin/materias`,
+  ADMIN_MATERIAS_LIST: `${API_BASE_URL}/api/v1/admin/materias/list`,
   MATERIA_BY_ID: (id) => `${API_BASE_URL}/api/v1/admin/materias/${id}`,
   ADMIN_MATERIA_BY_CODE: (materiaCode) => `${API_BASE_URL}/api/v1/admin/materias/${materiaCode}`,
   ADMIN_MATERIA_ASIGNACIONES: (materiaCode) => `${API_BASE_URL}/api/v1/admin/materias/${materiaCode}/asignaciones`,

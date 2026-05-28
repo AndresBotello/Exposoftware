@@ -65,20 +65,25 @@ const procesarRespuesta = async (response) => {
 
 
 /**
- * Obtener todas las materias desde el backend
- * @returns {Promise<Array>} Lista de materias
+ * Obtener todas las materias desde el backend (sin paginar).
+ *
+ * Usa el endpoint /admin/materias/list que devuelve TODO el catálogo en
+ * una sola llamada — ideal para selectores/dropdowns. El endpoint base
+ * /admin/materias está paginado a 20 ítems y rompía los selectores que
+ * necesitan ver todas las materias.
+ *
+ * @returns {Promise<Array>} Lista completa de materias
  */
 export const obtenerMaterias = async () => {
   try {
     const headers = AuthService.getAuthHeaders();
-    
-    const response = await fetch(API_ENDPOINTS.MATERIAS, {
+
+    const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS_LIST, {
       credentials: 'include',
       method: 'GET',
       headers: headers
     });
-    
-    
+
     const resultado = await procesarRespuesta(response);
     return resultado.data || [];
   } catch (error) {
