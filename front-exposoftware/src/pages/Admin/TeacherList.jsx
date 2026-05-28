@@ -4,6 +4,8 @@ export default function TeacherList({
   profesoresFiltrados,
   searchTerm,
   setSearchTerm,
+  filtroEstado,
+  setFiltroEstado,
   handleEdit,
   handleDelete,
 }) {
@@ -27,11 +29,23 @@ export default function TeacherList({
               {profesoresFiltrados.length} {profesoresFiltrados.length === 1 ? 'profesor' : 'profesores'} encontrados
             </p>
           </div>
-          <SearchBar
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder="Buscar profesores..."
-          />
+          <div className="flex items-center gap-3">
+            <select
+              value={filtroEstado || 'todos'}
+              onChange={(e) => setFiltroEstado && setFiltroEstado(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              title="Filtrar por estado"
+            >
+              <option value="todos">Todos</option>
+              <option value="activo">Activos</option>
+              <option value="inactivo">Inactivos (pendientes)</option>
+            </select>
+            <SearchBar
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Buscar profesores..."
+            />
+          </div>
         </div>
       </div>
 
@@ -98,13 +112,21 @@ export default function TeacherList({
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      profesor?.usuario?.activo !== undefined ? profesor.usuario.activo : profesor?.activo
+                    {/* Patron explicito con parens: la ternaria anterior tenia
+                        precedencia rota (el `?:` interno no estaba envuelto)
+                        y el className terminaba como `... true` o `... false`. */}
+                    {(() => {
+                      const activo = profesor?.usuario?.activo ?? profesor?.activo ?? false;
+                      const cls = activo
                         ? 'bg-teal-100 text-teal-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {profesor?.usuario?.activo !== undefined ? (profesor.usuario.activo ? 'Activo' : 'Inactivo') : (profesor?.activo ? 'Activo' : 'Inactivo')}
-                    </span>
+                        : 'bg-red-100 text-red-800';
+                      const texto = activo ? 'Activo' : 'Pendiente verificación';
+                      return (
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+                          {texto}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-2">

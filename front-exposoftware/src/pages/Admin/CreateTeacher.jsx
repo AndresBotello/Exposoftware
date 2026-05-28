@@ -156,6 +156,8 @@ export default function CreateTeacher() {
     profesores,
     searchTerm,
     setSearchTerm,
+    filtroEstado,
+    setFiltroEstado,
     profesoresFiltrados,
     // Estados para municipios dinámicos
     municipios,
@@ -394,6 +396,8 @@ export default function CreateTeacher() {
                 profesoresFiltrados={profesoresFiltrados}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
+                filtroEstado={filtroEstado}
+                setFiltroEstado={setFiltroEstado}
                 handleEdit={handleEdit}
                 handleDelete={handleDelete}
               />

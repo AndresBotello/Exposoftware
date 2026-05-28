@@ -7,6 +7,7 @@ import {
   actualizarDocente,
   eliminarDocente,
   filtrarDocentes,
+  filtrarDocentesPorEstado,
   formatearDatosDocente,
   TIPOS_DOCUMENTO,
   GENEROS,
@@ -152,6 +153,9 @@ export function useTeacherManagement() {
 
   // Estado para búsqueda/filtro
   const [searchTerm, setSearchTerm] = useState("");
+  // Filtro por estado (Activo / Inactivo / Todos). El backend ahora devuelve
+  // activos+inactivos por defecto, asi que el filtro vive en el cliente.
+  const [filtroEstado, setFiltroEstado] = useState("todos");
 
   // Cargar profesores al montar el componente (evitar usar función antes de definirla)
   useEffect(() => {
@@ -408,8 +412,11 @@ export function useTeacherManagement() {
     limpiarFormulario();
   };
 
-  // Filtrar profesores por búsqueda usando el servicio
-  const profesoresFiltrados = filtrarDocentes(profesores, searchTerm);
+  // Filtrar profesores por búsqueda + estado.
+  const profesoresFiltrados = filtrarDocentesPorEstado(
+    filtroEstado,
+    filtrarDocentes(profesores, searchTerm)
+  );
 
   return {
     // Estados del formulario - Usuario (heredados)
@@ -475,6 +482,8 @@ export function useTeacherManagement() {
     profesores,
     searchTerm,
     setSearchTerm,
+    filtroEstado,
+    setFiltroEstado,
     profesoresFiltrados,
 
     // Estados para municipios dinámicos

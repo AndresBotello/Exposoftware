@@ -399,6 +399,21 @@ export const eliminarDocente = async (idDocente) => {
 // ==================== FUNCIONES AUXILIARES ====================
 
 /**
+ * Filtrar docentes por estado (activo / inactivo / todos).
+ * Pareja del filtro analogo en estudiantes para consistencia UX.
+ */
+export const filtrarDocentesPorEstado = (estado, docentes) => {
+  if (!Array.isArray(docentes)) return [];
+  if (estado === 'todos' || !estado) return docentes;
+
+  const queremosActivos = estado === 'activo';
+  return docentes.filter(d => {
+    const activo = d?.usuario?.activo ?? d?.activo ?? false;
+    return Boolean(activo) === queremosActivos;
+  });
+};
+
+/**
  * Filtrar docentes por término de búsqueda
  * @param {Array} docentes - Lista de docentes
  * @param {string} searchTerm - Término de búsqueda
