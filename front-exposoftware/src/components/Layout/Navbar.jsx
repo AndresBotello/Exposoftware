@@ -46,14 +46,11 @@ export default function Navbar() {
 
       {/* Menú para desktop */}
       <ul className="hidden md:flex items-center gap-6 lg:gap-8 text-base font-medium">
-        {/* Si es invitado, solo mostrar "Inicio" y "Proyectos" */}
+        {/* Si es invitado, solo mostrar "Inicio" */}
         {isGuest ? (
           <>
             <li>
               <Link to="/" className="hover:text-green-700 transition duration-300">Inicio</Link>
-            </li>
-            <li>
-              <Link to="/projects" className="hover:text-green-700 transition duration-300">Proyectos</Link>
             </li>
             <li>
               <button
@@ -69,9 +66,6 @@ export default function Navbar() {
           <>
             <li>
               <Link to="/" className="hover:text-green-700 transition duration-300">Inicio</Link>
-            </li>
-            <li>
-              <Link to="/projects" className="hover:text-green-700 transition duration-300">Proyectos</Link>
             </li>
             <li>
               <Link to="/about" className="hover:text-green-700 transition duration-300">Acerca de</Link>
@@ -110,7 +104,7 @@ export default function Navbar() {
       `}>
         <div className="container mx-auto px-4 py-6">
           <ul className="flex flex-col gap-4">
-            {/* Si es invitado, solo mostrar Inicio, Proyectos y Salir */}
+            {/* Si es invitado, solo mostrar Inicio y Salir */}
             {isGuest ? (
               <>
                 <li>
@@ -120,15 +114,6 @@ export default function Navbar() {
                     onClick={closeMenu}
                   >
                     Inicio
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/projects"
-                    className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
-                    onClick={closeMenu}
-                  >
-                    Proyectos
                   </Link>
                 </li>
                 <li className="mt-4 pt-4 border-t border-gray-200">
@@ -150,15 +135,6 @@ export default function Navbar() {
                     onClick={closeMenu}
                   >
                     Inicio
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/projects"
-                    className="block py-3 px-4 hover:bg-green-50 hover:text-green-700 rounded-lg transition duration-300 font-medium"
-                    onClick={closeMenu}
-                  >
-                    Proyectos
                   </Link>
                 </li>
                 <li>

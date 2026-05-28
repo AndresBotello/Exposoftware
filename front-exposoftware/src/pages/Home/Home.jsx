@@ -75,9 +75,13 @@ export default function Home() {
               </div>
 
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-green-600 leading-tight drop-shadow-sm">
-                XXI Jornada de Investigación{" "}
+                XXII Jornada de Investigación{" "}
                 <span className="bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
-                  EXPOSOFTWARE
+                  Exposoftware
+                </span>
+                <br className="hidden sm:block" />
+                <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-semibold text-gray-700">
+                  "Ciencia, Tecnología e Innovación"
                 </span>
               </h1>
 

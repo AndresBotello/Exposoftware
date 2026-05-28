@@ -203,7 +203,7 @@ export default function LoginPage() {
               <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
                 <span className="text-2xl font-bold">&lt;/&gt;</span>
               </div>
-              <h1 className="text-2xl lg:text-3xl font-bold">Expo-Software 2025</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold">Expo-Software 2026</h1>
             </div>
             <div className="h-1 w-20 bg-white rounded-full"></div>
           </header>
@@ -251,7 +251,7 @@ export default function LoginPage() {
               <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
                 <span className="text-2xl font-bold text-white">&lt;/&gt;</span>
               </div>
-              <h1 className="text-2xl font-bold text-green-800">Expo-Software 2025</h1>
+              <h1 className="text-2xl font-bold text-green-800">Expo-Software 2026</h1>
             </div>
             <div className="h-1 w-20 bg-green-600 rounded-full mx-auto mb-2"></div>
             <p className="text-gray-600 text-sm">Universidad Popular del Cesar</p>

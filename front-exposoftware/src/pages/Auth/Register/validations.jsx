@@ -101,8 +101,8 @@ case "direccionResidencia":
             error = "El número colombiano debe tener 10 dígitos.";
           }
         } else {
-          if (digits.length < 6) {
-            error = "Debe tener mínimo 6 dígitos.";
+          if (digits.length < 8 || digits.length > 10) {
+            error = "Debe tener entre 8 y 10 dígitos.";
           }
         }
       }
