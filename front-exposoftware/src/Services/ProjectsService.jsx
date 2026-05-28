@@ -81,8 +81,6 @@ export const obtenerMisProyectos = async (idEstudiante) => {
  */
 export const obtenerProyectoPorId = async (projectId) => {
   try {
-    console.log(`📊 Obteniendo proyecto ${projectId}...`);
-
     const response = await fetch(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
       method: 'GET',
       credentials: 'include',
@@ -94,8 +92,7 @@ export const obtenerProyectoPorId = async (projectId) => {
     }
 
     const data = await response.json();
-    console.log(`✅ Proyecto ${projectId} obtenido:`, data);
-    
+
     return data.data || data;
   } catch (error) {
     console.error(`❌ Error obteniendo proyecto:`, error);
@@ -108,8 +105,6 @@ export const obtenerProyectoPorId = async (projectId) => {
  */
 export const obtenerIntegrantesProyecto = async (proyectoId) => {
   try {
-    console.log(`📊 Obteniendo integrantes del proyecto ${proyectoId}...`);
-
     const response = await fetch(API_ENDPOINTS.PROYECTO_INTEGRANTES(proyectoId), {
       method: 'GET',
       credentials: 'include',
@@ -117,13 +112,11 @@ export const obtenerIntegrantesProyecto = async (proyectoId) => {
     });
 
     if (!response.ok) {
-      console.warn(`⚠️ Error obteniendo integrantes (${response.status})`);
       return [];
     }
 
     const data = await response.json();
     const integrantes = Array.isArray(data) ? data : (data.data || data.integrantes || []);
-    console.log(`✅ Integrantes obtenidos: ${integrantes.length}`);
 
     return integrantes;
   } catch (error) {
@@ -137,8 +130,6 @@ export const obtenerIntegrantesProyecto = async (proyectoId) => {
  */
 export const crearProyecto = async (projectData) => {
   try {
-    console.log('📤 Creando nuevo proyecto...', projectData);
-
     const response = await fetch(API_ENDPOINTS.PROYECTOS, {
       credentials: 'include',
       method: 'POST',
@@ -152,7 +143,6 @@ export const crearProyecto = async (projectData) => {
     }
 
     const data = await response.json();
-    console.log('✅ Proyecto creado:', data);
 
     return data.data || data;
   } catch (error) {
@@ -166,8 +156,6 @@ export const crearProyecto = async (projectData) => {
  */
 export const actualizarProyecto = async (projectId, projectData) => {
   try {
-    console.log(`📝 Actualizando proyecto ${projectId}...`, projectData);
-
     const response = await fetch(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
       method: 'PUT',
       credentials: 'include',
@@ -181,8 +169,7 @@ export const actualizarProyecto = async (projectId, projectData) => {
     }
 
     const data = await response.json();
-    console.log(`✅ Proyecto ${projectId} actualizado:`, data);
-    
+
     return data.data || data;
   } catch (error) {
     console.error(`❌ Error actualizando proyecto:`, error);
@@ -198,11 +185,6 @@ export const actualizarProyecto = async (projectId, projectData) => {
  */
 export const getTeacherProjects = async (teacherId) => {
   try {
-    console.log(`👨‍🏫 Obteniendo proyectos del docente...`, { teacherId });
-    console.log(`📋 ID del docente a buscar: ${teacherId}`);
-
-    console.log('🔄 GET /api/v1/proyectos (filtrar manualmente por docente)');
-
     const response = await fetch(API_ENDPOINTS.PROYECTOS, {
       method: 'GET',
       credentials: 'include',
@@ -216,21 +198,6 @@ export const getTeacherProjects = async (teacherId) => {
     const data = await response.json();
     const todosProyectos = Array.isArray(data) ? data : (data.data || data.proyectos || []);
 
-    console.log('📋 Total de proyectos recibidos:', todosProyectos.length);
-    console.log('🔍 Filtrando proyectos del docente:', teacherId);
-
-    // Debug: Ver estructura del primer proyecto
-    if (todosProyectos.length > 0) {
-      console.log('🔍 DEBUG - Estructura del primer proyecto completo:', todosProyectos[0]);
-      console.log('🔍 DEBUG - id_docente:', todosProyectos[0].id_docente);
-      console.log('🔍 DEBUG - Tipo de id_docente:', typeof todosProyectos[0].id_docente);
-      if (todosProyectos[0].id_docente?.uid_docente) {
-        console.log('🔍 DEBUG - uid_docente:', todosProyectos[0].id_docente.uid_docente);
-      }
-    }
-
-    console.log('🔍 DEBUG - ID que estamos buscando:', teacherId);
-
     // Filtrar proyectos donde el docente está asignado
     // id_docente puede ser un string o un objeto {uid_docente: string, nombre: string}
     const proyectosDocente = todosProyectos.filter(proyecto => {
@@ -239,30 +206,15 @@ export const getTeacherProjects = async (teacherId) => {
       // Caso 1: id_docente es un objeto con uid_docente
       if (typeof proyecto.id_docente === 'object' && proyecto.id_docente !== null) {
         esDelDocente = proyecto.id_docente.uid_docente === teacherId;
-
-        console.log(`   🔎 Comparando: "${proyecto.id_docente.uid_docente}" === "${teacherId}" -> ${esDelDocente}`);
-
-        if (esDelDocente) {
-          console.log('   ✅ Proyecto del docente (objeto):', proyecto.titulo_proyecto);
-          console.log('      - uid_docente:', proyecto.id_docente.uid_docente);
-          console.log('      - nombre:', proyecto.id_docente.nombre);
-        }
       }
       // Caso 2: id_docente es un string simple
       else if (typeof proyecto.id_docente === 'string') {
         esDelDocente = proyecto.id_docente === teacherId;
-
-        console.log(`   🔎 Comparando string: "${proyecto.id_docente}" === "${teacherId}" -> ${esDelDocente}`);
-
-        if (esDelDocente) {
-          console.log('   ✅ Proyecto del docente (string):', proyecto.titulo_proyecto);
-        }
       }
 
       return esDelDocente;
     });
 
-    console.log('✅ Proyectos del docente filtrados:', proyectosDocente.length);
     return proyectosDocente;
 
   } catch (error) {
@@ -276,8 +228,6 @@ export const getTeacherProjects = async (teacherId) => {
  */
 export const updateProjectStatus = async (projectId, status) => {
   try {
-    console.log(`🔄 Actualizando estado del proyecto ${projectId} a ${status}...`);
-
     const response = await fetch(API_ENDPOINTS.PROYECTO_ESTADO(projectId), {
       method: 'PATCH',
       credentials: 'include',
@@ -291,8 +241,7 @@ export const updateProjectStatus = async (projectId, status) => {
     }
 
     const data = await response.json();
-    console.log(`✅ Estado del proyecto ${projectId} actualizado:`, data);
-    
+
     return data.data || data;
   } catch (error) {
     console.error(`❌ Error actualizando estado del proyecto:`, error);
@@ -305,8 +254,6 @@ export const updateProjectStatus = async (projectId, status) => {
  */
 export const obtenerMiembrosProyecto = async (projectId) => {
   try {
-    console.log(`👥 Obteniendo miembros del proyecto ${projectId}...`);
-
     const response = await fetch(API_ENDPOINTS.PROYECTO_INTEGRANTES(projectId), {
       method: 'GET',
       credentials: 'include',
@@ -318,8 +265,7 @@ export const obtenerMiembrosProyecto = async (projectId) => {
     }
 
     const data = await response.json();
-    console.log('✅ Miembros obtenidos:', data);
-    
+
     return Array.isArray(data) ? data : (data.data || data.miembros || []);
   } catch (error) {
     console.error('❌ Error obteniendo miembros:', error);
@@ -332,8 +278,6 @@ export const obtenerMiembrosProyecto = async (projectId) => {
  */
 export const eliminarProyecto = async (projectId) => {
   try {
-    console.log(`🗑️ Eliminando proyecto ${projectId}...`);
-
     const response = await fetch(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
       method: 'DELETE',
       credentials: 'include',
@@ -345,7 +289,6 @@ export const eliminarProyecto = async (projectId) => {
       throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
     }
 
-    console.log(`✅ Proyecto ${projectId} eliminado`);
     return true;
   } catch (error) {
     console.error(`❌ Error eliminando proyecto:`, error);
@@ -362,8 +305,6 @@ export const eliminarProyecto = async (projectId) => {
  */
 export const generarQRCalificacion = async (projectId, urlFront = null) => {
   try {
-    console.log(`📱 Generando QR de calificación para proyecto ${projectId}...`);
-
     // Si no se proporciona urlFront, usar la actual
     const baseUrl = urlFront || window.location.origin;
 
@@ -382,7 +323,6 @@ export const generarQRCalificacion = async (projectId, urlFront = null) => {
     }
 
     const data = await response.json();
-    console.log(`✅ QR de calificación generado para proyecto ${projectId}:`, data);
 
     return data.data || data;
   } catch (error) {
