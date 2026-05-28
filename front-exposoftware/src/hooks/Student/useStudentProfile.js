@@ -54,6 +54,17 @@ export function useStudentProfile(user, updateUser) {
       if (resultado.success && resultado.data) {
         const perfilProcesado = StudentProfileService.procesarDatosPerfil(resultado.data);
         updateUser(perfilProcesado);
+        // Refrescar el estado local del formulario para que la UI muestre
+        // los valores recien guardados (antes solo se actualizaba el contexto
+        // de auth pero profileData quedaba con los valores previos a Guardar).
+        setProfileData(prev => ({
+          ...prev,
+          p_nombre: perfilProcesado.primer_nombre || "",
+          s_nombre: perfilProcesado.segundo_nombre || "",
+          p_apellido: perfilProcesado.primer_apellido || "",
+          s_apellido: perfilProcesado.segundo_apellido || "",
+          telefono: perfilProcesado.telefono || "",
+        }));
       }
       return { success: true };
     } catch (error) {
