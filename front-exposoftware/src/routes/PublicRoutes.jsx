@@ -8,7 +8,7 @@ import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import VerifyEmail from "../pages/Auth/VerifyEmail";
 import AsistenciaForm from "../pages/public/AttendanceForm.jsx";
-import InvitedPage from "../pages/Public/InvitedPage";
+import InvitedPage from "../pages/public/InvitedPage";
 import ProjectCalificacion from "../pages/ProjectCalificacion";
 
 /**

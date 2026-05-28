@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Instalar dependencias usando solo manifests para aprovechar cache
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN rm -f package-lock.json && npm install --no-audit --no-fund
 
 # Copiar el resto del código y construir
 COPY . .
