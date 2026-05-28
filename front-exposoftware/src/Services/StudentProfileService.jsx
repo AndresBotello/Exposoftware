@@ -60,26 +60,33 @@ export const obtenerMiPerfil = async () => {
 export const actualizarMiPerfil = async (datosActualizados) => {
 
   try {
-    const payload = {};
-
-    // Solo incluir campos que UsuarioPerfilUpdate permite (backend):
-    // - s_nombre, s_apellido, telefono
-    // - id_tipo_via, numero_via, numero_cruce, numero_placa, complemento
-    // - codigo_municipio_residencia
+    // El backend espera StudentUpdate ANIDADO: { perfil: {...}, usuario: {...} }.
+    // Antes mandabamos los campos flat (al nivel raiz) y Pydantic los ignoraba
+    // en silencio devolviendo 200 OK con el estado actual de BD. Ahora los
+    // agrupamos correctamente en `usuario` para que se apliquen.
     //
-    // p_nombre y p_apellido NO se mandan porque el backend los ignora
-    // silenciosamente (solo admin puede modificarlos via UsuarioAdminUpdate).
-    // s_nombre y s_apellido vacios se mandan como null para que el backend
-    // los borre en BD (es un campo opcional).
+    // Campos en `usuario` (UsuarioPerfilUpdate): s_nombre, s_apellido, telefono,
+    //   id_tipo_via, numero_via, numero_cruce, numero_placa, complemento,
+    //   codigo_municipio_residencia.
+    // p_nombre/p_apellido NO van porque solo admin puede cambiarlos.
+    const usuario = {};
     if (datosActualizados.s_nombre !== undefined) {
-      payload.s_nombre = datosActualizados.s_nombre?.trim() || null;
+      usuario.s_nombre = datosActualizados.s_nombre?.trim() || null;
     }
     if (datosActualizados.s_apellido !== undefined) {
-      payload.s_apellido = datosActualizados.s_apellido?.trim() || null;
+      usuario.s_apellido = datosActualizados.s_apellido?.trim() || null;
     }
     if (datosActualizados.telefono !== undefined) {
-      payload.telefono = datosActualizados.telefono || '';
+      usuario.telefono = datosActualizados.telefono || '';
     }
+
+    // Si en el futuro se editan campos del perfil estudiante (semestre, etc.)
+    // se agrega aca. Por ahora siempre va vacio.
+    const perfil = {};
+
+    const payload = {};
+    if (Object.keys(usuario).length) payload.usuario = usuario;
+    if (Object.keys(perfil).length) payload.perfil = perfil;
 
     console.log('📦 Payload final a enviar:', JSON.stringify(payload, null, 2));
 
