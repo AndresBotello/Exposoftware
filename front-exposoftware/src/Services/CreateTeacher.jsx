@@ -5,20 +5,19 @@ export const TIPOS_DOCUMENTO = ["CC", "TI", "CE", "PEP", "Pasaporte"];
 
 export const GENEROS = ["Hombre", "Mujer", "Prefiero no decirlo"];
 
+// IMPORTANTE: estos labels DEBEN coincidir 1:1 con la tabla
+// `identidades_sexuales` del backend (scripts/init_catalogs.py). Si se agrega
+// uno nuevo, agregalo TAMBIÉN allá y en IDENTIDAD_MAP abajo con el mismo ID.
 export const IDENTIDADES_SEXUALES = [
   "Heterosexual",
   "Homosexual",
   "Bisexual",
-  "Pansexual",
-  "Asexual",
-  "Demisexual",
-  "Sapiosexual",
+  "Transgénero",
+  "Intersexual",
   "Queer",
-  "Graysexual",
-  "Omnisexual",
-  "Androsexual",
-  "Gynesexual",
-  "Polysexual"
+  "Asexual",
+  "Pansexual",
+  "Prefiero no decirlo"
 ];
 
 export const CATEGORIAS_DOCENTE = ["Interno", "Invitado", "Externo"];
@@ -47,20 +46,19 @@ const GENERO_MAP = {
   "Prefiero no decirlo": 3
 };
 
+// Mapeo label -> id_identidad (debe coincidir EXACTAMENTE con la tabla
+// identidades_sexuales del backend). Antes los IDs estaban desfasados y
+// guardaban valores incorrectos (Pansexual=4 escribia Transgenero, etc).
 const IDENTIDAD_MAP = {
   "Heterosexual": 1,
   "Homosexual": 2,
   "Bisexual": 3,
-  "Pansexual": 4,
-  "Asexual": 5,
-  "Demisexual": 6,
-  "Sapiosexual": 7,
-  "Queer": 8,
-  "Graysexual": 9,
-  "Omnisexual": 10,
-  "Androsexual": 11,
-  "Gynesexual": 12,
-  "Polysexual": 13
+  "Transgénero": 4,
+  "Intersexual": 5,
+  "Queer": 6,
+  "Asexual": 7,
+  "Pansexual": 8,
+  "Prefiero no decirlo": 9
 };
 
 const TIPO_VIA_MAP = {
