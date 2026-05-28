@@ -28,8 +28,9 @@ const CredentialsSection = ({
           <input
             name="contraseña"
             type={showPassword ? "text" : "password"}
-            maxLength="12"
-            placeholder="Mínimo 8 caracteres"
+            maxLength="128"
+            minLength="8"
+            placeholder="Entre 8 y 128 caracteres"
             value={formData.contraseña}
             onChange={handleChange}
             disabled={cargando}
@@ -51,7 +52,7 @@ const CredentialsSection = ({
           </p>
         )}
         <p className="text-xs text-gray-500 mt-1">
-          Debe tener al menos 8 caracteres
+          Entre 8 y 128 caracteres, con mayúscula, minúscula, número y carácter especial (@$!%?&#).
         </p>
       </div>
 
@@ -63,7 +64,8 @@ const CredentialsSection = ({
           <input
             name="confirmarcontraseña"
             type={showConfirmPassword ? "text" : "password"}
-            maxLength="12"
+            maxLength="128"
+            minLength="8"
             placeholder="Repite tu contraseña"
             value={formData.confirmarcontraseña}
             onChange={handleChange}

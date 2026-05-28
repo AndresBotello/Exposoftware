@@ -152,9 +152,13 @@ case "direccionResidencia":
 
     case "contraseña":
       if (!isEmpty) {
-        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&#])[A-Za-z\d@$!%?&#]{8,}$/.test(val)) {
+        // Alineado con backend: PASSWORD_MIN_LENGTH=8, PASSWORD_MAX_LENGTH=128.
+        // Mantiene regla anti-pwd-debiles (mayuscula + minuscula + digito + especial).
+        if (val.length > 128) {
+          error = "Máximo 128 caracteres.";
+        } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&#])[A-Za-z\d@$!%?&#]{8,128}$/.test(val)) {
           error =
-            "Debe tener 8+ caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&#).";
+            "Debe tener entre 8 y 128 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%?&#).";
         }
       }
       break;
