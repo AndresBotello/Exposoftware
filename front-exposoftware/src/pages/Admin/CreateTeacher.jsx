@@ -40,7 +40,10 @@ export default function CreateTeacher() {
       setLoadingProgramas(true);
       try {
         // Intentar cargar todos los programas
+        // credentials: 'include' es necesario para que el navegador envie la cookie
+        // de auth cross-site (frontend y backend estan en subdominios distintos).
         const response = await fetch(API_ENDPOINTS.ADMIN_FACULTADES, {
+          credentials: 'include',
           headers: AuthService.getAuthHeaders()
         });
 
