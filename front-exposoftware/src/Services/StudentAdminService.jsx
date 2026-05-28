@@ -221,18 +221,29 @@ export const activarEstudiante = async (studentId) => {
 
 /**
  * Desactivar un estudiante (cambiar estado a inactivo)
- * @param {string} studentId - ID del estudiante
+ * El backend exige una `razon` (Body embed=True). Si el llamador no la pasa,
+ * se envía un placeholder genérico para que el request no falle con 422.
+ * @param {string} studentId - ID UUID del estudiante
+ * @param {string} [razon] - Motivo de la desactivación
  * @returns {Promise<Object>} Resultado de la operación
  */
-export const desactivarEstudiante = async (studentId) => {
+export const desactivarEstudiante = async (studentId, razon = "Desactivado por administrador") => {
   try {
+    // Guard: el backend exige UUID en el path. Si el caller pasa undefined o un
+    // valor con prefijo extraño (urn:uuid:..., etc.) FastAPI tira 422 con un
+    // mensaje crítico. Mejor fallar acá con un error legible.
+    const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!studentId || !UUID_RE.test(String(studentId))) {
+      console.error('[desactivarEstudiante] studentId inválido (no es UUID):', studentId);
+      throw new Error(`ID de estudiante inválido: "${studentId}". Esperado un UUID.`);
+    }
     const url = API_ENDPOINTS.ADMIN_ESTUDIANTE_DESACTIVAR(studentId);
-    
-    
+
     const response = await fetch(url, {
       credentials: 'include',
       method: 'PATCH',
-      headers: AuthService.getAuthHeaders()
+      headers: AuthService.getAuthHeaders(),
+      body: JSON.stringify({ razon })
     });
 
     const result = await procesarRespuesta(response);
