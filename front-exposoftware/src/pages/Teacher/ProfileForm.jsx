@@ -36,6 +36,20 @@ export default function ProfileForm({ profileData }) {
             />
           </div>
 
+          {/* Segundo Nombre */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Segundo Nombre
+            </label>
+            <input
+              type="text"
+              value={profileData.s_nombre || ""}
+              placeholder={profileData.s_nombre ? "" : "—"}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+              disabled
+            />
+          </div>
+
           {/* Primer Apellido */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -44,6 +58,20 @@ export default function ProfileForm({ profileData }) {
             <input
               type="text"
               value={profileData.p_apellido || ""}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+              disabled
+            />
+          </div>
+
+          {/* Segundo Apellido */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Segundo Apellido
+            </label>
+            <input
+              type="text"
+              value={profileData.s_apellido || ""}
+              placeholder={profileData.s_apellido ? "" : "—"}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
               disabled
             />

@@ -399,6 +399,50 @@ export const eliminarDocente = async (idDocente) => {
 // ==================== FUNCIONES AUXILIARES ====================
 
 /**
+ * Activar un docente desactivado (endpoint POST /admin/profesores/{id}/activar).
+ * Usado tanto cuando el admin reactiva manualmente como cuando el docente
+ * verifica su correo y queda pendiente de aprobacion.
+ */
+export const activarDocente = async (idDocente) => {
+  try {
+    const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTE_ACTIVAR(idDocente), {
+      credentials: 'include',
+      method: 'POST',
+      headers: AuthService.getAuthHeaders(),
+    });
+    if (response.ok) return { success: true };
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || errorData.detail || `Error al activar docente (${response.status})`);
+  } catch (error) {
+    if (error.message) throw error;
+    throw new Error('Error de conexion al activar el docente.');
+  }
+};
+
+/**
+ * Desactivar (soft delete) un docente. Por ahora reusa `eliminarDocente`
+ * (DELETE /admin/profesores/{id}) porque el backend usa el mismo endpoint.
+ * Lo expongo con el nombre `desactivarDocente` para que el UI distinga
+ * semanticamente entre "activar" y "desactivar".
+ */
+export const desactivarDocente = async (idDocente, razon = 'Desactivado por administrador') => {
+  try {
+    const url = `${API_ENDPOINTS.ADMIN_DOCENTES}/${idDocente}?reason=${encodeURIComponent(razon)}`;
+    const response = await fetch(url, {
+      credentials: 'include',
+      method: 'DELETE',
+      headers: AuthService.getAuthHeaders(),
+    });
+    if (response.ok) return { success: true };
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || errorData.detail || `Error al desactivar docente (${response.status})`);
+  } catch (error) {
+    if (error.message) throw error;
+    throw new Error('Error de conexion al desactivar el docente.');
+  }
+};
+
+/**
  * Filtrar docentes por estado (activo / inactivo / todos).
  * Pareja del filtro analogo en estudiantes para consistencia UX.
  */

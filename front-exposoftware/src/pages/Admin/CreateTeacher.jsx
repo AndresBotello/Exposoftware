@@ -178,6 +178,7 @@ export default function CreateTeacher() {
     handleSaveEdit,
     handleCancelEdit,
     handleDelete,
+    handleToggleActivo,
     handleCancel,
   } = useTeacherManagement();
   
@@ -400,6 +401,7 @@ export default function CreateTeacher() {
                 setFiltroEstado={setFiltroEstado}
                 handleEdit={handleEdit}
                 handleDelete={handleDelete}
+                handleToggleActivo={handleToggleActivo}
               />
             )}
           </main>

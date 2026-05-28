@@ -6,6 +6,8 @@ import {
   crearDocente,
   actualizarDocente,
   eliminarDocente,
+  activarDocente,
+  desactivarDocente,
   filtrarDocentes,
   filtrarDocentesPorEstado,
   formatearDatosDocente,
@@ -387,7 +389,7 @@ export function useTeacherManagement() {
   // Eliminar profesor usando el servicio
   const handleDelete = async (id) => {
     const profesorAEliminar = profesores.find(p => (p.docente?.id_docente || p.id) === id);
-    
+
     // El backend retorna 'nombre_completo' en el objeto usuario
     const nombreCompleto = profesorAEliminar?.usuario?.nombre_completo || profesorAEliminar?.usuario?.nombres || profesorAEliminar?.nombres || "profesor";
 
@@ -404,6 +406,32 @@ export function useTeacherManagement() {
       finally {
         setLoading(false);
       }
+    }
+  };
+
+  // Cambiar estado activo/inactivo desde la fila de la tabla. Esto evita
+  // forzar al admin a abrir Editar para reactivar a alguien que verifico
+  // su correo (o para desactivar al instante a alguien dado de baja).
+  const handleToggleActivo = async (profesor) => {
+    const id = profesor?.docente?.id_docente || profesor?.id;
+    if (!id) return;
+    const nombre = profesor?.usuario?.nombre_completo || profesor?.usuario?.p_nombre || 'docente';
+    const estaActivo = profesor?.usuario?.activo ?? profesor?.activo ?? false;
+    const verbo = estaActivo ? 'desactivar' : 'activar';
+    if (!window.confirm(`¿Está seguro de que desea ${verbo} al profesor "${nombre}"?`)) return;
+    try {
+      setLoading(true);
+      setServerError('');
+      if (estaActivo) {
+        await desactivarDocente(id);
+      } else {
+        await activarDocente(id);
+      }
+      await cargarProfesores();
+    } catch (error) {
+      setServerError(error.message || `Error al ${verbo} docente`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -507,6 +535,7 @@ export function useTeacherManagement() {
     handleSaveEdit,
     handleCancelEdit,
     handleDelete,
+    handleToggleActivo,
     handleCancel,
     // UI states
     loading,

@@ -8,6 +8,7 @@ export default function TeacherList({
   setFiltroEstado,
   handleEdit,
   handleDelete,
+  handleToggleActivo,
 }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-8">
@@ -129,22 +130,40 @@ export default function TeacherList({
                     })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleEdit(profesor)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                        title="Editar"
-                      >
-                        <i className="pi pi-pencil"></i>
-                      </button>
-                      <button
-                        onClick={() => handleDelete(profesor.docente?.id_docente || profesor.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                        title="Eliminar"
-                      >
-                        <i className="pi pi-trash"></i>
-                      </button>
-                    </div>
+                    {(() => {
+                      const activo = profesor?.usuario?.activo ?? profesor?.activo ?? false;
+                      return (
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleEdit(profesor)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Editar"
+                          >
+                            <i className="pi pi-pencil"></i>
+                          </button>
+                          {handleToggleActivo && (
+                            <button
+                              onClick={() => handleToggleActivo(profesor)}
+                              className={`p-2 rounded-lg transition ${
+                                activo
+                                  ? 'text-yellow-600 hover:bg-yellow-50'
+                                  : 'text-green-600 hover:bg-green-50'
+                              }`}
+                              title={activo ? 'Desactivar' : 'Activar'}
+                            >
+                              <i className={`pi ${activo ? 'pi-lock' : 'pi-check-circle'}`}></i>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(profesor.docente?.id_docente || profesor.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Eliminar"
+                          >
+                            <i className="pi pi-trash"></i>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))
