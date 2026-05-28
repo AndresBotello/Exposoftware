@@ -5,7 +5,9 @@ export function useStudentProfile(user, updateUser) {
   const [profileData, setProfileData] = useState({
     identificacion: "",
     p_nombre: "",
+    s_nombre: "",
     p_apellido: "",
+    s_apellido: "",
     correo: "",
     telefono: "",
     codigoPrograma: "",
@@ -25,7 +27,9 @@ export function useStudentProfile(user, updateUser) {
           setProfileData({
             identificacion: perfilProcesado.identificacion || "",
             p_nombre: perfilProcesado.primer_nombre || "",
+            s_nombre: perfilProcesado.segundo_nombre || "",
             p_apellido: perfilProcesado.primer_apellido || "",
+            s_apellido: perfilProcesado.segundo_apellido || "",
             correo: perfilProcesado.correo || "",
             telefono: perfilProcesado.telefono || "",
             codigoPrograma: perfilProcesado.codigo_programa || "",

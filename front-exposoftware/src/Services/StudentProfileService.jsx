@@ -62,12 +62,20 @@ export const actualizarMiPerfil = async (datosActualizados) => {
   try {
     const payload = {};
 
-    // Solo incluir datos que pueden actualizarse
-    if (datosActualizados.p_nombre !== undefined) {
-      payload.p_nombre = datosActualizados.p_nombre || '';
+    // Solo incluir campos que UsuarioPerfilUpdate permite (backend):
+    // - s_nombre, s_apellido, telefono
+    // - id_tipo_via, numero_via, numero_cruce, numero_placa, complemento
+    // - codigo_municipio_residencia
+    //
+    // p_nombre y p_apellido NO se mandan porque el backend los ignora
+    // silenciosamente (solo admin puede modificarlos via UsuarioAdminUpdate).
+    // s_nombre y s_apellido vacios se mandan como null para que el backend
+    // los borre en BD (es un campo opcional).
+    if (datosActualizados.s_nombre !== undefined) {
+      payload.s_nombre = datosActualizados.s_nombre?.trim() || null;
     }
-    if (datosActualizados.p_apellido !== undefined) {
-      payload.p_apellido = datosActualizados.p_apellido || '';
+    if (datosActualizados.s_apellido !== undefined) {
+      payload.s_apellido = datosActualizados.s_apellido?.trim() || null;
     }
     if (datosActualizados.telefono !== undefined) {
       payload.telefono = datosActualizados.telefono || '';
@@ -142,15 +150,19 @@ export const procesarDatosPerfil = (perfil) => {
   const estudiante = perfil.estudiante || {};
 
   const primer_nombre = usuario.p_nombre || '';
+  const segundo_nombre = usuario.s_nombre || '';
   const primer_apellido = usuario.p_apellido || '';
+  const segundo_apellido = usuario.s_apellido || '';
 
   const datosProcessados = {
     // Datos de usuario
     id_usuario: usuario.id_usuario || '',
     identificacion: usuario.identificacion || '',
     primer_nombre: primer_nombre,
+    segundo_nombre: segundo_nombre,
     primer_apellido: primer_apellido,
-    nombre_completo: `${primer_nombre} ${primer_apellido}`.trim(),
+    segundo_apellido: segundo_apellido,
+    nombre_completo: [primer_nombre, segundo_nombre, primer_apellido, segundo_apellido].filter(Boolean).join(' '),
     correo: usuario.correo || '',
     telefono: usuario.telefono || '',
     rol: usuario.rol || 'Estudiante',

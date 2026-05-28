@@ -28,14 +28,12 @@ export default function StudentProfileForm({
             />
           </div>
 
-          {/* Nombre — solo lectura. El backend (UsuarioPerfilUpdate) NO permite
+          {/* Primer nombre — solo lectura. El backend (UsuarioPerfilUpdate) NO permite
               que el estudiante modifique p_nombre desde mi-perfil. Solo un
-              admin puede corregirlo desde el panel. Mostrar el input deshabilitado
-              evitar dar la falsa sensación de que se guardo cuando en realidad
-              el backend lo ignora silenciosamente. */}
+              admin puede corregirlo desde el panel. */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre <span className="text-gray-400 text-xs">(no editable — contactá admin para cambios)</span>
+              Primer Nombre <span className="text-gray-400 text-xs">(no editable — contactá admin)</span>
             </label>
             <input
               type="text"
@@ -47,10 +45,27 @@ export default function StudentProfileForm({
             />
           </div>
 
-          {/* Apellido — mismo motivo que Nombre arriba. */}
+          {/* Segundo nombre — SI editable. UsuarioPerfilUpdate lo acepta. */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Apellido <span className="text-gray-400 text-xs">(no editable — contactá admin para cambios)</span>
+              Segundo Nombre <span className="text-gray-400 text-xs">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              value={profileData.s_nombre || ''}
+              onChange={(e) => handleInputChange('s_nombre', e.target.value)}
+              placeholder="Dejar vacío si no aplica"
+              className={`w-full border border-gray-300 rounded-lg px-4 py-2 ${
+                isEditing ? 'focus:outline-none focus:ring-2 focus:ring-teal-500' : 'bg-gray-50'
+              }`}
+              disabled={!isEditing || loading}
+            />
+          </div>
+
+          {/* Primer apellido — solo lectura, mismo motivo que primer nombre. */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Primer Apellido <span className="text-gray-400 text-xs">(no editable — contactá admin)</span>
             </label>
             <input
               type="text"
@@ -59,6 +74,23 @@ export default function StudentProfileForm({
               disabled
               className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
               title="Este dato solo puede cambiarlo un administrador"
+            />
+          </div>
+
+          {/* Segundo apellido — SI editable. */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Segundo Apellido <span className="text-gray-400 text-xs">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              value={profileData.s_apellido || ''}
+              onChange={(e) => handleInputChange('s_apellido', e.target.value)}
+              placeholder="Dejar vacío si no aplica"
+              className={`w-full border border-gray-300 rounded-lg px-4 py-2 ${
+                isEditing ? 'focus:outline-none focus:ring-2 focus:ring-teal-500' : 'bg-gray-50'
+              }`}
+              disabled={!isEditing || loading}
             />
           </div>
 
