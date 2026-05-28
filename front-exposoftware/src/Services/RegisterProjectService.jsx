@@ -420,7 +420,7 @@ class RegisterProjectService {
    */
   static async obtenerMaterias() {
     try {
-      const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS, {
+      const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS_LIST, {
         method: 'GET',
         headers: getAuthHeaders(),
       });
@@ -473,7 +473,7 @@ class RegisterProjectService {
 
       // INTENTO 2: Endpoint admin de materias directamente
       if (!response.ok) {
-        response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS, {
+        response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS_LIST, {
           method: 'GET',
           headers: getAuthHeaders(),
         });

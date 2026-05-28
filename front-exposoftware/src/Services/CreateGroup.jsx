@@ -328,14 +328,16 @@ export const filtrarGrupos = (grupos, searchTerm, profesores) => {
 // ==================== MATERIAS ====================
 
 /**
- * Obtener todas las materias
- * @returns {Promise<Array>} Lista de materias
+ * Obtener todas las materias (catalogo completo, sin paginar).
+ *
+ * Usa /admin/materias/list — el endpoint base /admin/materias pagina a 20
+ * y rompia los selectores que necesitan ver TODAS las materias.
  */
 export const obtenerMaterias = async () => {
   try {
     const headers = AuthService.getAuthHeaders();
 
-    const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS, {
+    const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS_LIST, {
       credentials: 'include',
       method: 'GET',
       headers: headers
