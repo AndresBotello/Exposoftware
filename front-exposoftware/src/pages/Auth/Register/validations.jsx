@@ -117,17 +117,20 @@ case "direccionResidencia":
           break;
         }
 
+        // Rango alineado con el backend (Limits.IDENTIFICATION_MIN=6,
+        // IDENTIFICATION_MAX=16). Cédulas colombianas viejas tienen 8 dígitos,
+        // las nuevas 10 — por eso CC/TI van de 6 a 10.
         if (tipo === "CC" || tipo === "TI") {
-          if (val.length < 10) {
-            error = "Debe tener exactamente 10 dígitos.";
+          if (val.length < 6) {
+            error = "Debe tener mínimo 6 dígitos.";
           } else if (val.length > 10) {
-            error = "Debe tener exactamente 10 dígitos.";
+            error = "Máximo 10 dígitos.";
           }
         } else if (tipo === "CE" || tipo === "PTE" || tipo === "PAS") {
           if (val.length < 6) {
             error = "Debe tener mínimo 6 caracteres.";
-          } else if (val.length > 15) {
-            error = "Máximo 15 caracteres.";
+          } else if (val.length > 16) {
+            error = "Máximo 16 caracteres.";
           }
         }
       }
