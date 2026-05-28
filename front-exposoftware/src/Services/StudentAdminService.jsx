@@ -56,8 +56,10 @@ const procesarRespuesta = async (response) => {
  */
 export const obtenerEstudiantes = async (params = {}) => {
   try {
-    // El endpoint no acepta parámetros, devuelve todos los estudiantes
-    const url = API_ENDPOINTS.ADMIN_ESTUDIANTES;
+    // Usa /admin/estudiantes/list — el endpoint base /admin/estudiantes
+    // pagina a 20 ítems y rompía la UI del listado completo cuando hay
+    // más estudiantes que page size (mismo patrón que materias y grupos).
+    const url = API_ENDPOINTS.ADMIN_ESTUDIANTES_LIST;
     const headers = AuthService.getAuthHeaders();
 
     const response = await fetch(url, {

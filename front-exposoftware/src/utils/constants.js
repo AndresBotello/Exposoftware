@@ -83,6 +83,7 @@ export const API_ENDPOINTS = {
   
   // Estudiantes (Admin)
   ADMIN_ESTUDIANTES: `${API_BASE_URL}/api/v1/admin/estudiantes`,
+  ADMIN_ESTUDIANTES_LIST: `${API_BASE_URL}/api/v1/admin/estudiantes/list`,
   ADMIN_ESTUDIANTE_BY_ID: (estudianteId) => `${API_BASE_URL}/api/v1/admin/estudiantes/${estudianteId}`,
   ADMIN_ESTUDIANTE_ACTIVAR: (estudianteId) => `${API_BASE_URL}/api/v1/admin/estudiantes/${estudianteId}/activar`,
   ADMIN_ESTUDIANTE_DESACTIVAR: (estudianteId) => `${API_BASE_URL}/api/v1/admin/estudiantes/${estudianteId}/desactivar`,
