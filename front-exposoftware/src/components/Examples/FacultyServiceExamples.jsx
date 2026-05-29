@@ -124,10 +124,10 @@ export function EditarFacultad({ idFacultad, nombreActual, onGuardado }) {
       await FacultyService.actualizarFacultad(idFacultad, {
         nombre_facultad: nombre
       });
-      alert("✅ Facultad actualizada");
+      alert("Facultad actualizada");
       onGuardado?.();
     } catch (error) {
-      alert("❌ Error: " + error.message);
+      alert("Error: " + error.message);
     } finally {
       setCargando(false);
     }
@@ -169,10 +169,10 @@ export function EliminarFacultad({ idFacultad, nombreFacultad, onEliminado }) {
     setCargando(true);
     try {
       await FacultyService.eliminarFacultad(idFacultad);
-      alert("✅ Facultad eliminada");
+      alert("Facultad eliminada");
       onEliminado?.();
     } catch (error) {
-      alert("❌ Error: " + error.message);
+      alert("Error: " + error.message);
     } finally {
       setCargando(false);
     }
@@ -227,11 +227,11 @@ export function FormularioConValidacion() {
       const datosFormateados = FacultyService.formatearDatosFacultad(formData);
       await FacultyService.crearFacultad(datosFormateados);
       
-      alert("✅ Facultad creada");
+      alert("Facultad creada");
       setFormData({ idFacultad: "", nombreFacultad: "" });
       setErrores({});
     } catch (error) {
-      alert("❌ Error: " + error.message);
+      alert("Error: " + error.message);
     } finally {
       setCargando(false);
     }
@@ -305,12 +305,12 @@ export function DashboardFacultades() {
         id_facultad: formulario.idFacultad.toUpperCase(),
         nombre_facultad: formulario.nombreFacultad
       });
-      alert("✅ Facultad creada");
+      alert("Facultad creada");
       setFormulario({ idFacultad: "", nombreFacultad: "" });
       setTab("lista");
       await cargarFacultades();
     } catch (error) {
-      alert("❌ Error: " + error.message);
+      alert("Error: " + error.message);
     } finally {
       setCargando(false);
     }
@@ -322,10 +322,10 @@ export function DashboardFacultades() {
     setCargando(true);
     try {
       await FacultyService.eliminarFacultad(id);
-      alert("✅ Eliminada");
+      alert("Facultad eliminada");
       await cargarFacultades();
     } catch (error) {
-      alert("❌ Error: " + error.message);
+      alert("Error: " + error.message);
     } finally {
       setCargando(false);
     }
@@ -340,13 +340,13 @@ export function DashboardFacultades() {
           onClick={() => setTab("lista")} 
           style={{ fontWeight: tab === "lista" ? "bold" : "normal" }}
         >
-          📋 Lista
+          Lista
         </button>
         <button 
           onClick={() => setTab("crear")}
           style={{ fontWeight: tab === "crear" ? "bold" : "normal", marginLeft: "10px" }}
         >
-          ➕ Crear
+          Crear
         </button>
       </div>
 

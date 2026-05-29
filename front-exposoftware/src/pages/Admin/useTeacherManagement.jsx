@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import colombiaData from "../../data/colombia.json";
 import countryList from 'react-select-country-list';
 import {
   obtenerDocentes,
@@ -16,10 +15,9 @@ import {
   IDENTIDADES_SEXUALES,
   CATEGORIAS_DOCENTE,
   DEPARTAMENTOS_COLOMBIA
-} from "../../Services/CreateTeacher";
+} from "../../Services/CreateTeacher"; // 💡 Verifica que las mayúsculas coincidan con tu sistema de archivos
 import { API_ENDPOINTS } from "../../utils/constants";
 
-// Re-exportar constantes para mantener compatibilidad
 export { TIPOS_DOCUMENTO, GENEROS, IDENTIDADES_SEXUALES, CATEGORIAS_DOCENTE, DEPARTAMENTOS_COLOMBIA };
 
 export const PAISES = [
@@ -27,17 +25,12 @@ export const PAISES = [
   "Venezuela", "Estados Unidos", "España", "Otro"
 ];
 
-/**
- * Custom Hook para gestionar la lógica de creación y manejo de profesores
- */
 export function useTeacherManagement() {
-  // Opciones de países/nacionalidades
   const opcionesPaises = useMemo(() => countryList().getData(), []);
 
-  // Estados para el formulario - Datos del Usuario (heredados)
+  // Formulario - Datos del Usuario (heredados)
   const [tipoDocumento, setTipoDocumento] = useState("");
   const [identificacion, setIdentificacion] = useState("");
-  // Nombres y apellidos separados según tabla DOCENTE
   const [primerNombre, setPrimerNombre] = useState("");
   const [segundoNombre, setSegundoNombre] = useState("");
   const [primerApellido, setPrimerApellido] = useState("");
@@ -45,8 +38,8 @@ export function useTeacherManagement() {
   const [genero, setGenero] = useState("");
   const [identidadSexual, setIdentidadSexual] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
-  const [nacionalidad, setNacionalidad] = useState("CO"); // Código ISO de Colombia
-  const [pais, setPais] = useState("CO"); // Código ISO de Colombia (pais_residencia en backend)
+  const [nacionalidad, setNacionalidad] = useState("CO"); 
+  const [pais, setPais] = useState("CO"); 
   const [departamento, setDepartamento] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [ciudadResidencia, setCiudadResidencia] = useState("");
@@ -55,27 +48,40 @@ export function useTeacherManagement() {
   const [correo, setCorreo] = useState("");
   const [contraseña, setContraseña] = useState("");
 
-  // Estados para el formulario - Datos del Docente (propios)
+  // Formulario - Datos del Docente (propios)
   const [categoriaDocente, setCategoriaDocente] = useState("");
   const [codigoPrograma, setCodigoPrograma] = useState("");
   const [activo, setActivo] = useState(true);
 
-  // Estados para componentes de dirección (tipo_via, numero_via, etc.)
+  // Dirección componentes
   const [tipoVia, setTipoVia] = useState("");
   const [numeroVia, setNumeroVia] = useState("");
   const [numeroCruce, setNumeroCruce] = useState("");
   const [numeroPlaca, setNumeroPlaca] = useState("");
   const [complemento, setComplemento] = useState("");
 
-  // Estados para manejar municipios dinámicos
   const [municipios, setMunicipios] = useState([]);
-
-  // Catálogos cargados desde la API
   const [paises, setPaises] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
   const [municipiosApi, setMunicipiosApi] = useState([]);
 
-  // Cargar catálogos de países y departamentos al montar
+  // ====== ESTADOS PARA CONTROL DE PAGINACIÓN LOCAL ======
+  const [currentPageBackend, setCurrentPageBackend] = useState(1);
+  const [limitBackend, setLimitBackend] = useState(5); // 👈 Añadido para controlar el selector de filas
+
+  // Lista de profesores y UI States
+  const [profesores, setProfesores] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+
+  // Cargar catálogos iniciales
   useEffect(() => {
     const loadCatalogs = async () => {
       try {
@@ -83,107 +89,62 @@ export function useTeacherManagement() {
           fetch(API_ENDPOINTS.CATALOGOS_PAISES),
           fetch(API_ENDPOINTS.CATALOGOS_DEPARTAMENTOS),
         ]);
-
         if (paisesRes.ok) {
           const data = await paisesRes.json();
-          const arr = Array.isArray(data) ? data : (data.data || data.paises || []);
-          setPaises(arr);
+          setPaises(Array.isArray(data) ? data : (data.data || data.paises || []));
         }
-
         if (deptoRes.ok) {
           const data = await deptoRes.json();
           setDepartamentos(Array.isArray(data) ? data : (data.data || data.departamentos || []));
         }
       } catch (err) {
+        console.error("Error al cargar catálogos:", err);
       }
     };
     loadCatalogs();
   }, []);
 
-  // Limpiar código de programa cuando la categoría cambie a Invitado o Externo
   useEffect(() => {
     if (categoriaDocente === "Invitado" || categoriaDocente === "Externo") {
       setCodigoPrograma("");
     }
   }, [categoriaDocente]);
 
-  // Actualizar municipios cuando cambie el departamento
+  // Municipios dinámicos basados en departamento
   useEffect(() => {
     if (departamento) {
       const deptoEncontrado = departamentos.find(d =>
-        d.nombre === departamento ||
-        d.nombre_departamento === departamento ||
-        d.departamento === departamento ||
-        d.codigo === departamento ||
-        d.codigo_departamento === departamento
+        d.nombre === departamento || d.nombre_departamento === departamento ||
+        d.departamento === departamento || d.codigo === departamento || d.codigo_departamento === departamento
       );
-
       const deptoCodigo = deptoEncontrado?.codigo || deptoEncontrado?.codigo_departamento || departamento;
-
-      console.log('📍 URL:', API_ENDPOINTS.CATALOGOS_MUNICIPIOS(deptoCodigo));
 
       fetch(API_ENDPOINTS.CATALOGOS_MUNICIPIOS(deptoCodigo))
         .then((r) => {
-          if (!r.ok) {
-            throw new Error(`Error ${r.status}: ${r.statusText}`);
-          }
+          if (!r.ok) throw new Error(`Error ${r.status}`);
           return r.json();
         })
         .then((data) => {
-          const municipiosList = Array.isArray(data) ? data : (data.data || data.municipios || []);
-          setMunicipiosApi(municipiosList);
+          setMunicipiosApi(Array.isArray(data) ? data : (data.data || data.municipios || []));
         })
-        .catch((err) => {
-          setMunicipiosApi([]);
-        });
+        .catch(() => setMunicipiosApi([]));
     } else {
       setMunicipiosApi([]);
       setMunicipio("");
     }
   }, [departamento, departamentos]);
 
-  // Estado para la lista de profesores
-  const [profesores, setProfesores] = useState([]);
-  // Estado de carga y mensaje de error del servidor
-  const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState("");
-
-  // Estados para edición
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-
-  // Estado para búsqueda/filtro
-  const [searchTerm, setSearchTerm] = useState("");
-  // Filtro por estado (Activo / Inactivo / Todos). El backend ahora devuelve
-  // activos+inactivos por defecto, asi que el filtro vive en el cliente.
-  const [filtroEstado, setFiltroEstado] = useState("todos");
-
-  // Cargar profesores al montar el componente (evitar usar función antes de definirla)
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setServerError("");
-      try {
-        const data = await obtenerDocentes();
-        setProfesores(data);
-      } catch (error) {
-        setProfesores([]);
-        setServerError(error.message || 'Error al cargar profesores');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  // Función para (re)cargar profesores desde el backend — usada por submit/edición/eliminación
+  // Función de carga unificada (trae los 17 registros de golpe)
   const cargarProfesores = async () => {
     setLoading(true);
     setServerError("");
     try {
-      const data = await obtenerDocentes();
-      setProfesores(data);
-      setServerError("");
+      const response = await obtenerDocentes();
+      if (response && response.data) {
+        setProfesores(response.data);
+      } else {
+        setProfesores(response || []);
+      }
     } catch (error) {
       setProfesores([]);
       setServerError(error.message || 'Error al cargar profesores');
@@ -192,7 +153,41 @@ export function useTeacherManagement() {
     }
   };
 
-  // Limpiar formulario
+  // Carga inicial
+  useEffect(() => {
+    cargarProfesores();
+  }, []);
+
+  // ====== PROCESAMIENTO Y MATEMÁTICA DE FILTRADO Y PAGINACIÓN LOCAL ======
+  
+  // 1. Filtramos todo el universo de registros por texto y estado
+  const todosLosProfesoresFiltrados = useMemo(() => {
+    return filtrarDocentesPorEstado(
+      filtroEstado,
+      filtrarDocentes(profesores, searchTerm)
+    );
+  }, [profesores, searchTerm, filtroEstado]);
+
+  // 2. Calculamos las páginas totales dinámicamente basadas en el resultado previo
+  const totalPaginasBackend = useMemo(() => {
+    return Math.ceil(todosLosProfesoresFiltrados.length / limitBackend) || 1;
+  }, [todosLosProfesoresFiltrados, limitBackend]);
+
+  // 3. Reseteamos la página actual si los filtros exceden el nuevo rango
+  useEffect(() => {
+    if (currentPageBackend > totalPaginasBackend) {
+      setCurrentPageBackend(1);
+    }
+  }, [totalPaginasBackend, currentPageBackend]);
+
+  // 4. Recortamos el array para enviar ÚNICAMENTE las filas de la página activa
+  const profesoresFiltrados = useMemo(() => {
+    const inicio = (currentPageBackend - 1) * limitBackend;
+    const fin = inicio + limitBackend;
+    return todosLosProfesoresFiltrados.slice(inicio, fin);
+  }, [todosLosProfesoresFiltrados, currentPageBackend, limitBackend]);
+
+
   const limpiarFormulario = () => {
     setTipoDocumento("");
     setIdentificacion("");
@@ -203,8 +198,8 @@ export function useTeacherManagement() {
     setGenero("");
     setIdentidadSexual("");
     setFechaNacimiento("");
-    setNacionalidad("CO"); // Código ISO de Colombia
-    setPais("CO"); // Código ISO de Colombia
+    setNacionalidad("CO");
+    setPais("CO");
     setDepartamento("");
     setMunicipio("");
     setCiudadResidencia("");
@@ -220,91 +215,52 @@ export function useTeacherManagement() {
     setCategoriaDocente("");
     setCodigoPrograma("");
     setActivo(true);
-    // Limpiar listas de municipios
     setMunicipios([]);
   };
 
-  // Crear nuevo profesor usando el servicio
   const handleSubmit = async (e, onSuccess = null) => {
     e.preventDefault();
-
     setLoading(true);
     setServerError("");
-
     try {
-      // Combinar nombres y apellidos separados en campos únicos para el servicio
       const nombresCompletos = `${primerNombre} ${segundoNombre}`.trim();
       const apellidosCompletos = `${primerApellido} ${segundoApellido}`.trim();
-
-      // Buscar códigos de municipios en los catálogos
       const municipioSeleccionado = municipiosApi.find(m =>
         m.nombre === municipio || m.nombre_municipio === municipio || m.municipio === municipio
       );
       const codigoMunicipioRes = municipioSeleccionado?.codigo || municipioSeleccionado?.codigo_municipio || "08001";
 
       const datosDocente = formatearDatosDocente({
-        tipoDocumento,
-        identificacion,
-        nombres: nombresCompletos,
-        apellidos: apellidosCompletos,
-        genero,
-        identidadSexual,
-        fechaNacimiento,
-        nacionalidad,
-        pais,
-        departamento,
-        municipio,
-        codigoMunicipioResidencia: codigoMunicipioRes,
-        codigoMunicipioNacimiento: codigoMunicipioRes,
-        ciudadResidencia,
-        tipoVia,
-        numeroVia,
-        numeroCruce,
-        numeroPlaca,
-        complemento,
-        direccionResidencia,
-        telefono,
-        correo,
-        contraseña,
-        categoriaDocente,
-        codigoPrograma
+        tipoDocumento, identificacion, nombres: nombresCompletos, apellidos: apellidosCompletos,
+        genero, identidadSexual, fechaNacimiento, nacionalidad, pais, departamento, municipio,
+        codigoMunicipioResidencia: codigoMunicipioRes, codigoMunicipioNacimiento: codigoMunicipioRes,
+        ciudadResidencia, tipoVia, numeroVia, numeroCruce, numeroPlaca, complemento,
+        direccionResidencia, telefono, correo, contraseña, categoriaDocente, codigoPrograma
       });
 
       await crearDocente(datosDocente);
+      setCurrentPageBackend(1);
       await cargarProfesores();
-      // éxito: limpiar formulario y resetear errores
       limpiarFormulario();
-      setServerError("");
-      // Llamar callback de éxito si se proporciona
-      if (onSuccess) {
-        onSuccess(`✅ Profesor ${nombresCompletos} creado correctamente`);
-      }
+      if (onSuccess) onSuccess(`Profesor ${nombresCompletos} creado correctamente`);
     } catch (error) {
       setServerError(error.message || 'Error al crear docente');
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
 
-  // Iniciar edición
   const handleEdit = (profesor) => {
-
     setEditingId(profesor.docente?.id_docente || profesor.id);
-
-    // Los datos están separados en objetos 'usuario' y 'docente'
     const datosUsuario = profesor.usuario || {};
     const datosDocente = profesor.docente || profesor;
 
     setTipoDocumento(datosUsuario.tipo_documento || "");
     setIdentificacion(datosUsuario.identificacion || "");
-
-    // El backend retorna p_nombre y p_apellido separados
     setPrimerNombre(datosUsuario.p_nombre || "");
     setSegundoNombre("");
     setPrimerApellido(datosUsuario.p_apellido || "");
     setSegundoApellido("");
-    
     setGenero(datosUsuario.sexo || datosUsuario.genero || "");
     setIdentidadSexual(datosUsuario.identidad_sexual || "");
     setFechaNacimiento(datosUsuario.fecha_nacimiento || "");
@@ -328,57 +284,30 @@ export function useTeacherManagement() {
     setShowEditModal(true);
   };
 
-  // Guardar edición usando el servicio
   const handleSaveEdit = async (e) => {
     e.preventDefault();
-
     setLoading(true);
     setServerError("");
-
     try {
-      // Combinar nombres y apellidos separados en campos únicos para el servicio
       const nombresCompletos = `${primerNombre} ${segundoNombre}`.trim();
       const apellidosCompletos = `${primerApellido} ${segundoApellido}`.trim();
-
       const datosDocente = formatearDatosDocente({
-        tipoDocumento,
-        identificacion,
-        nombres: nombresCompletos,
-        apellidos: apellidosCompletos,
-        genero,
-        identidadSexual,
-        fechaNacimiento,
-        nacionalidad,
-        pais,
-        departamento,
-        municipio,
-        ciudadResidencia,
-        tipoVia,
-        numeroVia,
-        numeroCruce,
-        numeroPlaca,
-        complemento,
-        direccionResidencia,
-        telefono,
-        correo,
-        contraseña,
-        categoriaDocente,
-        codigoPrograma
+        tipoDocumento, identificacion, nombres: nombresCompletos, apellidos: apellidosCompletos,
+        genero, identidadSexual, fechaNacimiento, nacionalidad, pais, departamento, municipio,
+        ciudadResidencia, tipoVia, numeroVia, numeroCruce, numeroPlaca, complemento,
+        direccionResidencia, telefono, correo, contraseña, categoriaDocente, codigoPrograma
       });
 
       await actualizarDocente(editingId, datosDocente);
-      await cargarProfesores();
-      setServerError("");
+      await cargarProfesores(); 
       handleCancelEdit();
     } catch (error) {
       setServerError(error.message || 'Error al actualizar docente');
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
 
-  // Cancelar edición
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditingId(null);
@@ -386,32 +315,23 @@ export function useTeacherManagement() {
     limpiarFormulario();
   };
 
-  // Eliminar profesor usando el servicio
   const handleDelete = async (id) => {
     const profesorAEliminar = profesores.find(p => (p.docente?.id_docente || p.id) === id);
-
-    // El backend retorna 'nombre_completo' en el objeto usuario
     const nombreCompleto = profesorAEliminar?.usuario?.nombre_completo || profesorAEliminar?.usuario?.nombres || profesorAEliminar?.nombres || "profesor";
 
     if (window.confirm(`¿Está seguro de que desea eliminar al profesor "${nombreCompleto}"?`)) {
       try {
         setLoading(true);
-        setServerError("");
         await eliminarDocente(id);
         await cargarProfesores();
-        setServerError("");
       } catch (error) {
         setServerError(error.message || 'Error al eliminar docente');
-      }
-      finally {
+      } finally {
         setLoading(false);
       }
     }
   };
 
-  // Cambiar estado activo/inactivo desde la fila de la tabla. Esto evita
-  // forzar al admin a abrir Editar para reactivar a alguien que verifico
-  // su correo (o para desactivar al instante a alguien dado de baja).
   const handleToggleActivo = async (profesor) => {
     const id = profesor?.docente?.id_docente || profesor?.id;
     if (!id) return;
@@ -421,7 +341,6 @@ export function useTeacherManagement() {
     if (!window.confirm(`¿Está seguro de que desea ${verbo} al profesor "${nombre}"?`)) return;
     try {
       setLoading(true);
-      setServerError('');
       if (estaActivo) {
         await desactivarDocente(id);
       } else {
@@ -435,112 +354,33 @@ export function useTeacherManagement() {
     }
   };
 
-  // Cancelar formulario
   const handleCancel = () => {
     limpiarFormulario();
   };
 
-  // Filtrar profesores por búsqueda + estado.
-  const profesoresFiltrados = filtrarDocentesPorEstado(
-    filtroEstado,
-    filtrarDocentes(profesores, searchTerm)
-  );
-
   return {
-    // Estados del formulario - Usuario (heredados)
-    tipoDocumento,
-    setTipoDocumento,
-    identificacion,
-    setIdentificacion,
-    // Nombres y apellidos separados
-    primerNombre,
-    setPrimerNombre,
-    segundoNombre,
-    setSegundoNombre,
-    primerApellido,
-    setPrimerApellido,
-    segundoApellido,
-    setSegundoApellido,
-    genero,
-    setGenero,
-    identidadSexual,
-    setIdentidadSexual,
-    fechaNacimiento,
-    setFechaNacimiento,
-    nacionalidad,
-    setNacionalidad,
-    pais,
-    setPais,
-    departamento,
-    setDepartamento,
-    municipio,
-    setMunicipio,
-    ciudadResidencia,
-    setCiudadResidencia,
-    direccionResidencia,
-    setDireccionResidencia,
-    telefono,
-    setTelefono,
-    correo,
-    setCorreo,
-    contraseña,
-    setContraseña,
-
-    // Estados del formulario - Docente (propios)
-    categoriaDocente,
-    setCategoriaDocente,
-    codigoPrograma,
-    setCodigoPrograma,
-    activo,
-    setActivo,
-
-    // Estados de componentes de dirección
-    tipoVia,
-    setTipoVia,
-    numeroVia,
-    setNumeroVia,
-    numeroCruce,
-    setNumeroCruce,
-    numeroPlaca,
-    setNumeroPlaca,
-    complemento,
-    setComplemento,
-
-    // Estados de la lista y UI
-    profesores,
-    searchTerm,
-    setSearchTerm,
-    filtroEstado,
-    setFiltroEstado,
-    profesoresFiltrados,
-
-    // Estados para municipios dinámicos
-    municipios,
-
-    // Catálogos
-    paises,
-    departamentos,
-    municipiosApi,
-
-    // Opciones de países/nacionalidades
-    opcionesPaises,
-
-    // Estados de edición
-    isEditing,
-    showEditModal,
-
-    // Funciones
-    handleSubmit,
-    handleEdit,
-    handleSaveEdit,
-    handleCancelEdit,
-    handleDelete,
-    handleToggleActivo,
-    handleCancel,
-    // UI states
-    loading,
-    setLoading,
-    serverError,
-    setServerError,
+    tipoDocumento, setTipoDocumento, identificacion, setIdentificacion,
+    primerNombre, setPrimerNombre, segundoNombre, setSegundoNombre,
+    primerApellido, setPrimerApellido, segundoApellido, setSegundoApellido,
+    genero, setGenero, identidadSexual, setIdentidadSexual, fechaNacimiento, setFechaNacimiento,
+    nacionalidad, setNacionalidad, pais, setPais, departamento, setDepartamento,
+    municipio, setMunicipio, ciudadResidencia, setCiudadResidencia,
+    direccionResidencia, setDireccionResidencia, 
+    telefono, setTelefono, // 🔧 Corregido: antes tenías cruzado setCorreo aquí
+    correo, setCorreo,     // 🔧 Corregido: antes tenías cruzado setTelefono aquí
+    contraseña, setContraseña,
+    categoriaDocente, setCategoriaDocente, codigoPrograma, setCodigoPrograma, activo, setActivo,
+    tipoVia, setTipoVia, numeroVia, setNumeroVia, numeroCruce, setNumeroCruce, numeroPlaca, setNumeroPlaca, complemento, setComplemento,
+    profesores, searchTerm, setSearchTerm, filtroEstado, setFiltroEstado, profesoresFiltrados,
+    municipios, paises, departamentos, municipiosApi, opcionesPaises, isEditing, showEditModal,
+    handleSubmit, handleEdit, handleSaveEdit, handleCancelEdit, handleDelete, handleToggleActivo, handleCancel,
+    loading, setLoading, serverError, setServerError,
+    
+    // Variables de paginación sincronizadas
+    currentPageBackend,
+    setCurrentPageBackend,
+    totalPaginasBackend,
+    limitBackend,       // 👈 Exportado
+    setLimitBackend     // 👈 Exportado
   };
 }

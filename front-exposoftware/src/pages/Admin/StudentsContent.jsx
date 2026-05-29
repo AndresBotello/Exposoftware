@@ -9,6 +9,50 @@ export default function StudentsContent({
   mostrarConfirmacion, estudianteSeleccionado, accionPendiente,
   confirmarCambioEstado, setMostrarConfirmacion, setEstudianteSeleccionado, setAccionPendiente,
 }) {
+
+  // Función interna para calcular los rangos de las páginas con elipsis (...)
+  const renderBotoneraPaginacion = () => {
+    const rango = [];
+    const maximaDistancia = 1; // Páginas que se muestran a la izquierda y derecha de la actual
+
+    for (let i = 1; i <= totalPaginas; i++) {
+      if (
+        i === 1 || 
+        i === totalPaginas || 
+        (i >= paginaActual - maximaDistancia && i <= paginaActual + maximaDistancia)
+      ) {
+        rango.push(i);
+      } else if (rango[rango.length - 1] !== '...') {
+        rango.push('...');
+      }
+    }
+
+    return rango.map((num, idx) => {
+      if (num === '...') {
+        return (
+          <span key={`dots-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-400 select-none">
+            ...
+          </span>
+        );
+      }
+
+      return (
+        <button
+          key={num}
+          type="button"
+          onClick={() => cambiarPagina(num)}
+          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all ${
+            paginaActual === num 
+              ? 'z-10 bg-teal-50 border-teal-500 text-teal-600 font-bold' 
+              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+          }`}
+        >
+          {num}
+        </button>
+      );
+    });
+  };
+
   if (cargando && estudiantes.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-8">
@@ -119,17 +163,26 @@ export default function StudentsContent({
           </table>
         </div>
 
-        {/* Paginación */}
+        {/* Paginación Modificada Dinámica */}
         {totalPaginas > 1 && (
           <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200">
             <div className="flex-1 flex justify-between sm:hidden">
-              <button onClick={() => cambiarPagina(paginaActual - 1)} disabled={paginaActual === 1}
+              <button 
+                onClick={() => cambiarPagina(paginaActual - 1)} 
+                disabled={paginaActual === 1}
                 className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >Anterior</button>
-              <button onClick={() => cambiarPagina(paginaActual + 1)} disabled={paginaActual === totalPaginas}
+              >
+                Anterior
+              </button>
+              <button 
+                onClick={() => cambiarPagina(paginaActual + 1)} 
+                disabled={paginaActual === totalPaginas}
                 className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >Siguiente</button>
+              >
+                Siguiente
+              </button>
             </div>
+            
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <p className="text-sm text-gray-700">
                 Mostrando <span className="font-medium">{indexPrimerEstudiante + 1}</span> a{' '}
@@ -137,17 +190,24 @@ export default function StudentsContent({
                 de <span className="font-medium">{estudiantesFiltrados.length}</span> resultados
               </p>
               <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                <button onClick={() => cambiarPagina(paginaActual - 1)} disabled={paginaActual === 1}
+                <button 
+                  onClick={() => cambiarPagina(paginaActual - 1)} 
+                  disabled={paginaActual === 1}
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >Anterior</button>
-                {[...Array(totalPaginas)].map((_, index) => (
-                  <button key={index + 1} onClick={() => cambiarPagina(index + 1)}
-                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${paginaActual === index + 1 ? 'z-10 bg-teal-50 border-teal-500 text-teal-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}
-                  >{index + 1}</button>
-                ))}
-                <button onClick={() => cambiarPagina(paginaActual + 1)} disabled={paginaActual === totalPaginas}
+                >
+                  Anterior
+                </button>
+                
+                {/* Renderizado de botones con elipsis inteligente */}
+                {renderBotoneraPaginacion()}
+                
+                <button 
+                  onClick={() => cambiarPagina(paginaActual + 1)} 
+                  disabled={paginaActual === totalPaginas}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >Siguiente</button>
+                >
+                  Siguiente
+                </button>
               </nav>
             </div>
           </div>
@@ -155,7 +215,7 @@ export default function StudentsContent({
       </div>
 
       {/* Modal de confirmación */}
-      {mostrarConfirmacion && (
+      {mostrarConfirmacion && estudianteSeleccionado && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg border border-gray-200 shadow-lg p-8 w-full max-w-md">
             <div className="text-center">
@@ -166,7 +226,9 @@ export default function StudentsContent({
               <div className="mb-6">
                 <p className="text-sm text-gray-600">
                   ¿Está seguro que desea {accionPendiente} al estudiante{' '}
-                  <strong className="text-gray-900">{formatearEstudiante(estudianteSeleccionado, programas).nombreCompleto}</strong>?
+                  <strong className="text-gray-900">
+                    {formatearEstudiante(estudianteSeleccionado, programas).nombreCompleto}
+                  </strong>?
                 </p>
               </div>
               <div className="flex gap-3 justify-center">

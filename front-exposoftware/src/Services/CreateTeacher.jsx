@@ -5,9 +5,6 @@ export const TIPOS_DOCUMENTO = ["CC", "TI", "CE", "PEP", "Pasaporte"];
 
 export const GENEROS = ["Hombre", "Mujer", "Prefiero no decirlo"];
 
-// IMPORTANTE: estos labels DEBEN coincidir 1:1 con la tabla
-// `identidades_sexuales` del backend (scripts/init_catalogs.py). Si se agrega
-// uno nuevo, agregalo TAMBIÉN allá y en IDENTIDAD_MAP abajo con el mismo ID.
 export const IDENTIDADES_SEXUALES = [
   "Heterosexual",
   "Homosexual",
@@ -31,7 +28,6 @@ export const DEPARTAMENTOS_COLOMBIA = [
   "Vaupés", "Vichada"
 ];
 
-// Mapeos de valores UI a IDs de la API
 const TIPO_DOCUMENTO_MAP = {
   "CC": 1,
   "TI": 2,
@@ -46,9 +42,6 @@ const GENERO_MAP = {
   "Prefiero no decirlo": 3
 };
 
-// Mapeo label -> id_identidad (debe coincidir EXACTAMENTE con la tabla
-// identidades_sexuales del backend). Antes los IDs estaban desfasados y
-// guardaban valores incorrectos (Pansexual=4 escribia Transgenero, etc).
 const IDENTIDAD_MAP = {
   "Heterosexual": 1,
   "Homosexual": 2,
@@ -69,7 +62,6 @@ const TIPO_VIA_MAP = {
   "Avenida": 5
 };
 
-// Mapeo de códigos ISO 2 a códigos ISO 3 para países
 const PAIS_ISO_MAP = {
   "CO": "COL",
   "AR": "ARG",
@@ -84,15 +76,10 @@ const PAIS_ISO_MAP = {
   "OTROS": "OTR"
 };
 
-/**
- * Convertir valores UI a IDs de la API
- */
 const convertirAIds = (formData) => {
-  // Si vienen nombres y apellidos como strings combinados, usarlos; si no, combinar desde campos separados
   const nombres = formData.nombres || `${formData.primerNombre || ""} ${formData.segundoNombre || ""}`.trim();
   const apellidos = formData.apellidos || `${formData.primerApellido || ""} ${formData.segundoApellido || ""}`.trim();
 
-  // Separar nombres y apellidos
   const partesNombre = nombres.trim().split(/\s+/);
   const primerNombre = partesNombre[0] || "";
   const segundoNombre = partesNombre.slice(1).join(" ") || "";
@@ -101,7 +88,6 @@ const convertirAIds = (formData) => {
   const primerApellido = partesApellido[0] || "";
   const segundoApellido = partesApellido.slice(1).join(" ") || "";
 
-  // Mapear códigos de país de ISO 2 a ISO 3
   const codigoPais = (codigoISO2) => PAIS_ISO_MAP[codigoISO2] || codigoISO2 || "COL";
 
   return {
@@ -119,13 +105,6 @@ const convertirAIds = (formData) => {
   };
 };
 
-// ==================== FUNCIONES DE API ====================
-
-/**
- * Separar nombres completos en primer y segundo nombre
- * @param {string} nombresCompletos - Nombres completos ingresados
- * @returns {Object} {primer_nombre, segundo_nombre}
- */
 const separarNombres = (nombresCompletos) => {
   if (!nombresCompletos) return { primer_nombre: "", segundo_nombre: "" };
   
@@ -136,11 +115,6 @@ const separarNombres = (nombresCompletos) => {
   };
 };
 
-/**
- * Separar apellidos completos en primer y segundo apellido
- * @param {string} apellidosCompletos - Apellidos completos ingresados
- * @returns {Object} {primer_apellido, segundo_apellido}
- */
 const separarApellidos = (apellidosCompletos) => {
   if (!apellidosCompletos) return { primer_apellido: "", segundo_apellido: "" };
   
@@ -151,42 +125,27 @@ const separarApellidos = (apellidosCompletos) => {
   };
 };
 
-/**
- * Obtener todos los docentes desde el backend
- * @returns {Promise<Array>} Lista de docentes
- */
-export const obtenerDocentes = async () => {
-  try {
-    const headers = AuthService.getAuthHeaders();
 
-    const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
-      credentials: 'include',
-      method: 'GET',
-      headers: headers
-    });
-    
-    
-    if (response.ok) {
-      const result = await response.json();
-      // El backend retorna { status, message, data, code }
-      const docentes = result.data || result;
-      return Array.isArray(docentes) ? docentes : [];
-    } else {
-      const errorText = await response.text();
-      throw new Error(`Error al cargar profesores: ${response.statusText}`);
+// Obtener los docentes con paginacion 
+// En tu archivo de servicios (ej. src/Services/createtecacher.js)
+  export const obtenerDocentes = async (page = 1, limit = 50) => {
+    try {
+      const url = `${API_ENDPOINTS.ADMIN_DOCENTES}?page=${page}&limit=${limit}`;
+      
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: AuthService.getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Error al obtener los docentes');
+      return await response.json(); 
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
-  } catch (error) {
-    throw error;
-  }
-};
+  };
 
-/**
- * Crear un nuevo docente en el backend
- * @param {Object} datosDocente - Datos completos del docente
- * @returns {Promise<Object>} Datos del docente creado
- */
 export const crearDocente = async (datosDocente) => {
-  // Validaciones básicas
   if (!datosDocente.id_tipo_doc || !datosDocente.identificacion) {
     throw new Error("El tipo de documento e identificación son obligatorios");
   }
@@ -211,7 +170,6 @@ export const crearDocente = async (datosDocente) => {
     throw new Error("La categoría del docente es obligatoria");
   }
 
-  // Estructura del payload según el nuevo OpenAPI: TeacherCreate
   const payload = {
     usuario: {
       id_tipo_doc: datosDocente.id_tipo_doc,
@@ -268,7 +226,6 @@ export const crearDocente = async (datosDocente) => {
       throw new Error(`Conflicto: ${errorData.message || errorData.detail || 'El docente ya existe'}`);
     } else if (response.status === 422) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Error de validación (422):', errorData);
       throw new Error(`Error de validación: ${errorData.message || errorData.detail || 'Los datos no son válidos'}`);
     } else {
       const errorData = await response.json().catch(() => ({}));
@@ -282,14 +239,7 @@ export const crearDocente = async (datosDocente) => {
   }
 };
 
-/**
- * Actualizar un docente existente
- * @param {string} idDocente - ID del docente a actualizar
- * @param {Object} datosDocente - Datos actualizados del docente
- * @returns {Promise<Object>} Datos del docente actualizado
- */
 export const actualizarDocente = async (idDocente, datosDocente) => {
-  // Validaciones
   if (!datosDocente.p_nombre || !datosDocente.p_apellido) {
     throw new Error("El nombre y apellido son obligatorios");
   }
@@ -302,7 +252,6 @@ export const actualizarDocente = async (idDocente, datosDocente) => {
     throw new Error("El correo debe ser institucional (@unicesar.edu.co)");
   }
 
-  // Payload para actualización - estructura TeacherUpdate
   const payload = {
     usuario: {
       identificacion: datosDocente.identificacion,
@@ -331,7 +280,6 @@ export const actualizarDocente = async (idDocente, datosDocente) => {
     }
   };
 
-  // Solo incluir contraseña si se proporcionó (para cambiarla)
   if (datosDocente.contrasena && datosDocente.contrasena.trim() !== "") {
     payload.usuario.contrasena = datosDocente.contrasena;
   }
@@ -365,13 +313,7 @@ export const actualizarDocente = async (idDocente, datosDocente) => {
   }
 };
 
-/**
- * Eliminar un docente
- * @param {string} idDocente - ID del docente a eliminar
- * @returns {Promise<Object>} Confirmación de eliminación
- */
 export const eliminarDocente = async (idDocente) => {
-
   try {
     const response = await fetch(`${API_ENDPOINTS.ADMIN_DOCENTES}/${idDocente}`, {
       credentials: 'include',
@@ -396,13 +338,6 @@ export const eliminarDocente = async (idDocente) => {
   }
 };
 
-// ==================== FUNCIONES AUXILIARES ====================
-
-/**
- * Activar un docente desactivado (endpoint POST /admin/profesores/{id}/activar).
- * Usado tanto cuando el admin reactiva manualmente como cuando el docente
- * verifica su correo y queda pendiente de aprobacion.
- */
 export const activarDocente = async (idDocente) => {
   try {
     const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTE_ACTIVAR(idDocente), {
@@ -419,12 +354,6 @@ export const activarDocente = async (idDocente) => {
   }
 };
 
-/**
- * Desactivar (soft delete) un docente. Por ahora reusa `eliminarDocente`
- * (DELETE /admin/profesores/{id}) porque el backend usa el mismo endpoint.
- * Lo expongo con el nombre `desactivarDocente` para que el UI distinga
- * semanticamente entre "activar" y "desactivar".
- */
 export const desactivarDocente = async (idDocente, razon = 'Desactivado por administrador') => {
   try {
     const url = `${API_ENDPOINTS.ADMIN_DOCENTES}/${idDocente}?reason=${encodeURIComponent(razon)}`;
@@ -442,10 +371,6 @@ export const desactivarDocente = async (idDocente, razon = 'Desactivado por admi
   }
 };
 
-/**
- * Filtrar docentes por estado (activo / inactivo / todos).
- * Pareja del filtro analogo en estudiantes para consistencia UX.
- */
 export const filtrarDocentesPorEstado = (estado, docentes) => {
   if (!Array.isArray(docentes)) return [];
   if (estado === 'todos' || !estado) return docentes;
@@ -457,14 +382,7 @@ export const filtrarDocentesPorEstado = (estado, docentes) => {
   });
 };
 
-/**
- * Filtrar docentes por término de búsqueda
- * @param {Array} docentes - Lista de docentes
- * @param {string} searchTerm - Término de búsqueda
- * @returns {Array} Docentes filtrados
- */
 export const filtrarDocentes = (docentes, searchTerm) => {
-  // Validar que docentes sea un array
   if (!Array.isArray(docentes)) {
     return [];
   }
@@ -474,17 +392,16 @@ export const filtrarDocentes = (docentes, searchTerm) => {
   const termino = searchTerm.toLowerCase();
   return docentes.filter(docente => {
     try {
-      // El backend devuelve nombre_completo en el objeto usuario
       const nombreCompleto = docente?.usuario?.nombre_completo?.toLowerCase() || "";
       const identificacion = docente?.usuario?.identificacion?.toLowerCase() || "";
       const correo = docente?.usuario?.correo?.toLowerCase() || "";
-      const programa = docente?.docente?.codigo_programa?.toLowerCase() || docente?.codigo_programa?.toLowerCase() || '';
+      const programme = docente?.docente?.codigo_programa?.toLowerCase() || docente?.codigo_programa?.toLowerCase() || '';
 
       return (
         nombreCompleto.includes(termino) ||
         identificacion.includes(termino) ||
         correo.includes(termino) ||
-        programa.includes(termino)
+        programme.includes(termino)
       );
     } catch (error) {
       return false;
@@ -492,32 +409,15 @@ export const filtrarDocentes = (docentes, searchTerm) => {
   });
 };
 
-/**
- * Validar formato de correo institucional
- * @param {string} correo - Correo a validar
- * @returns {boolean} True si es válido
- */
 export const validarCorreoInstitucional = (correo) => {
   return correo.endsWith("@unicesar.edu.co");
 };
 
-/**
- * Validar formato de teléfono colombiano
- * @param {string} telefono - Teléfono a validar
- * @returns {boolean} True si es válido
- */
 export const validarTelefono = (telefono) => {
-  // Debe tener 10 dígitos y comenzar con 3
   return /^3\d{9}$/.test(telefono);
 };
 
-/**
- * Formatear datos del formulario para envío al backend
- * @param {Object} formData - Datos del formulario (con nombres de forma antigua)
- * @returns {Object} Datos formateados para la API nueva
- */
 export const formatearDatosDocente = (formData) => {
-  // Convertir valores UI a IDs
   const datosConIds = convertirAIds(formData);
 
   return {
@@ -529,13 +429,12 @@ export const formatearDatosDocente = (formData) => {
     s_apellido: datosConIds.segundoApellido || null,
     id_genero: datosConIds.genero,
     id_identidad: datosConIds.identidadSexual || null,
-    fecha_nacimiento: datosConIds.fechaNacimiento || "",
-    id_tipo_via: datosConIds.tipoVia || 2, // Carrera por defecto
+    id_tipo_via: datosConIds.tipoVia || 2,
     numero_via: datosConIds.numeroVia || "0",
     numero_cruce: datosConIds.numeroCruce || "0",
     numero_placa: datosConIds.numeroPlaca || "0",
     complemento: datosConIds.complemento || null,
-    codigo_municipio_residencia: datosConIds.codigoMunicipioResidencia || "08001", // Valledupar por defecto
+    codigo_municipio_residencia: datosConIds.codigoMunicipioResidencia || "08001",
     codigo_municipio_nacimiento: datosConIds.codigoMunicipioNacimiento || "08001",
     codigo_pais_nacimiento: datosConIds.codigoPaisNacimiento || "COL",
     codigo_pais_nacionalidad: datosConIds.codigoPaisNacionalidad || "COL",

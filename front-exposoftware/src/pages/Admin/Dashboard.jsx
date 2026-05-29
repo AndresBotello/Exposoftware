@@ -324,7 +324,7 @@ export default function AdminDashboard() {
             {/* Charts Row - Gráficas de Power BI */}
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">📊 Analytics en Tiempo Real</h2>
+                <h2 className="text-xl font-bold text-gray-900">Analytics en Tiempo Real</h2>
                 <p className="text-sm text-gray-500">Gráficas interactivas desde Power BI</p>
               </div>
             </div>

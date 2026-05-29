@@ -6,7 +6,7 @@ import { validateField, filterInput } from "../../utils/teacherValidations";
 import TeacherPersonalSection from "./TeacherPersonalSection";
 
 export default function TeacherForm({
-  // Estados del formulario - Usuario
+  
   tipoDocumento,
   setTipoDocumento,
   identificacion,
