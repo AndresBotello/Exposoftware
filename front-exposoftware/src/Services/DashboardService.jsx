@@ -59,23 +59,27 @@ class DashboardService {
         `${API_ENDPOINTS.ADMIN_ESTUDIANTES}?limit=100`,
         this.getAuthConfig()
       );
-      
-      
+
+      // Si viene con paginación, usar total_items
+      if (response.data?.pagination?.total_items) {
+        return response.data.pagination.total_items;
+      }
+
       // La API devuelve un array directamente
       if (Array.isArray(response.data)) {
         return response.data.length;
       }
-      
+
       // Si viene en un objeto con propiedad data
       if (response.data?.data && Array.isArray(response.data.data)) {
         return response.data.data.length;
       }
-      
+
       // Si viene con propiedad estudiantes
       if (response.data?.estudiantes && Array.isArray(response.data.estudiantes)) {
         return response.data.estudiantes.length;
       }
-      
+
       return 0;
     } catch (error) {
       return 0;
@@ -93,23 +97,27 @@ class DashboardService {
         `${API_ENDPOINTS.ADMIN_DOCENTES}?limit=100`,
         this.getAuthConfig()
       );
-      
-      
+
+      // Si viene con paginación, usar total_items
+      if (response.data?.pagination?.total_items) {
+        return response.data.pagination.total_items;
+      }
+
       // La API devuelve un array directamente
       if (Array.isArray(response.data)) {
         return response.data.length;
       }
-      
+
       // Si viene en un objeto con propiedad data
       if (response.data?.data && Array.isArray(response.data.data)) {
         return response.data.data.length;
       }
-      
+
       // Si viene con propiedad profesores
       if (response.data?.profesores && Array.isArray(response.data.profesores)) {
         return response.data.profesores.length;
       }
-      
+
       return 0;
     } catch (error) {
       return 0;
