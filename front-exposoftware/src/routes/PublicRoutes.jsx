@@ -7,6 +7,8 @@ import Projects from "../pages/Home/Projects";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import VerifyEmail from "../pages/Auth/VerifyEmail";
+import RecuperarPassword from "../pages/Auth/RecuperarPassword";
+import RestablecerPassword from "../pages/Auth/RestablecerPassword";
 import AsistenciaForm from "../pages/public/AttendanceForm.jsx";
 import InvitedPage from "../pages/public/InvitedPage";
 import ProjectCalificacion from "../pages/ProjectCalificacion";
@@ -36,6 +38,8 @@ export default function PublicRoutes() {
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
       <Route path="verificar-cuenta" element={<VerifyEmail />} />
+      <Route path="recuperar-password" element={<RecuperarPassword />} />
+      <Route path="restablecer-password" element={<RestablecerPassword />} />
       
       {/* 📂 Proyectos públicos */}
       <Route path="projects" element={<Projects />} />

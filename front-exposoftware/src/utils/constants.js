@@ -19,6 +19,8 @@ export const API_ENDPOINTS = {
   AUTH_REFRESH: `${API_BASE_URL}/api/v1/auth/refresh`,
   AUTH_VERIFICAR_CUENTA: `${API_BASE_URL}/api/v1/auth/verificar-cuenta`,
   AUTH_REENVIAR_VERIFICACION: `${API_BASE_URL}/api/v1/auth/reenviar-verificacion`,
+  AUTH_RECUPERAR_PASSWORD: `${API_BASE_URL}/api/v1/auth/recuperar-password`,
+  AUTH_RESTABLECER_PASSWORD: `${API_BASE_URL}/api/v1/auth/restablecer-password`,
   
   // ═══════════════════════════════════════════════════════════
   // 📚 CATÁLOGOS - /api/v1/catalogos/...

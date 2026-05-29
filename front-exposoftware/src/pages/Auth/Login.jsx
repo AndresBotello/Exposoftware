@@ -341,9 +341,12 @@ export default function LoginPage() {
                 />
                 <span className="text-gray-700">Recordarme</span>
               </label>
-              <a href="#" className="text-green-700 hover:underline text-sm">
+              <Link
+                to="/recuperar-password"
+                className="text-green-700 hover:underline text-sm transition"
+              >
                 ¿Olvidaste tu contraseña?
-              </a>
+              </Link>
             </div>
 
             <button
