@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
+import { CICLOS_ID_MAP } from "../pages/Admin/useSubjectManagement";
 
 
 /**
@@ -178,10 +179,16 @@ export const crearMateria = async (materiaData) => {
     throw new Error(`Ciclo inválido. Debe ser uno de: ${ciclosValidos.join(', ')}`);
   }
   
+  // Convertir nombre del ciclo a ID numérico
+  const idCiclo = CICLOS_ID_MAP[materiaData.ciclo_semestral];
+  if (!idCiclo) {
+    throw new Error(`Ciclo inválido. Debe ser uno de: ${Object.keys(CICLOS_ID_MAP).join(', ')}`);
+  }
+
   // El orden DEBE ser exactamente como aparece en el ejemplo de la documentación
   const payload = {
-    ciclo_semestral: materiaData.ciclo_semestral,
     codigo_materia: codigoUpper,
+    id_ciclo: idCiclo,
     nombre_materia: materiaData.nombre_materia.trim()
   };
 
