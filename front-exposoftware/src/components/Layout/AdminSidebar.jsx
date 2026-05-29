@@ -97,11 +97,11 @@ const AdminSidebar = memo(({ userName = "Carlos Mendoza", userRole = "Administra
       icon: "pi-briefcase",
       label: "Gestión de Proyectos"
     },
-    {
-      to: "/admin/profile",
-      icon: "pi-cog",
-      label: "Configuración de Perfil"
-    }
+    // {
+    //   to: "/admin/profile",
+    //   icon: "pi-cog",
+    //   label: "Configuración de Perfil"
+    // }
   ];
 
   return (

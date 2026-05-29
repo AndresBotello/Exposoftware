@@ -10,13 +10,10 @@ import EventModals from "./EventModals";
 export default function ManageEvents() {
   const navigate = useNavigate();
   const { getUserName, getUserInitials, handleLogout } = useAdminAuth();
-
   const [eventos, setEventos] = useState([]);
   const [eventosFiltrados, setEventosFiltrados] = useState([]);
   const [loadingEventos, setLoadingEventos] = useState(false);
-  const [estadisticas, setEstadisticas] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
-
   const [showEditModal, setShowEditModal] = useState(false);
   const [eventoEditando, setEventoEditando] = useState(null);
   const [nombreEvento, setNombreEvento] = useState("");
@@ -29,11 +26,12 @@ export default function ManageEvents() {
   const [cupoMaximo, setCupoMaximo] = useState("");
   const [estado, setEstado] = useState("ACTIVO");
   const [guardandoEvento, setGuardandoEvento] = useState(false);
-
   const [showCapacidadModal, setShowCapacidadModal] = useState(false);
   const [capacidadInfo, setCapacidadInfo] = useState(null);
 
-  useEffect(() => { cargarEventos(); }, []);
+  useEffect(() => {
+    cargarEventos();
+  }, []);
 
   const cargarEventos = async () => {
     setLoadingEventos(true);
@@ -41,7 +39,7 @@ export default function ManageEvents() {
       const data = await EventosService.obtenerEventosAdmin();
       const eventosOrdenados = data.sort((a, b) => new Date(b.fecha_inicio) - new Date(a.fecha_inicio));
       setEventos(eventosOrdenados);
-      setEventosFiltrados(eventosOrdenados);
+      ejecutarFiltrado(filtroEstado, eventosOrdenados);
     } catch (error) {
       setEventos([]);
       setEventosFiltrados([]);
@@ -50,25 +48,17 @@ export default function ManageEvents() {
     }
   };
 
-  useEffect(() => {
-    if (filtroEstado === "TODOS") {
-      setEventosFiltrados(eventos);
+  // Centralizamos la lógica de filtrado para evitar desfases
+  const ejecutarFiltrado = (estadoAFiltrar, listaEventos) => {
+    if (estadoAFiltrar === "TODOS") {
+      setEventosFiltrados(listaEventos);
     } else {
-      setEventosFiltrados(eventos.filter(evento => evento.estado === filtroEstado));
+      setEventosFiltrados(listaEventos.filter(evento => evento.estado === estadoAFiltrar));
     }
-  }, [filtroEstado, eventos]);
-
+  };
   useEffect(() => {
-    if (eventos.length > 0) {
-      const ahora = new Date();
-      setEstadisticas({
-        total_eventos: eventos.length,
-        eventos_activos: eventos.filter(e => e.estado === 'en_curso' || e.estado === 'inscripciones_abiertas').length,
-        eventos_proximos: eventos.filter(e => new Date(e.fecha_inicio) > ahora && e.estado !== 'cancelado').length,
-        eventos_finalizados: eventos.filter(e => e.estado === 'finalizado').length
-      });
-    }
-  }, [eventos]);
+    ejecutarFiltrado(filtroEstado, eventos);
+  }, [filtroEstado, eventos]);
 
   const formatearFechaParaInput = (fecha) => {
     if (!fecha) return "";
@@ -130,7 +120,7 @@ export default function ManageEvents() {
         'inscripciones_cerradas': 'en_curso',
         'en_curso': 'finalizado'
       }[estadoActual];
-      alert(`❌ Transición no permitida\n\nEstado actual: ${estadoActual}\nEstado solicitado: ${estado}\n\nPróximo estado permitido: ${transicionesValidas || 'ninguno (puede cancelar)'}`);
+      alert(`Transición no permitida\n\nEstado actual: ${estadoActual}\nEstado solicitado: ${estado}\n\nPróximo estado permitido: ${transicionesValidas || 'ninguno (puede cancelar)'}`);
       return;
     }
 
@@ -154,7 +144,6 @@ export default function ManageEvents() {
       lugar: lugarEvento.trim()
     };
 
-    // Agregar fechas solo si tienen valores válidos
     const fechaInicioISO = convertirFecha(fechaInicio);
     const fechaFinISO = convertirFecha(fechaFin);
     const fechaAperturaISO = convertirFecha(fechaAperturaInscripciones);
@@ -180,11 +169,11 @@ export default function ManageEvents() {
         await EventosService.cambiarEstadoEvento(eventoEditando.id_evento, estado);
       }
 
-      alert("✅ Evento actualizado exitosamente");
+      alert("Evento actualizado exitosamente");
       setShowEditModal(false);
       cargarEventos();
     } catch (error) {
-      alert(`❌ Error al actualizar evento: ${error.message}`);
+      alert(`Error al actualizar evento: ${error.message}`);
     } finally {
       setGuardandoEvento(false);
     }
@@ -194,10 +183,10 @@ export default function ManageEvents() {
     if (!window.confirm(`¿Desea cambiar el estado del evento a ${nuevoEstado}?`)) return;
     try {
       await EventosService.cambiarEstadoEvento(eventoId, nuevoEstado);
-      alert(`✅ Estado cambiado a ${nuevoEstado}`);
+      alert(`Estado cambiado a ${nuevoEstado}`);
       cargarEventos();
     } catch (error) {
-      alert(`❌ Error al cambiar estado: ${error.message}`);
+      alert(`Error al cambiar estado: ${error.message}`);
     }
   };
 
@@ -240,15 +229,19 @@ export default function ManageEvents() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    // Agregamos flex-col y min-h-screen para asegurar estabilidad vertical
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* Crecimiento flexible para que el footer o fondo no colapsen */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start"> {/* items-start evita que el sidebar se estire o colapse raro */}
+          
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
 
-          <main className="lg:col-span-3 space-y-6">
-            <div className="bg-gradient-to-r from-teal-600 to-emerald-600 rounded-lg shadow-lg p-8">
+ 
+          <main className="lg:col-span-3 space-y-6 min-h-[600px] flex flex-col justify-start">        
+            <div className="bg-gradient-to-r from-teal-600 to-emerald-600 rounded-lg shadow-lg p-8 w-full block">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                   <i className="pi pi-calendar-plus text-3xl text-white"></i>
@@ -260,21 +253,23 @@ export default function ManageEvents() {
               </div>
             </div>
 
-            <EventsTable
-              loadingEventos={loadingEventos}
-              eventosFiltrados={eventosFiltrados}
-              eventos={eventos}
-              filtroEstado={filtroEstado}
-              setFiltroEstado={setFiltroEstado}
-              estadisticas={estadisticas}
-              formatearFechaDisplay={formatearFechaDisplay}
-              getEstadoBadgeColor={getEstadoBadgeColor}
-              cargarEventos={cargarEventos}
-              handleEditarEvento={handleEditarEvento}
-              handleVerCapacidad={handleVerCapacidad}
-              handleCambiarEstado={handleCambiarEstado}
-              handleArchivarEvento={handleArchivarEvento}
-            />
+            <div className="w-full block clear-both">
+              <EventsTable
+                loadingEventos={loadingEventos}
+                eventosFiltrados={eventosFiltrados}
+                eventos={eventos}
+                filtroEstado={filtroEstado}
+                setFiltroEstado={setFiltroEstado}
+                formatearFechaDisplay={formatearFechaDisplay}
+                getEstadoBadgeColor={getEstadoBadgeColor}
+                cargarEventos={cargarEventos}
+                handleEditarEvento={handleEditarEvento}
+                handleVerCapacidad={handleVerCapacidad}
+                handleCambiarEstado={handleCambiarEstado}
+                handleArchivarEvento={handleArchivarEvento}
+              />
+            </div>
+            
           </main>
         </div>
       </div>

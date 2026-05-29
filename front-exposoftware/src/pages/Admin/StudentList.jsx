@@ -97,12 +97,15 @@ const StudentList = () => {
 
   const verDetalles = (estudianteId) => navigate(`/admin/estudiantes/${estudianteId}`);
   const editarEstudiante = (estudianteId) => navigate(`/admin/estudiantes/${estudianteId}/editar`);
+  
   const cambiarPagina = (numeroPagina) => setPaginaActual(numeroPagina);
+  const paginaAnterior = () => setPaginaActual((prev) => Math.max(prev - 1, 1));
+  const paginaSiguiente = () => setPaginaActual((prev) => Math.min(prev + 1, totalPaginas));
 
+  const totalPaginas = Math.ceil(estudiantesFiltrados.length / estudiantesPorPagina) || 1;
   const indexUltimoEstudiante = paginaActual * estudiantesPorPagina;
   const indexPrimerEstudiante = indexUltimoEstudiante - estudiantesPorPagina;
   const estudiantesActuales = estudiantesFiltrados.slice(indexPrimerEstudiante, indexUltimoEstudiante);
-  const totalPaginas = Math.ceil(estudiantesFiltrados.length / estudiantesPorPagina);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -160,6 +163,8 @@ const StudentList = () => {
               indexPrimerEstudiante={indexPrimerEstudiante}
               indexUltimoEstudiante={indexUltimoEstudiante}
               cambiarPagina={cambiarPagina}
+              paginaAnterior={paginaAnterior}
+              paginaSiguiente={paginaSiguiente}
               verDetalles={verDetalles}
               editarEstudiante={editarEstudiante}
               handleCambiarEstado={handleCambiarEstado}

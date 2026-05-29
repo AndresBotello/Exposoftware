@@ -68,7 +68,6 @@ export const obtenerProfesores = async () => {
       headers: headers
     });
     
-    
     if (response.ok) {
       const result = await response.json();
       
@@ -105,7 +104,6 @@ export const obtenerProfesores = async () => {
       
       return Array.isArray(profesoresConUsuario) ? profesoresConUsuario : [];
     } else {
-      const errorText = await response.text();
       throw new Error(`Error al cargar profesores: ${response.statusText}`);
     }
   } catch (error) {
@@ -119,15 +117,13 @@ export const obtenerProfesores = async () => {
  * @returns {Promise<Object>} Datos del grupo creado
  */
 export const crearGrupo = async (codigoGrupo) => {
-  // Validaciones
   if (!codigoGrupo) {
     throw new Error("Por favor ingrese un código de grupo");
   }
 
   // Estructura exacta que espera el backend
-  // IMPORTANTE: codigo_grupo debe ser STRING con solo números
   const payload = {
-    nombre_grupo: String(codigoGrupo)  // El servidor espera nombre_grupo, no codigo_grupo
+    nombre_grupo: String(codigoGrupo)
   };
 
   const headers = AuthService.getAuthHeaders();
@@ -140,8 +136,6 @@ export const crearGrupo = async (codigoGrupo) => {
       body: JSON.stringify(payload)
     });
 
-
-    // Manejo de códigos de estado HTTP
     if (response.status === 201 || response.ok) {
       const data = await response.json();
       return { success: true, data };
@@ -161,18 +155,14 @@ export const crearGrupo = async (codigoGrupo) => {
       const errorData = await response.json().catch(() => ({}));
       console.error('❌ Error detail completo:', JSON.stringify(errorData, null, 2));
       
-      // Manejar errores de validación de FastAPI
       if (errorData.detail && Array.isArray(errorData.detail)) {
-        console.error('❌ Errores de validación (Array):', errorData.detail);
-        const errorMessages = errorData.detail.map((err, index) => {
+        const errorMessages = errorData.detail.map((err) => {
           return `• ${err.loc ? err.loc.join('.') : 'Campo'}: ${err.msg || err.message || 'Error de validación'}`;
         }).join('\n');
         throw new Error('Errores de validación:\n' + errorMessages);
       }
       
-      // Si detail es un string
       if (typeof errorData.detail === 'string') {
-        console.error('❌ Error detail (string):', errorData.detail);
         throw new Error(`Error de validación: ${errorData.detail}`);
       }
       
@@ -182,22 +172,18 @@ export const crearGrupo = async (codigoGrupo) => {
       throw new Error(`Error al crear el grupo (${response.status}): ${errorData.message || errorData.detail || 'Error desconocido'}`);
     }
   } catch (error) {
-    if (error.message) {
-      throw error;
-    }
+    if (error.message) throw error;
     throw new Error("Error de conexión al crear el grupo. Verifique su conexión a internet.");
   }
 };
 
 /**
  * Actualizar un grupo existente
- * @param {string} codigoGrupo - Código/ID del grupo a actualizar
+ * @param {string} idGrupo - ID del grupo a actualizar
  * @param {string} nombreGrupo - Nuevo nombre del grupo
- * @param {string} idDocente - Nuevo ID del docente asignado
  * @returns {Promise<Object>} Datos del grupo actualizado
  */
 export const actualizarGrupo = async (idGrupo, nombreGrupo) => {
-  // Validaciones
   if (!nombreGrupo) {
     throw new Error("Por favor complete todos los campos obligatorios");
   }
@@ -237,9 +223,7 @@ export const actualizarGrupo = async (idGrupo, nombreGrupo) => {
       throw new Error(`Error al actualizar el grupo (${response.status}): ${errorData.message || errorData.detail || 'Error desconocido'}`);
     }
   } catch (error) {
-    if (error.message) {
-      throw error;
-    }
+    if (error.message) throw error;
     throw new Error("Error de conexión al actualizar el grupo. Verifique su conexión a internet.");
   }
 };
@@ -250,7 +234,6 @@ export const actualizarGrupo = async (idGrupo, nombreGrupo) => {
  * @returns {Promise<Object>} Confirmación de eliminación
  */
 export const eliminarGrupo = async (codigoGrupo) => {
-
   try {
     const response = await fetch(API_ENDPOINTS.ADMIN_GRUPO_BY_ID(codigoGrupo), { 
       credentials: 'include',
@@ -274,9 +257,7 @@ export const eliminarGrupo = async (codigoGrupo) => {
       throw new Error(`Error al eliminar el grupo (${response.status}): ${errorData.message || errorData.detail || 'Error desconocido'}`);
     }
   } catch (error) {
-    if (error.message) {
-      throw error;
-    }
+    if (error.message) throw error;
     throw new Error("Error de conexión al eliminar el grupo. Verifique su conexión a internet.");
   }
 };
@@ -302,14 +283,8 @@ export const obtenerNombreProfesor = (idDocente, profesores) => {
  * @returns {Array} Grupos filtrados
  */
 export const filtrarGrupos = (grupos, searchTerm, profesores) => {
-  // Validar que grupos sea un array
-  if (!Array.isArray(grupos)) {
-    return [];
-  }
-
-  if (!searchTerm || searchTerm.trim() === '') {
-    return grupos;
-  }
+  if (!Array.isArray(grupos)) return [];
+  if (!searchTerm || searchTerm.trim() === '') return grupos;
 
   const termino = searchTerm.toLowerCase();
 
@@ -317,7 +292,6 @@ export const filtrarGrupos = (grupos, searchTerm, profesores) => {
     try {
       const nombreGrupo = grupo?.nombre_grupo?.toLowerCase() || '';
       const nombreProfesor = obtenerNombreProfesor(grupo?.id_docente, profesores).toLowerCase();
-
       return nombreGrupo.includes(termino) || nombreProfesor.includes(termino);
     } catch (error) {
       return false;
@@ -328,29 +302,22 @@ export const filtrarGrupos = (grupos, searchTerm, profesores) => {
 // ==================== MATERIAS ====================
 
 /**
- * Obtener todas las materias (catalogo completo, sin paginar).
- *
- * Usa /admin/materias/list — el endpoint base /admin/materias pagina a 20
- * y rompia los selectores que necesitan ver TODAS las materias.
+ * Obtener todas las materias (catálogo completo, sin paginar).
  */
 export const obtenerMaterias = async () => {
   try {
     const headers = AuthService.getAuthHeaders();
-
     const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS_LIST, {
       credentials: 'include',
       method: 'GET',
       headers: headers
     });
 
-
     if (response.ok) {
       const result = await response.json();
-
       const materias = result.data || result;
       return Array.isArray(materias) ? materias : [];
     } else {
-      const errorText = await response.text();
       throw new Error(`Error al cargar materias: ${response.statusText}`);
     }
   } catch (error) {
@@ -366,7 +333,6 @@ export const obtenerMaterias = async () => {
 export const obtenerMateriaPorCodigo = async (codigoMateria) => {
   try {
     const headers = AuthService.getAuthHeaders();
-
     const response = await fetch(API_ENDPOINTS.ADMIN_MATERIA_BY_CODE(codigoMateria), {
       credentials: 'include',
       method: 'GET',
@@ -387,11 +353,7 @@ export const obtenerMateriaPorCodigo = async (codigoMateria) => {
 // ==================== ASIGNACIONES (CLASES) ====================
 
 /**
- * Crear una asignación (Clase = Docente + Materia + Grupo)
- * @param {string} idDocente - ID del docente
- * @param {string} codigoMateria - Código de la materia
- * @param {string} idGrupo - ID del grupo (UUID)
- * @returns {Promise<Object>} Datos de la asignación creada
+ * Crear una asignación única tradicional (Clase = Docente + Materia + Grupo)
  */
 export const crearAsignacion = async (idDocente, codigoMateria, idGrupo) => {
   if (!idDocente || !codigoMateria || !idGrupo) {
@@ -414,7 +376,6 @@ export const crearAsignacion = async (idDocente, codigoMateria, idGrupo) => {
       body: JSON.stringify(payload)
     });
 
-
     if (response.status === 201 || response.ok) {
       const data = await response.json();
       return { success: true, data };
@@ -432,24 +393,60 @@ export const crearAsignacion = async (idDocente, codigoMateria, idGrupo) => {
       throw new Error(`Error al crear la asignación (${response.status}): ${errorData.message || errorData.detail || 'Error desconocido'}`);
     }
   } catch (error) {
-    if (error.message) {
-      throw error;
-    }
+    if (error.message) throw error;
     throw new Error("Error de conexión al crear la asignación. Verifique su conexión a internet.");
   }
 };
 
 /**
+ * NUEVO: Enviar una asignación masiva de un docente a múltiples grupos para una materia.
+ * @param {Object} payload - Objeto estructurado { id_docente, codigo_materia, id_grupos }
+ * @returns {Promise<Object>} Resumen del conteo de registros procesados
+ */
+export const crearAsignacionBulk = async (payload) => {
+  if (!payload || !payload.id_docente || !payload.codigo_materia || !payload.id_grupos) {
+    throw new Error("Por favor asigne un docente, una materia y al menos un grupo.");
+  }
+
+  const headers = AuthService.getAuthHeaders();
+
+  try {
+    // Si tienes mapeado el endpoint masivo en tus constantes puedes cambiar la string cruda por: API_ENDPOINTS.ADMIN_MATERIAS_ASIGNACIONES_BULK
+    const response = await fetch("https://expounicesar.duckdns.org/api/v1/admin/materias/asignaciones/bulk", {
+      credentials: "include",
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (response.status === 201 || response.ok) {
+      const data = await response.json();
+      return { success: true, data };
+    } else if (response.status === 400) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Solicitud incorrecta: ${errorData.message || errorData.detail || 'Error al procesar la asignación en bloque.'}`);
+    } else if (response.status === 401) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`No autorizado: Debe iniciar sesión nuevamente.`);
+    } else if (response.status === 422) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Error de validación: Los campos enviados no coinciden con el esquema requerido.`);
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Error en asignación masiva (${response.status}): ${errorData.message || errorData.detail || 'Error desconocido'}`);
+    }
+  } catch (error) {
+    if (error.message) throw error;
+    throw new Error("Error de conexión en la asignación por lotes. Verifique su red.");
+  }
+};
+
+/**
  * Obtener todas las clases de una materia
- * @param {string} codigoMateria - Código de la materia
- * @param {Array} profesores - Lista de profesores para buscar nombres
- * @param {Array} grupos - Lista de grupos para buscar información
- * @returns {Promise<Array>} Lista de clases/asignaciones
  */
 export const obtenerClasesMateria = async (codigoMateria, profesores = [], grupos = []) => {
   try {
     const headers = AuthService.getAuthHeaders();
-
     const response = await fetch(API_ENDPOINTS.ADMIN_MATERIA_ASIGNACIONES(codigoMateria), {
       credentials: 'include',
       method: 'GET',
@@ -458,23 +455,18 @@ export const obtenerClasesMateria = async (codigoMateria, profesores = [], grupo
 
     if (response.ok) {
       const result = await response.json();
-
-      // El endpoint devuelve la materia con sus asignaciones anidadas
       const asignaciones = result.data?.asignaciones || result.asignaciones || [];
 
-      // Transformar asignaciones a formato compatible con la UI
       return asignaciones.map(asignacion => {
         const idDocente = asignacion.docente?.id_docente || asignacion.id_docente;
         const idGrupo = asignacion.grupo?.id || asignacion.id_grupo;
 
-        // Buscar el profesor en la lista para obtener el nombre completo
         const profesorInfo = profesores.find(p => {
           const docente = p?.docente || p;
           const usuario = p?.usuario || {};
           return docente?.id_docente === idDocente || usuario?.id_usuario === idDocente;
         });
 
-        // Construir el nombre completo del docente
         let docente_nombre = '';
         if (profesorInfo?.usuario) {
           const { p_nombre, p_apellido } = profesorInfo.usuario;
@@ -488,11 +480,8 @@ export const obtenerClasesMateria = async (codigoMateria, profesores = [], grupo
           docente_nombre = asignacion.docente_nombre || 'Sin nombre';
         }
 
-
-        // Buscar el grupo en la lista para obtener su información
         const grupoInfo = grupos.find(g => g?.id_grupo === idGrupo);
         const nombre_grupo = grupoInfo?.nombre_grupo || asignacion.grupo?.nombre_grupo || '';
-
 
         return {
           id_asignacion: asignacion.id_docente_materia || asignacion.id,
@@ -512,13 +501,10 @@ export const obtenerClasesMateria = async (codigoMateria, profesores = [], grupo
 
 /**
  * Obtener todas las clases de un docente
- * @param {string} idDocente - ID del docente
- * @returns {Promise<Array>} Lista de clases/asignaciones
  */
 export const obtenerClasesDocente = async (idDocente) => {
   try {
     const headers = AuthService.getAuthHeaders();
-
     const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES_ASIGNACIONES(idDocente), {
       credentials: 'include',
       method: 'GET',
