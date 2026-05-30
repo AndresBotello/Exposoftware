@@ -22,13 +22,11 @@ export default function RegisterProject() {
     setForm,
     tiposActividad,
     estudiantes,
-    materias,
-    grupos,
+    clasesDisponibles,
     lineas,
     sublineasFiltradas,
     eventos,
     areasFiltradas,
-    docenteDelGrupo,
     loading,
     loadingData,
     error,
@@ -36,8 +34,8 @@ export default function RegisterProject() {
     removeParticipant,
     buscarEstudiantes,
     submit,
-    currentUserEmail, 
-    currentUserId     
+    currentUserEmail,
+    currentUserId
   } = hookProps;
 
   // Estilo de Tailwind CSS común para modernizar los elementos <select> nativos
@@ -258,97 +256,25 @@ export default function RegisterProject() {
             })()}
           </div>
 
-          {/* Materia y Grupo */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1.5">
-                Materia <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  value={form.codigo_materia}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, codigo_materia: e.target.value, id_grupo: "", id_docente: "" }))
-                  }
-                  className={selectClassName}
-                  required
-                >
-                  <option value="">Selecciona una materia registrada</option>
-                  {materias.map((mat) => (
-                    <option key={mat.codigo} value={mat.codigo}>
-                      {mat.codigo} - {mat.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {materias.length === 0 && (
-                <p className="text-xs text-amber-700 mt-1.5 font-medium">
-                  Cargando asignaturas... Si experimentas demoras prolongadas, notifícalo a soporte.
-                </p>
-              )}
-            </div>
-
-            {/* Selector de Grupo con Docentes */}
-            {form.codigo_materia && (
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Selecciona un Grupo <span className="text-red-500">*</span>
-                </label>
-
-                {grupos && grupos.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-2.5">
-                    {grupos.map((grupo) => (
-                      <button
-                        key={grupo.id}
-                        type="button"
-                        onClick={() => setForm((s) => ({ ...s, id_grupo: grupo.id }))}
-                        className={`p-3.5 rounded-xl border transition-all text-left cursor-pointer ${
-                          form.id_grupo === grupo.id
-                            ? "border-teal-600 bg-teal-50/50 ring-1 ring-teal-600"
-                            : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="text-sm font-bold text-gray-900">
-                              Grupo: <span className="text-teal-700">{grupo.nombre}</span>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-0.5">
-                              Docente responsable: <span className="font-semibold text-gray-700">{grupo.nombreDocente || "Sin asignar"}</span>
-                            </div>
-                          </div>
-                          {form.id_grupo === grupo.id && (
-                            <div className="text-teal-600 font-bold text-sm bg-teal-100/80 px-2 py-0.5 rounded-md">
-                              Seleccionado
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <p className="text-amber-800 text-xs font-medium">No se registran grupos abiertos para esta asignatura actual.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Docente (solo lectura, auto-asignado del grupo) */}
-            {docenteDelGrupo && form.id_grupo && (
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Docente asignado al proyecto
-                </label>
-                <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-800">
-                  {docenteDelGrupo.nombreDocente || docenteDelGrupo.idDocente}
-                </div>
-                <p className="text-xs text-gray-400 mt-1">
-                  Establecido dinámicamente según las especificaciones del grupo asignado.
-                </p>
-              </div>
-            )}
-          </div>
+          {/* Docentes Evaluadores (1-3 clases) */}
+          <DocentesEvaluadoresForm
+            clasesDisponibles={clasesDisponibles}
+            selectedIds={form.id_docente_materias}
+            onAdd={(idClase) => {
+              if (form.id_docente_materias.length < 3) {
+                setForm((s) => ({
+                  ...s,
+                  id_docente_materias: [...s.id_docente_materias, idClase]
+                }));
+              }
+            }}
+            onRemove={(idClase) => {
+              setForm((s) => ({
+                ...s,
+                id_docente_materias: s.id_docente_materias.filter((x) => x !== idClase)
+              }));
+            }}
+          />
 
           {/* Línea de Investigación */}
           <div>
@@ -588,6 +514,221 @@ function ParticipantCombo({ students, selectedIds, onAdd, buscarEstudiantes, cur
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function DocentesEvaluadoresForm({ clasesDisponibles, selectedIds, onAdd, onRemove }) {
+  const [materiaSeleccionada, setMateriaSeleccionada] = useState("");
+  const [mostrarAdicionales, setMostrarAdicionales] = useState(false);
+  const [qAdicionales, setQAdicionales] = useState("");
+
+  // Extraer materias únicas
+  const materias = Array.from(
+    new Map(
+      clasesDisponibles.map((c) => [c.codigo_materia, { codigo: c.codigo_materia, nombre: c.nombre_materia }])
+    ).values()
+  );
+
+  // Filtrar clases por materia seleccionada (docente + grupo)
+  const clasesPorMateria = materiaSeleccionada
+    ? clasesDisponibles.filter((c) => c.codigo_materia === materiaSeleccionada && !selectedIds.includes(c.id))
+    : [];
+
+  // Filtrar clases adicionales no seleccionadas
+  const clasesAdicionales = clasesDisponibles
+    .filter((c) => !selectedIds.includes(c.id))
+    .filter((c) => {
+      if (!qAdicionales.trim()) return true;
+      const q = qAdicionales.toLowerCase();
+      return (
+        c.nombre_docente.toLowerCase().includes(q) ||
+        c.codigo_materia.toLowerCase().includes(q) ||
+        c.nombre_materia.toLowerCase().includes(q)
+      );
+    });
+
+  const handleAgregarPrimero = (idClase) => {
+    onAdd(idClase);
+    setMateriaSeleccionada("");
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-gray-800 mb-3">
+        Docentes Evaluadores <span className="text-red-500">*</span>
+        <span className="font-normal text-gray-500 ml-2">
+          ({selectedIds.length}/3 seleccionadas)
+        </span>
+      </label>
+
+      {/* Chips de clases seleccionadas */}
+      <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-xs mb-4">
+        <div className="flex gap-2 flex-wrap">
+          {selectedIds.map((idClase) => {
+            const clase = clasesDisponibles.find((c) => c.id === idClase);
+            if (!clase) return null;
+
+            return (
+              <span
+                key={idClase}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-medium"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-semibold">{clase.nombre_docente}</span>
+                  <span className="text-teal-700 text-[10px]">
+                    {clase.codigo_materia} · Gr. {clase.nombre_grupo}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onRemove(idClase)}
+                  className="text-teal-600 hover:text-teal-900 font-bold ml-1 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </span>
+            );
+          })}
+          {selectedIds.length === 0 && (
+            <span className="text-sm text-gray-400 italic">
+              No hay docentes asignados aún. Selecciona al menos 1.
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Sección del PRIMER docente (seleccionar materia y luego docente + grupo) */}
+      {selectedIds.length === 0 ? (
+        <div className="border border-gray-200 rounded-xl p-5 bg-gray-50">
+          <h4 className="text-sm font-bold text-gray-900 mb-4">Selecciona el primer docente evaluador:</h4>
+
+          {/* Paso 1: Seleccionar Materia */}
+          <div className="mb-4">
+            <label className="block text-xs font-semibold text-gray-700 mb-2">
+              1. Materia <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={materiaSeleccionada}
+              onChange={(e) => setMateriaSeleccionada(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
+            >
+              <option value="">Selecciona una materia</option>
+              {materias.map((m) => (
+                <option key={m.codigo} value={m.codigo}>
+                  {m.codigo} - {m.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Paso 2: Mostrar docentes y grupos de esa materia */}
+          {materiaSeleccionada && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
+                2. Docente y Grupo <span className="text-red-500">*</span>
+              </label>
+              {clasesPorMateria.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2.5 max-h-56 overflow-auto">
+                  {clasesPorMateria.map((clase) => (
+                    <button
+                      key={clase.id}
+                      type="button"
+                      onClick={() => handleAgregarPrimero(clase.id)}
+                      className="p-3.5 rounded-xl border border-gray-200 bg-white hover:border-teal-300 hover:bg-teal-50/30 text-left transition cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="text-sm font-bold text-gray-900">
+                            {clase.nombre_docente}
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            Grupo: <span className="font-semibold">{clase.nombre_grupo}</span>
+                          </div>
+                        </div>
+                        <span className="text-teal-600 font-semibold text-xs border border-teal-200 bg-teal-50/50 px-2.5 py-1 rounded-md ml-2 whitespace-nowrap">
+                          Seleccionar
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-amber-800 text-xs font-medium">
+                    No hay docentes disponibles para esta materia.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Sección para agregar docentes ADICIONALES (hasta 2 más) */
+        <div>
+          {!mostrarAdicionales ? (
+            <button
+              type="button"
+              onClick={() => setMostrarAdicionales(true)}
+              disabled={selectedIds.length >= 3}
+              className="w-full px-4 py-2.5 rounded-lg border-2 border-dashed border-teal-300 text-teal-700 text-sm font-semibold hover:bg-teal-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              + Agregar otro docente evaluador {selectedIds.length < 3 && `(${3 - selectedIds.length} disponibles)`}
+            </button>
+          ) : (
+            <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold text-gray-900">Agregar docente adicional:</h4>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMostrarAdicionales(false);
+                    setQAdicionales("");
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <input
+                value={qAdicionales}
+                onChange={(e) => setQAdicionales(e.target.value)}
+                placeholder="Busca por nombre del docente, materia o código..."
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white mb-3"
+              />
+
+              <div className="max-h-48 overflow-auto divide-y divide-gray-100">
+                {clasesAdicionales.length > 0 ? (
+                  clasesAdicionales.map((clase) => (
+                    <button
+                      key={clase.id}
+                      type="button"
+                      onClick={() => {
+                        onAdd(clase.id);
+                        setQAdicionales("");
+                        if (selectedIds.length + 1 >= 3) {
+                          setMostrarAdicionales(false);
+                        }
+                      }}
+                      className="w-full text-left py-2.5 px-3 hover:bg-teal-50/50 transition"
+                    >
+                      <div className="font-semibold text-gray-900 text-sm">{clase.nombre_docente}</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {clase.codigo_materia} - {clase.nombre_materia} · Gr. {clase.nombre_grupo}
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400 px-3 py-2">
+                    {qAdicionales.trim() ? "No coincide con tu búsqueda" : "Todas las clases ya están asignadas"}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

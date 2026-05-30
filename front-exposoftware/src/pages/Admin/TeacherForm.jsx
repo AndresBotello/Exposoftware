@@ -6,7 +6,6 @@ import { validateField, filterInput } from "../../utils/teacherValidations";
 import TeacherPersonalSection from "./TeacherPersonalSection";
 
 export default function TeacherForm({
-  
   tipoDocumento,
   setTipoDocumento,
   identificacion,
@@ -273,11 +272,11 @@ export default function TeacherForm({
                 required
               >
                 <option value="">Seleccionar tipo de vía</option>
-                <option value="Calle">Calle</option>
-                <option value="Carrera">Carrera</option>
-                <option value="Diagonal">Diagonal</option>
-                <option value="Transversal">Transversal</option>
-                <option value="Avenida">Avenida</option>
+                <option value="1">Calle</option>
+                <option value="2">Carrera</option>
+                <option value="3">Diagonal</option>
+                <option value="4">Transversal</option>
+                <option value="5">Avenida</option>
               </select>
             </div>
 

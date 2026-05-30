@@ -27,10 +27,8 @@ export function useRegisterProject() {
   const [form, setForm] = useState({
     titulo_proyecto: "",
     tipo_actividad: "",
-    id_docente: "",
+    id_docente_materias: [], // NUEVO: array de 1-3 ids (id_docente_materia)
     id_estudiantes: [],
-    id_grupo: "",
-    codigo_materia: "",
     codigo_linea: "",
     codigo_sublinea: "",
     codigo_area: "",
@@ -124,11 +122,10 @@ export function useRegisterProject() {
         }
 
         // 3️⃣ Clases disponibles (materias + grupos + docentes)
-        // Usa el nuevo endpoint que devuelve todo combinado
+        // Usa el endpoint que devuelve las clases disponibles
         let materiasData = [];
         let clasesDisponibles = [];
         try {
-
           const response = await fetch(API_ENDPOINTS.ESTUDIANTE_MIS_CLASES, {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
@@ -224,60 +221,28 @@ export function useRegisterProject() {
     }
   }, [form.codigo_linea, sublineas]);
 
-  // Cargar grupos cuando cambia la materia seleccionada
-  // Usa las clases disponibles cargadas en el endpoint /api/v1/estudiantes/mis_clases_disponibles
+  // Cargar todas las clases disponibles (sin filtrar por materia en la lista)
+  // Solo se usan para multi-select con chips
   useEffect(() => {
-    if (form.codigo_materia && clasesDisponibles.length > 0) {
-
-      // Filtrar clases disponibles por la materia seleccionada
-      const clasesDeMateria = clasesDisponibles.filter(
-        (clase) => clase.codigo_materia === form.codigo_materia
-      );
-
-      const gruposFormateados = clasesDeMateria.map((clase) => ({
+    if (clasesDisponibles.length > 0) {
+      const clasesFormateadas = clasesDisponibles.map((clase) => ({
         id: clase.id_docente_materia,
-        nombre: `Grupo ${clase.nombre_grupo || ''}`,
-        codigo_grupo: clase.nombre_grupo,
-        idDocente: clase.id_docente,
-        nombreDocente: clase.nombre_docente || 'Sin asignar',
-        id_grupo: clase.id_grupo,
-        id_docente_materia: clase.id_docente_materia
+        nombre_docente: clase.nombre_docente || 'Sin asignar',
+        codigo_materia: clase.codigo_materia,
+        nombre_materia: clase.nombre_materia || clase.codigo_materia,
+        nombre_grupo: clase.nombre_grupo || '',
+        id_docente: clase.id_docente,
       }));
-
-      setGrupos(gruposFormateados);
+      setGrupos(clasesFormateadas);
     } else {
       setGrupos([]);
-      setForm((prev) => ({ ...prev, id_grupo: "", id_docente: "" }));
     }
-  }, [form.codigo_materia, clasesDisponibles]);
-
-  // Auto-asignar docente del grupo seleccionado
-  useEffect(() => {
-    if (form.id_grupo) {
-      const grupoSeleccionado = grupos.find((g) => g.id === form.id_grupo);
-      if (grupoSeleccionado?.idDocente) {
-        const nuevoDocente = {
-          id: grupoSeleccionado.idDocente,
-          nombre: grupoSeleccionado.nombreDocente || "",
-          correo: "",
-        };
-        setDocentes((prev) => {
-          const existe = prev.find((d) => d.id === nuevoDocente.id);
-          return existe ? prev : [...prev, nuevoDocente];
-        });
-        setForm((prev) => ({ ...prev, id_docente: grupoSeleccionado.idDocente }));
-      }
-    } else {
-      setForm((prev) => ({ ...prev, id_docente: "" }));
-    }
-  }, [form.id_grupo, grupos]);
+  }, [clasesDisponibles]);
 
   // Derivados
   const areasFiltradas = form.codigo_sublinea
     ? areas.filter((a) => a.codigoSublinea === parseInt(form.codigo_sublinea))
     : [];
-
-  const docenteDelGrupo = form.id_grupo ? grupos.find((g) => g.id === form.id_grupo) : null;
 
   // Búsqueda de estudiantes
   const buscarEstudiantes = async (termino) => {
@@ -338,7 +303,37 @@ export function useRegisterProject() {
     }
     if (!form.titulo_proyecto.trim()) { alert("El título del proyecto es obligatorio"); return; }
     if (!form.tipo_actividad) { alert("Debe seleccionar un tipo de actividad"); return; }
-    if (!form.id_docente) { alert("Debe seleccionar un grupo para asignar el docente"); return; }
+
+    // Validar 1-3 clases
+    if (!form.id_docente_materias || form.id_docente_materias.length === 0) {
+      alert("Debes asignar al menos 1 clase (docente + materia + grupo).");
+      return;
+    }
+    if (form.id_docente_materias.length > 3) {
+      alert("No puedes asignar más de 3 clases al proyecto.");
+      return;
+    }
+
+    // Validar no hay docentes repetidos
+    const docentesIds = form.id_docente_materias.map(idDM => {
+      const clase = grupos.find(g => g.id === idDM);
+      return clase?.id_docente;
+    });
+    if (new Set(docentesIds).size !== docentesIds.length) {
+      alert("Un mismo docente no puede aparecer dos veces.");
+      return;
+    }
+
+    // Validar no hay materias repetidas
+    const materiasIds = form.id_docente_materias.map(idDM => {
+      const clase = grupos.find(g => g.id === idDM);
+      return clase?.codigo_materia;
+    });
+    if (new Set(materiasIds).size !== materiasIds.length) {
+      alert("Una misma materia no puede aparecer dos veces.");
+      return;
+    }
+
     if (!form.codigo_linea) { alert("Debe seleccionar una línea de investigación"); return; }
     if (!form.codigo_sublinea) { alert("Debe seleccionar una sublínea de investigación"); return; }
     if (!form.codigo_area) { alert("Debe seleccionar un área temática"); return; }
@@ -398,18 +393,12 @@ export function useRegisterProject() {
         nombresParticipantes.push(getFullName() || "Usuario actual");
       }
 
-      const docenteSeleccionado = docentes.find((d) => d.id === form.id_docente);
-      const nombreDocente = docenteSeleccionado?.nombre || docenteDelGrupo?.nombreDocente || "";
-
       const proyectoData = {
-        id_docente: form.id_docente,
-        nombre_docente: nombreDocente,
+        id_docente_materias: form.id_docente_materias, // NUEVO: array de IDs
         id_estudiantes: participantes,
         nombres_estudiantes: nombresParticipantes,
-        id_grupo: form.id_grupo,
         codigo_area: form.codigo_area,
         id_evento: form.id_evento,
-        codigo_materia: form.codigo_materia,
         codigo_linea: form.codigo_linea,
         codigo_sublinea: form.codigo_sublinea,
         titulo_proyecto: form.titulo_proyecto,
@@ -447,15 +436,13 @@ export function useRegisterProject() {
     // Catálogos
     tiposActividad: TIPOS_ACTIVIDAD,
     estudiantes,
-    docentes,
     materias,
-    grupos,
+    clasesDisponibles: grupos, // Exportar como grupos (lista de clases disponibles)
     lineas,
     sublineasFiltradas,
     eventos,
     // Derivados
     areasFiltradas,
-    docenteDelGrupo,
     // Estados de UI
     loading,
     loadingData,

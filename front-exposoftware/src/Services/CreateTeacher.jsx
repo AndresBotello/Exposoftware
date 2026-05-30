@@ -429,6 +429,7 @@ export const formatearDatosDocente = (formData) => {
     s_apellido: datosConIds.segundoApellido || null,
     id_genero: datosConIds.genero,
     id_identidad: datosConIds.identidadSexual || null,
+    fecha_nacimiento: datosConIds.fechaNacimiento,
     id_tipo_via: datosConIds.tipoVia || 2,
     numero_via: datosConIds.numeroVia || "0",
     numero_cruce: datosConIds.numeroCruce || "0",
@@ -440,6 +441,7 @@ export const formatearDatosDocente = (formData) => {
     codigo_pais_nacionalidad: datosConIds.codigoPaisNacionalidad || "COL",
     telefono: datosConIds.telefono || null,
     correo: datosConIds.correo,
+    activo: true,
     contrasena: datosConIds.contrasena || datosConIds.contraseña,
     categoria_docente: datosConIds.categoriaDocente,
     codigo_programa: datosConIds.codigoPrograma || ""

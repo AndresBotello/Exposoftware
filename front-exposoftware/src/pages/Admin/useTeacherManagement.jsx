@@ -244,6 +244,10 @@ export function useTeacherManagement() {
       limpiarFormulario();
       if (onSuccess) onSuccess(`Profesor ${nombresCompletos} creado correctamente`);
     } catch (error) {
+      console.error("❌ ERROR al crear docente:", {
+        message: error.message,
+        fullError: error
+      });
       setServerError(error.message || 'Error al crear docente');
     } finally {
       setLoading(false);

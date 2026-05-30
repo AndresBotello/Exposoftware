@@ -94,6 +94,11 @@ export default function CreateTeacher() {
     municipio, setMunicipio,
     ciudadResidencia, setCiudadResidencia,
     direccionResidencia, setDireccionResidencia,
+    tipoVia, setTipoVia,
+    numeroVia, setNumeroVia,
+    numeroCruce, setNumeroCruce,
+    numeroPlaca, setNumeroPlaca,
+    complemento, setComplemento,
     telefono, setTelefono,
     correo, setCorreo,
     contraseña, setContraseña,
@@ -104,7 +109,7 @@ export default function CreateTeacher() {
     filtroEstado, setFiltroEstado,
     profesoresFiltrados,
     municipiosApi,
-    departamentosCatalogo,
+    departamentos,
     isEditing, showEditModal, loading, serverError,
     handleSubmit, handleEdit, handleSaveEdit, handleCancelEdit, handleDelete, handleToggleActivo, handleCancel,
     
@@ -165,6 +170,12 @@ export default function CreateTeacher() {
                 municipio={municipio} setMunicipio={setMunicipio}
                 municipiosDisponibles={municipiosApi}
                 ciudadResidencia={ciudadResidencia} setCiudadResidencia={setCiudadResidencia}
+                direccionResidencia={direccionResidencia} setDireccionResidencia={setDireccionResidencia}
+                tipoVia={tipoVia} setTipoVia={setTipoVia}
+                numeroVia={numeroVia} setNumeroVia={setNumeroVia}
+                numeroCruce={numeroCruce} setNumeroCruce={setNumeroCruce}
+                numeroPlaca={numeroPlaca} setNumeroPlaca={setNumeroPlaca}
+                complemento={complemento} setComplemento={setComplemento}
                 telefono={telefono} setTelefono={setTelefono}
                 correo={correo} setCorreo={setCorreo}
                 contraseña={contraseña} setContraseña={setContraseña}
@@ -174,7 +185,7 @@ export default function CreateTeacher() {
                 errors={errors} loading={loading} isEditing={isEditing}
                 onSubmit={handleFormSubmit} onCancel={handleCancel}
                 handleInputChange={handleInputChange} options={options}
-                departamentos={departamentosCatalogo} programas={programas}
+                departamentos={departamentos} programas={programas}
                 loadingProgramas={loadingProgramas}
               />
             )}

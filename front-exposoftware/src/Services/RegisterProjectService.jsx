@@ -308,8 +308,7 @@ class RegisterProjectService {
       // Validaciones previas
       const required = [
         'titulo_proyecto',
-        'id_docente',
-        'id_grupo',
+        'id_docente_materias',
         'codigo_area',
         'codigo_linea',
         'codigo_sublinea',
@@ -320,6 +319,13 @@ class RegisterProjectService {
         if (!proyectoData[field]) {
           throw new Error(`El campo ${field.replace('_', ' ')} es obligatorio`);
         }
+      }
+
+      // Validar que id_docente_materias sea un array con 1-3 elementos
+      if (!Array.isArray(proyectoData.id_docente_materias) ||
+          proyectoData.id_docente_materias.length < 1 ||
+          proyectoData.id_docente_materias.length > 3) {
+        throw new Error('Debes asignar entre 1 y 3 clases distintas.');
       }
 
       // Validar archivos según tipo de actividad
@@ -333,29 +339,24 @@ class RegisterProjectService {
 
       // Preparar payload del proyecto según el NUEVO FORMATO del backend
       const payload = {
-        // ✅ NUEVO: id_docente como objeto con uid_docente y nombre
-        id_docente: {
-          uid_docente: proyectoData.id_docente,
-          nombre: proyectoData.nombre_docente || "" // Necesitamos el nombre del docente
-        },
-        // ✅ NUEVO: integrantes (no id_estudiantes) como array de objetos con id_usuario, nombre y es_lider
+        // ✅ id_docente_materias: array de UUIDs (1-3 clases)
+        id_docente_materias: proyectoData.id_docente_materias,
+        // ✅ id_docente_materia: el primero del array (para validación/compatibilidad)
+        id_docente_materia: proyectoData.id_docente_materias[0],
+        // ✅ integrantes como array de objetos con id_usuario, nombre y es_lider
         integrantes: proyectoData.id_estudiantes.map((id, index) => ({
           id_usuario: id,
           nombre: proyectoData.nombres_estudiantes?.[index] || "",
           es_lider: id === idUsuarioCreador // Marcar como líder si es el creador
         })),
-        // ✅ id_docente_materia identifica la clase (docente + materia + grupo)
-        id_docente_materia: proyectoData.id_grupo.toString(),
         codigo_area: parseInt(proyectoData.codigo_area),
         id_evento: proyectoData.id_evento || '1jAZE5TKXakRd9ymq1Xu',
-        codigo_materia: proyectoData.codigo_materia,
         codigo_linea: parseInt(proyectoData.codigo_linea),
         codigo_sublinea: parseInt(proyectoData.codigo_sublinea),
         titulo_proyecto: proyectoData.titulo_proyecto.trim(),
         id_tipo_actividad: parseInt(proyectoData.tipo_actividad),
         // Campos opcionales (el backend los puede llenar)
-        estado_calificacion: "Pendiente",
-        // No incluir calificacion - la asigna el profesor después
+        es_egresado: false,
       };
 
       // Agregar proyecto_data como JSON string
@@ -396,14 +397,10 @@ class RegisterProjectService {
         }
         
         
-        // 🔥 Si el error es "docente no existe", dar mensaje más claro
-        if (errorMessage.includes('No existe ningún docente')) {
-          throw new Error(
-            `❌ El docente asignado al grupo no existe en el sistema.\n\n` +
-            `Esto es un problema del backend. Contacta al administrador.\n\n` +
-            `ID del docente: ${proyectoData.id_docente}\n` +
-            `Grupo: ${proyectoData.id_grupo}`
-          );
+        // 🔥 Si el error menciona clases o docentes duplicados
+        if (errorMessage.includes('docente') || errorMessage.includes('materia')) {
+          // El servidor ya envió un mensaje claro de validación
+          throw new Error(errorMessage);
         }
         
         throw new Error(errorMessage);
