@@ -181,7 +181,6 @@ export const login = async (credentials) => {
     try {
       loginResponseBody = await loginResponse.clone().json();
     } catch (e) {
-      // Error al parsear JSON, continuar sin token
     }
 
     if (loginResponseBody) {
@@ -265,13 +264,10 @@ export const login = async (credentials) => {
 
       // Guardar datos del usuario (ahora incluye el nombre si estaba en el JWT)
       localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
-      
+
       // Guardar rol normalizado (admin, docente, estudiante)
       const rolNormalizado = normalizarRol(rolFinal);
       localStorage.setItem(STORAGE_KEYS.USER_ROLE, rolNormalizado);
-      
-      // Verificar que se guardó correctamente
-      const rolGuardado = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
       
       // Guardar tiempo de expiración (24 horas por defecto)
       const expiresAt = Date.now() + (24 * 60 * 60 * 1000);

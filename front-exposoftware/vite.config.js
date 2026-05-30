@@ -16,11 +16,11 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      external: ['quill'],
       output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules/react')) return 'vendor-react';
-          if (id.includes('node_modules/react-router-dom')) return 'vendor-router';
-          if (id.includes('node_modules')) return 'vendor';
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor': ['primereact'],
         },
       },
     },
@@ -28,7 +28,7 @@ export default defineConfig({
     minify: 'esbuild',
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: ['react', 'react-dom', 'react-router-dom', 'primereact'],
     exclude: ['quill'],
   },
 })
