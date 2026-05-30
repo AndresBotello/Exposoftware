@@ -33,7 +33,8 @@ const EditStudent = () => {
     codigo_programa: '',
     semestre: 1,
     periodo: '',
-    anio_ingreso: new Date().getFullYear()
+    anio_ingreso: new Date().getFullYear(),
+    correo: ''
   });
 
   // Cargar datos del usuario autenticado
@@ -92,7 +93,8 @@ const EditStudent = () => {
         codigo_programa: datosEstudiante.codigo_programa || '',
         semestre: datosEstudiante.semestre || 1,
         periodo: datosEstudiante.periodo || '',
-        anio_ingreso: datosEstudiante.anio_ingreso || new Date().getFullYear()
+        anio_ingreso: datosEstudiante.anio_ingreso || new Date().getFullYear(),
+        correo: datosEstudiante.usuario?.correo || ''
       });
     } catch (err) {
       setError(err.message || 'Error al cargar los datos del estudiante');
@@ -130,21 +132,49 @@ const EditStudent = () => {
       return;
     }
 
+    // Validar formato de correo si fue ingresado
+    if (formData.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) {
+      setError('Por favor ingrese un correo electrónico válido');
+      return;
+    }
+
     try {
       setGuardando(true);
       setError(null);
       setSuccess('');
-      
-      await actualizarEstudiante(studentId, formData);
-      
+
+      // Payload estructurado: el backend espera { perfil: {...}, usuario: {...} }
+      const correoOriginal = estudiante?.usuario?.correo || '';
+      const payload = {
+        perfil: {
+          codigo_programa: formData.codigo_programa,
+          semestre: formData.semestre,
+          periodo: formData.periodo,
+          anio_ingreso: formData.anio_ingreso,
+        },
+        // Solo incluir 'usuario' si el correo cambió (no enviar campos vacíos)
+        ...(formData.correo !== correoOriginal && {
+          usuario: { correo: formData.correo },
+        }),
+      };
+
+      await actualizarEstudiante(studentId, payload);
+
       setSuccess('✅ Estudiante actualizado exitosamente');
-      
+
       // Redirigir después de 1.5 segundos
       setTimeout(() => {
         navigate(`/admin/estudiantes/${studentId}`);
       }, 1500);
     } catch (err) {
-      setError(err.message || 'Error al actualizar el estudiante');
+      let msg = err.message || 'Error al actualizar el estudiante';
+      // El backend devuelve 500 con IntegrityError si el correo ya está usado
+      // por otro usuario. Lo traducimos a un mensaje claro para el admin.
+      const lower = msg.toLowerCase();
+      if (lower.includes('integrity') || lower.includes('unique') || lower.includes('duplicate')) {
+        msg = '⚠ Ese correo ya está registrado por otro usuario. Usa uno diferente.';
+      }
+      setError(msg);
     } finally {
       setGuardando(false);
     }
@@ -373,6 +403,26 @@ const EditStudent = () => {
                       disabled={guardando}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-100"
                     />
+                  </div>
+
+                  {/* Correo Electrónico */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="correo" className="block text-sm font-medium text-gray-700 mb-2">
+                      Correo Electrónico
+                    </label>
+                    <input
+                      type="email"
+                      id="correo"
+                      name="correo"
+                      value={formData.correo}
+                      onChange={handleChange}
+                      placeholder="estudiante@unicesar.edu.co"
+                      disabled={guardando}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:bg-gray-100"
+                    />
+                    <p className="mt-1 text-xs text-amber-600">
+                      ⚠ Al cambiar el correo, el estudiante deberá usar el nuevo para iniciar sesión.
+                    </p>
                   </div>
                 </div>
 

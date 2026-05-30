@@ -184,7 +184,7 @@ export const actualizarEstudiante = async (studentId, studentData) => {
     
     const response = await fetch(url, {
       credentials: 'include',
-      method: 'PUT',
+      method: 'PATCH',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(studentData)
     });
