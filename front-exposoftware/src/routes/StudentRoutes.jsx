@@ -1,9 +1,17 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { EstudianteRoute, EstudianteOEgresadoRoute } from "../components/ProtectedRoute";
-import StudentDashboard from "../pages/Student/Dashboard";
-import Profile from "../pages/Student/Profile";
-import MyProjects from "../pages/Student/MyProjects";
-import RegisterProject from "../pages/Student/RegisterProject";
+
+const StudentDashboard = lazy(() => import("../pages/Student/Dashboard"));
+const Profile = lazy(() => import("../pages/Student/Profile"));
+const MyProjects = lazy(() => import("../pages/Student/MyProjects"));
+const RegisterProject = lazy(() => import("../pages/Student/RegisterProject"));
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+  </div>
+);
 
 /**
  * StudentRoutes - Rutas protegidas para estudiantes
@@ -20,43 +28,51 @@ export default function StudentRoutes() {
   return (
     <Routes>
       {/* 🏠 Dashboard principal */}
-      <Route 
-        path="dashboard" 
+      <Route
+        path="dashboard"
         element={
           <EstudianteRoute>
-            <StudentDashboard />
+            <Suspense fallback={<LoadingFallback />}>
+              <StudentDashboard />
+            </Suspense>
           </EstudianteRoute>
-        } 
+        }
       />
-      
+
       {/* 👤 Perfil del estudiante */}
-      <Route 
-        path="profile" 
+      <Route
+        path="profile"
         element={
           <EstudianteRoute>
-            <Profile />
+            <Suspense fallback={<LoadingFallback />}>
+              <Profile />
+            </Suspense>
           </EstudianteRoute>
-        } 
+        }
       />
-      
+
       {/* 📂 Gestión de proyectos */}
-      <Route 
-        path="proyectos" 
+      <Route
+        path="proyectos"
         element={
           <EstudianteRoute>
-            <MyProjects />
+            <Suspense fallback={<LoadingFallback />}>
+              <MyProjects />
+            </Suspense>
           </EstudianteRoute>
-        } 
+        }
       />
-      
+
       {/* ➕ Registro de proyecto (estudiantes y egresados) */}
-      <Route 
-        path="register-project" 
+      <Route
+        path="register-project"
         element={
           <EstudianteOEgresadoRoute>
-            <RegisterProject />
+            <Suspense fallback={<LoadingFallback />}>
+              <RegisterProject />
+            </Suspense>
           </EstudianteOEgresadoRoute>
-        } 
+        }
       />
       
       {/* Redirección por defecto al dashboard */}

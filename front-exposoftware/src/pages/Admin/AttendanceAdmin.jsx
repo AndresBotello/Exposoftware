@@ -58,7 +58,7 @@ export default function AttendanceAdmin() {
   const buildQRData = (qrInfo, customDate = null, customHour = null) => {
     const fecha = customDate || new Date().toLocaleDateString("es-CO");
     const hora = customHour || new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-    return { evento: qrInfo.evento_nombre, id_sesion: qrInfo.evento_id, link: qrInfo.url_qr, fecha, hora };
+    return { evento: qrInfo.evento_nombre, id_sesion: qrInfo.evento_id, link: window.location.href, fecha, hora };
   };
 
   const getQRImage = (qrInfo) => qrInfo.qr_base64 ? `data:image/png;base64,${qrInfo.qr_base64}` : qrInfo.url_qr;

@@ -2,10 +2,13 @@ import { validateField, isNumericField } from "./validations";
 import * as RegisterService from "../../../Services/RegisterService";
 
 /**
- * Capitaliza la primera letra de cada palabra
+ * Capitaliza la primera letra de cada palabra (incluyendo caracteres especiales como ñ)
  */
 const capitalizeWords = (str) => {
-  return str.replace(/\b\w/g, (c) => c.toUpperCase());
+  return str
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 };
 
 export const handleChange = (

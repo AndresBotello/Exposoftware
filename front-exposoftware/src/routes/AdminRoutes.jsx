@@ -1,39 +1,43 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AdminRoute } from "../components/ProtectedRoute";
 
 // Dashboard y perfil
-import AdminDashboard from "../pages/Admin/Dashboard";
-import AdminProfile from "../pages/Admin/Profile";
+const AdminDashboard = lazy(() => import("../pages/Admin/Dashboard"));
+const AdminProfile = lazy(() => import("../pages/Admin/Profile"));
 
 // Gestión de estudiantes
-import ManageStudents from "../pages/Admin/ManageStudents";
-import StudentDetails from "../pages/Admin/StudentDetails";
-import EditStudent from "../pages/Admin/EditStudent";
+const ManageStudents = lazy(() => import("../pages/Admin/ManageStudents"));
+const StudentDetails = lazy(() => import("../pages/Admin/StudentDetails"));
+const EditStudent = lazy(() => import("../pages/Admin/EditStudent"));
 
 // Gestión académica
-import CrearGrupo from "../pages/Admin/CreateGroup";
-import CrearMateria from "../pages/Admin/CreateSubject";
-import CrearProfesor from "../pages/Admin/CreateTeacher";
-import CrearInvitadoYEgresado from "../pages/Admin/CreateGuestAndGraduate";
-import LineasInvestigacion from "../pages/Admin/CreateLines";
-import CrearFacultad from "../pages/Admin/CrearFacultades";
-import CrearPrograma from "../pages/Admin/CreatePrograms";
-//import GestionProgramas from "../pages/Admin/GestionProgramas";
-//import GestionFacultades from "../pages/Admin/GestionFacultades";
+const CrearGrupo = lazy(() => import("../pages/Admin/CreateGroup"));
+const CrearMateria = lazy(() => import("../pages/Admin/CreateSubject"));
+const CrearProfesor = lazy(() => import("../pages/Admin/CreateTeacher"));
+const CrearInvitadoYEgresado = lazy(() => import("../pages/Admin/CreateGuestAndGraduate"));
+const LineasInvestigacion = lazy(() => import("../pages/Admin/CreateLines"));
+const CrearFacultad = lazy(() => import("../pages/Admin/CrearFacultades"));
+const CrearPrograma = lazy(() => import("../pages/Admin/CreatePrograms"));
 
 // Gestión de eventos
-import RegistrarEventos from "../pages/Admin/RegisterEvent";
-import GestionarEventos from "../pages/Admin/ManageEvents";
-//import Evento from "../pages/Admin/Evento";
-import GestionAsistencia from "../pages/Admin/AttendanceAdmin";
-import EventsAttendance from "../pages/Admin/EventsAttendance";
+const RegistrarEventos = lazy(() => import("../pages/Admin/RegisterEvent"));
+const GestionarEventos = lazy(() => import("../pages/Admin/ManageEvents"));
+const GestionAsistencia = lazy(() => import("../pages/Admin/AttendanceAdmin"));
+const EventsAttendance = lazy(() => import("../pages/Admin/EventsAttendance"));
 
 // Registro de eventos por año
-import EventLog from "../pages/Admin/EventLog";
+const EventLog = lazy(() => import("../pages/Admin/EventLog"));
 
 // Otros
-import GestionCertificados from "../pages/Admin/GestionCertificados";
-import GestionProyectos from "../pages/Admin/GestionProyectos";
+const GestionCertificados = lazy(() => import("../pages/Admin/GestionCertificados"));
+const GestionProyectos = lazy(() => import("../pages/Admin/GestionProyectos"));
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+  </div>
+);
 
 /**
  * AdminRoutes - Rutas protegidas para administradores
@@ -52,85 +56,103 @@ export default function AdminRoutes() {
   return (
     <Routes>
       {/* 🏠 DASHBOARD Y PERFIL */}
-      <Route 
-        path="dashboard" 
+      <Route
+        path="dashboard"
         element={
           <AdminRoute>
-            <AdminDashboard />
+            <Suspense fallback={<LoadingFallback />}>
+              <AdminDashboard />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
-      
-      <Route 
-        path="dash" 
+
+      <Route
+        path="dash"
         element={
           <AdminRoute>
-            <AdminDashboard />
+            <Suspense fallback={<LoadingFallback />}>
+              <AdminDashboard />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
-      
-      <Route 
-        path="profile" 
+
+      <Route
+        path="profile"
         element={
           <AdminRoute>
-            <AdminProfile />
+            <Suspense fallback={<LoadingFallback />}>
+              <AdminProfile />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
 
       {/* 👥 GESTIÓN DE ESTUDIANTES */}
-      <Route 
-        path="estudiantes" 
+      <Route
+        path="estudiantes"
         element={
           <AdminRoute>
-            <ManageStudents />
+            <Suspense fallback={<LoadingFallback />}>
+              <ManageStudents />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
-      
-      <Route 
-        path="estudiantes/:studentId" 
+
+      <Route
+        path="estudiantes/:studentId"
         element={
           <AdminRoute>
-            <StudentDetails />
+            <Suspense fallback={<LoadingFallback />}>
+              <StudentDetails />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
-      
-      <Route 
-        path="estudiantes/:studentId/editar" 
+
+      <Route
+        path="estudiantes/:studentId/editar"
         element={
           <AdminRoute>
-            <EditStudent />
+            <Suspense fallback={<LoadingFallback />}>
+              <EditStudent />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
 
       {/* 📚 GESTIÓN ACADÉMICA - Grupos y Materias */}
-      <Route 
-        path="crear-grupo" 
+      <Route
+        path="crear-grupo"
         element={
           <AdminRoute>
-            <CrearGrupo />
+            <Suspense fallback={<LoadingFallback />}>
+              <CrearGrupo />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
-      
-      <Route 
-        path="crear-materia" 
+
+      <Route
+        path="crear-materia"
         element={
           <AdminRoute>
-            <CrearMateria />
+            <Suspense fallback={<LoadingFallback />}>
+              <CrearMateria />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
-      
+
       <Route
         path="crear-profesor"
         element={
           <AdminRoute>
-            <CrearProfesor />
+            <Suspense fallback={<LoadingFallback />}>
+              <CrearProfesor />
+            </Suspense>
           </AdminRoute>
         }
       />
@@ -139,105 +161,127 @@ export default function AdminRoutes() {
         path="crear-invitado-egresado"
         element={
           <AdminRoute>
-            <CrearInvitadoYEgresado />
+            <Suspense fallback={<LoadingFallback />}>
+              <CrearInvitadoYEgresado />
+            </Suspense>
           </AdminRoute>
         }
       />
 
       {/* 🏛️ GESTIÓN DE FACULTADES Y PROGRAMAS */}
-            
-      <Route 
-        path="crear-facultad" 
+
+      <Route
+        path="crear-facultad"
         element={
           <AdminRoute>
-            <CrearFacultad />
+            <Suspense fallback={<LoadingFallback />}>
+              <CrearFacultad />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
-      
-      <Route 
-        path="crear-programa" 
+
+      <Route
+        path="crear-programa"
         element={
           <AdminRoute>
-            <CrearPrograma />
+            <Suspense fallback={<LoadingFallback />}>
+              <CrearPrograma />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
 
       {/* 🔬 LÍNEAS DE INVESTIGACIÓN */}
-      <Route 
-        path="lineas-investigacion" 
+      <Route
+        path="lineas-investigacion"
         element={
           <AdminRoute>
-            <LineasInvestigacion />
+            <Suspense fallback={<LoadingFallback />}>
+              <LineasInvestigacion />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
 
       {/* 📅 GESTIÓN DE EVENTOS */}
-      <Route 
-        path="registrar-eventos" 
+      <Route
+        path="registrar-eventos"
         element={
           <AdminRoute>
-            <RegistrarEventos />
+            <Suspense fallback={<LoadingFallback />}>
+              <RegistrarEventos />
+            </Suspense>
           </AdminRoute>
-        } 
-      />
-      
-      <Route 
-        path="gestionar-eventos" 
-        element={
-          <AdminRoute>
-            <GestionarEventos />
-          </AdminRoute>
-        } 
-      />
-   
-      <Route 
-        path="asistencia" 
-        element={
-          <AdminRoute>
-            <GestionAsistencia/>
-          </AdminRoute>
-        } 
+        }
       />
 
-      <Route 
-        path="eventos-asistencias" 
+      <Route
+        path="gestionar-eventos"
         element={
           <AdminRoute>
-            <EventsAttendance/>
+            <Suspense fallback={<LoadingFallback />}>
+              <GestionarEventos />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
 
-      {/* � REGISTRO DE EVENTOS POR AÑO */}
-      <Route 
-        path="registro-eventos-anual" 
+      <Route
+        path="asistencia"
         element={
           <AdminRoute>
-            <EventLog />
+            <Suspense fallback={<LoadingFallback />}>
+              <GestionAsistencia />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
 
-      {/* �📜 CERTIFICADOS Y PROYECTOS */}
-      <Route 
-        path="certificados" 
+      <Route
+        path="eventos-asistencias"
         element={
           <AdminRoute>
-            <GestionCertificados />
+            <Suspense fallback={<LoadingFallback />}>
+              <EventsAttendance />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
       />
-      
-      <Route 
-        path="proyectos" 
+
+      {/* 📋 REGISTRO DE EVENTOS POR AÑO */}
+      <Route
+        path="registro-eventos-anual"
         element={
           <AdminRoute>
-            <GestionProyectos />
+            <Suspense fallback={<LoadingFallback />}>
+              <EventLog />
+            </Suspense>
           </AdminRoute>
-        } 
+        }
+      />
+
+      {/* 📜 CERTIFICADOS Y PROYECTOS */}
+      <Route
+        path="certificados"
+        element={
+          <AdminRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <GestionCertificados />
+            </Suspense>
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="proyectos"
+        element={
+          <AdminRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <GestionProyectos />
+            </Suspense>
+          </AdminRoute>
+        }
       />
 
       {/* Redirección por defecto al dashboard */}

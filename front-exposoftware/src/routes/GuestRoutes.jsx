@@ -1,8 +1,16 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { InvitadoRoute } from "../components/ProtectedRoute";
-import GuestDashboard from "../pages/Guest/Dashboard";
-import GuestProfile from "../pages/Guest/Profile";
-import GuestProjects from "../pages/Guest/Proyects";
+
+const GuestDashboard = lazy(() => import("../pages/Guest/Dashboard"));
+const GuestProfile = lazy(() => import("../pages/Guest/Profile"));
+const GuestProjects = lazy(() => import("../pages/Guest/Proyects"));
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+  </div>
+);
 
 /**
  * GuestRoutes - Rutas protegidas para invitados
@@ -18,33 +26,39 @@ export default function GuestRoutes() {
   return (
     <Routes>
       {/* 🏠 Dashboard principal */}
-      <Route 
-        path="dashboard" 
+      <Route
+        path="dashboard"
         element={
           <InvitadoRoute>
-            <GuestDashboard />
+            <Suspense fallback={<LoadingFallback />}>
+              <GuestDashboard />
+            </Suspense>
           </InvitadoRoute>
-        } 
+        }
       />
-      
+
       {/* 👤 Perfil del invitado */}
-      <Route 
-        path="profile" 
+      <Route
+        path="profile"
         element={
           <InvitadoRoute>
-            <GuestProfile />
+            <Suspense fallback={<LoadingFallback />}>
+              <GuestProfile />
+            </Suspense>
           </InvitadoRoute>
-        } 
+        }
       />
-      
+
       {/* 📂 Proyectos accesibles */}
-      <Route 
-        path="proyectos" 
+      <Route
+        path="proyectos"
         element={
           <InvitadoRoute>
-            <GuestProjects />
+            <Suspense fallback={<LoadingFallback />}>
+              <GuestProjects />
+            </Suspense>
           </InvitadoRoute>
-        } 
+        }
       />
       
       {/* Redirección por defecto al dashboard */}

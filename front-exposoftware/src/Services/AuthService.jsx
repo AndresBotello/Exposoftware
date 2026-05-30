@@ -23,11 +23,10 @@ const procesarRespuesta = async (response) => {
     try {
       responseData = await response.json();
     } catch (error) {
-      
+
       // Si no podemos parsear el JSON, es probable que el servidor esté caído
       if (!response.ok) {
         const textResponse = await response.text();
-        console.error('📄 Respuesta del servidor (texto):', textResponse);
         throw new Error(`Error del servidor (${response.status}): El servidor no respondió correctamente.`);
       }
     }
@@ -61,7 +60,6 @@ const procesarRespuesta = async (response) => {
 
   // Para 401, mostrar detalles específicos
   if (response.status === 401) {
-    console.error('🔒 Respuesta 401 completa del servidor:', JSON.stringify(responseData, null, 2));
     const backendMsg = responseData.message || '';
     const backendCode = responseData.code || '';
     // Detectar cuenta no verificada
@@ -158,14 +156,13 @@ export const login = async (credentials) => {
     // PASO 1: Enviar credenciales
     const loginResponse = await fetch(API_ENDPOINTS.LOGIN, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
       credentials: 'include', // Incluir cookies si el servidor las usa
       body: JSON.stringify(payload)
     });
-
 
     // Verificar si el login fue exitoso
     if (!loginResponse.ok) {
@@ -184,6 +181,7 @@ export const login = async (credentials) => {
     try {
       loginResponseBody = await loginResponse.clone().json();
     } catch (e) {
+      // Error al parsear JSON, continuar sin token
     }
 
     if (loginResponseBody) {
@@ -393,12 +391,16 @@ const normalizarRol = (rol) => {
   }
   
   // Invitado
-  if (rolLower.includes('invitado') || 
+  if (rolLower.includes('invitado') ||
       rolLower.includes('guest')) {
     return 'invitado';
   }
-  
-  console.warn('⚠️ Rol no reconocido:', rolOriginal, '(en minúsculas:', rolLower + ')');
+
+  // User genérico
+  if (rolLower === 'user') {
+    return 'user';
+  }
+
   return rolLower; // Retornar como está si no coincide
 };
 
@@ -407,7 +409,6 @@ const normalizarRol = (rol) => {
  * @deprecated Usar login() en su lugar
  */
 export const loginAdmin = async (credentials) => {
-  console.warn('⚠️ loginAdmin() está deprecado. Usa login() en su lugar.');
   return await login(credentials);
 };
 
@@ -416,7 +417,6 @@ export const loginAdmin = async (credentials) => {
  * @deprecated Usar login() en su lugar
  */
 export const loginEstudiante = async (credentials) => {
-  console.warn('⚠️ loginEstudiante() está deprecado. Usa login() en su lugar.');
   return await login(credentials);
 };
 
@@ -425,7 +425,6 @@ export const loginEstudiante = async (credentials) => {
  * @deprecated Usar login() en su lugar
  */
 export const loginDocente = async (credentials) => {
-  console.warn('⚠️ loginDocente() está deprecado. Usa login() en su lugar.');
   return await login(credentials);
 };
 

@@ -352,11 +352,11 @@ export function useRegisterProject() {
 
     if (!form.archivoPDF) { alert("Debe adjuntar el artículo en PDF"); return; }
 
-    // Límite real del servidor (proxy/backend): 1 MB máximo
-    const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB
+    // Límite real del servidor (proxy/backend): 10 MB máximo
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
     if (form.archivoPDF.size > MAX_FILE_SIZE) {
       alert(
-        `El archivo PDF es demasiado grande. Máximo: 1MB. Actual: ${(form.archivoPDF.size / 1024 / 1024).toFixed(2)}MB\n\nPor favor, comprime el PDF o reduce su tamaño.`
+        `El archivo PDF es demasiado grande. Máximo: 10MB. Actual: ${(form.archivoPDF.size / 1024 / 1024).toFixed(2)}MB\n\nPor favor, comprime el PDF o reduce su tamaño.`
       );
       return;
     }

@@ -411,8 +411,7 @@ export const crearAsignacionBulk = async (payload) => {
   const headers = AuthService.getAuthHeaders();
 
   try {
-    // Si tienes mapeado el endpoint masivo en tus constantes puedes cambiar la string cruda por: API_ENDPOINTS.ADMIN_MATERIAS_ASIGNACIONES_BULK
-    const response = await fetch("https://expounicesar.duckdns.org/api/v1/admin/materias/asignaciones/bulk", {
+    const response = await fetch("/api/v1/admin/materias/asignaciones/bulk", {
       credentials: "include",
       method: "POST",
       headers: headers,

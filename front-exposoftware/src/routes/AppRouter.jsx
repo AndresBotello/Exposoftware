@@ -1,15 +1,21 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import * as AuthService from "../Services/AuthService";
 
+// Lazy load los agrupadores de rutas (evita cargar rutas privadas innecesariamente)
+const PublicRoutes = lazy(() => import("./PublicRoutes"));
+const AdminRoutes = lazy(() => import("./AdminRoutes"));
+const StudentRoutes = lazy(() => import("./StudentRoutes"));
+const TeacherRoutes = lazy(() => import("./TeacherRoutes"));
+const GuestRoutes = lazy(() => import("./GuestRoutes"));
+const GraduateRoutes = lazy(() => import("./GraduateRoutes"));
 
-// Importa los agrupadores de rutas
-import PublicRoutes from "./PublicRoutes";
-import AdminRoutes from "./AdminRoutes";
-import StudentRoutes from "./StudentRoutes";
-import TeacherRoutes from "./TeacherRoutes";
-import GuestRoutes from "./GuestRoutes";
-import GraduateRoutes from "./GraduateRoutes";
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+  </div>
+);
 
 /**
  * AppRouter - Router principal de la aplicación
@@ -34,33 +40,75 @@ export default function AppRouter() {
   return (
     <Routes>
       {/* 🌐 Rutas públicas: Home, About, Contact, Login, etc. */}
-      <Route path="/*" element={<PublicRoutes />} />
+      <Route
+        path="/*"
+        element={
+          <Suspense fallback={<LoadingFallback />}>
+            <PublicRoutes />
+          </Suspense>
+        }
+      />
 
       {/* 🔒 Rutas privadas según el rol */}
-      
+
       {/* 👨‍💼 Admin Routes */}
       {isAuthenticated() && role === "admin" && (
-        <Route path="/admin/*" element={<AdminRoutes />} />
+        <Route
+          path="/admin/*"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <AdminRoutes />
+            </Suspense>
+          }
+        />
       )}
 
       {/* 🎓 Student Routes */}
       {isAuthenticated() && role === "estudiante" && (
-        <Route path="/student/*" element={<StudentRoutes />} />
+        <Route
+          path="/student/*"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <StudentRoutes />
+            </Suspense>
+          }
+        />
       )}
 
       {/* 👨‍🏫 Teacher Routes */}
       {isAuthenticated() && role === "docente" && (
-        <Route path="/teacher/*" element={<TeacherRoutes />} />
+        <Route
+          path="/teacher/*"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <TeacherRoutes />
+            </Suspense>
+          }
+        />
       )}
 
       {/* 🎉 Graduate Routes */}
       {isAuthenticated() && role === "egresado" && (
-        <Route path="/graduate/*" element={<GraduateRoutes />} />
+        <Route
+          path="/graduate/*"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <GraduateRoutes />
+            </Suspense>
+          }
+        />
       )}
 
       {/* 👤 Guest Routes */}
       {isAuthenticated() && role === "invitado" && (
-        <Route path="/guest/*" element={<GuestRoutes />} />
+        <Route
+          path="/guest/*"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <GuestRoutes />
+            </Suspense>
+          }
+        />
       )}
 
       {/* 🚫 Si no hay coincidencias, redirigir al home */}
