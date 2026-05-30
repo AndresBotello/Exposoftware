@@ -134,24 +134,47 @@ export default function StudentsContent({
                       </td>
                       <td className="py-4 px-4 text-sm text-gray-900">{formateado.semestre}°</td>
                       <td className="py-4 px-4">
-                        <span className={`px-2 py-1 inline-flex text-xs font-semibold rounded-full ${formateado.estadoBool ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        <div className={`px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center gap-2 w-fit ${
+                          formateado.estadoBool
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          <span className={`w-2 h-2 rounded-full ${formateado.estadoBool ? 'bg-green-600' : 'bg-red-600'}`}></span>
                           {formateado.estado}
-                        </span>
+                        </div>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="flex justify-center gap-2">
-                          <button onClick={() => verDetalles(estudianteId)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles">
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={() => verDetalles(estudianteId)}
+                            className="px-3 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors font-medium text-sm flex items-center gap-2"
+                            title="Ver detalles"
+                          >
                             <i className="pi pi-eye"></i>
-                          </button>
-                          <button onClick={() => editarEstudiante(estudianteId)} className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar">
-                            <i className="pi pi-pencil"></i>
+                            Ver
                           </button>
                           <button
-                            onClick={() => handleCambiarEstado(item, formateado.estadoBool ? 'desactivar' : 'activar')}
-                            className={`p-2 rounded-lg transition-colors ${formateado.estadoBool ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                            onClick={() => editarEstudiante(estudianteId)}
+                            className="px-3 py-2 text-yellow-600 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors font-medium text-sm flex items-center gap-2"
+                            title="Editar"
+                          >
+                            <i className="pi pi-pencil"></i>
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleCambiarEstado(
+                              { ...item, id_estudiante: item.estudiante?.id_estudiante || item.id_estudiante },
+                              formateado.estadoBool ? 'desactivar' : 'activar'
+                            )}
+                            className={`px-3 py-2 rounded-lg transition-colors font-medium text-sm flex items-center gap-2 ${
+                              formateado.estadoBool
+                                ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                                : 'text-green-600 bg-green-50 hover:bg-green-100'
+                            }`}
                             title={formateado.estadoBool ? 'Desactivar' : 'Activar'}
                           >
                             <i className={`pi ${formateado.estadoBool ? 'pi-lock' : 'pi-check-circle'}`}></i>
+                            {formateado.estadoBool ? 'Desactivar' : 'Activar'}
                           </button>
                         </div>
                       </td>

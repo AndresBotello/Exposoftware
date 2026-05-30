@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import logo from '../../assets/Logo-unicesar.png';
 import AdminSidebar from '../../components/Layout/AdminSidebar';
 import * as AuthService from '../../Services/AuthService';
-import { 
-  obtenerEstudiantePorId, 
-  actualizarEstudiante 
+import {
+  obtenerEstudiantePorId,
+  actualizarEstudiante,
+  activarEstudiante,
+  desactivarEstudiante
 } from '../../Services/StudentAdminService';
 import { obtenerTodosProgramas } from '../../Services/AcademicService';
 
@@ -20,6 +22,7 @@ const EditStudent = () => {
   
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [activando, setActivando] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState('');
   const [estudiante, setEstudiante] = useState(null);
@@ -151,6 +154,33 @@ const EditStudent = () => {
     navigate(`/admin/estudiantes/${studentId}`);
   };
 
+  const handleActivarDesactivar = async () => {
+    try {
+      setActivando(true);
+      setError(null);
+      setSuccess('');
+
+      const estaActivo = estudiante?.activo;
+
+      if (estaActivo) {
+        await desactivarEstudiante(studentId);
+        setSuccess('✅ Estudiante desactivado exitosamente');
+      } else {
+        await activarEstudiante(studentId);
+        setSuccess('✅ Estudiante activado exitosamente');
+      }
+
+      // Recargar datos del estudiante
+      setTimeout(() => {
+        cargarDatos();
+      }, 1000);
+    } catch (err) {
+      setError(err.message || 'Error al cambiar el estado del estudiante');
+    } finally {
+      setActivando(false);
+    }
+  };
+
   if (cargando) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -229,7 +259,17 @@ const EditStudent = () => {
           <main className="lg:col-span-3">
             {/* Header */}
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Editar Estudiante</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-2xl font-bold text-gray-900">Editar Estudiante</h2>
+                <div className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 ${
+                  estudiante?.activo
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${estudiante?.activo ? 'bg-green-600' : 'bg-red-600'}`}></span>
+                  {estudiante?.activo ? 'Activo' : 'Inactivo'}
+                </div>
+              </div>
               <p className="text-sm text-gray-600">
                 Editando información académica de: <strong>{nombreCompleto}</strong>
               </p>
@@ -337,41 +377,68 @@ const EditStudent = () => {
                 </div>
 
                 {/* Botones */}
-                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+                <div className="flex gap-3 justify-between pt-4 border-t border-gray-200">
                   <button
                     type="button"
-                    onClick={cancelar}
-                    disabled={guardando}
-                    className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50"
-                  >
-                    <span className="flex items-center gap-2">
-                      <i className="pi pi-times"></i>
-                      Cancelar
-                    </span>
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={guardando}
+                    onClick={handleActivarDesactivar}
+                    disabled={activando || guardando}
                     className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      guardando
-                        ? 'bg-gray-400 cursor-not-allowed text-white'
-                        : 'bg-teal-600 text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
+                      estudiante?.activo
+                        ? 'bg-red-50 text-red-700 border border-red-300 hover:bg-red-100 disabled:opacity-50'
+                        : 'bg-green-50 text-green-700 border border-green-300 hover:bg-green-100 disabled:opacity-50'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      {guardando ? (
+                      {activando ? (
                         <>
-                          <span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full"></span>
-                          Guardando...
+                          <span className="animate-spin inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full"></span>
+                          {estudiante?.activo ? 'Desactivando...' : 'Activando...'}
                         </>
                       ) : (
                         <>
-                          <i className="pi pi-save"></i>
-                          Guardar Cambios
+                          <i className={`pi ${estudiante?.activo ? 'pi-ban' : 'pi-check'}`}></i>
+                          {estudiante?.activo ? 'Desactivar Estudiante' : 'Activar Estudiante'}
                         </>
                       )}
                     </span>
                   </button>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={cancelar}
+                      disabled={guardando || activando}
+                      className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50"
+                    >
+                      <span className="flex items-center gap-2">
+                        <i className="pi pi-times"></i>
+                        Cancelar
+                      </span>
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={guardando || activando}
+                      className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                        guardando || activando
+                          ? 'bg-gray-400 cursor-not-allowed text-white'
+                          : 'bg-teal-600 text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        {guardando ? (
+                          <>
+                            <span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full"></span>
+                            Guardando...
+                          </>
+                        ) : (
+                          <>
+                            <i className="pi pi-save"></i>
+                            Guardar Cambios
+                          </>
+                        )}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

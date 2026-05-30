@@ -367,10 +367,12 @@ class RegisterProjectService {
         formData.append('archivo_extra', archivoExtra);
       }
 
+      const token = getAuthToken();
       const response = await fetch(API_ENDPOINTS.PROYECTOS, {
         method: 'POST',
         headers: {
           // NO incluir Content-Type, lo maneja FormData automáticamente
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: formData,
         credentials: 'include',
@@ -378,8 +380,7 @@ class RegisterProjectService {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        console.error('❌ Error completo (JSON):', JSON.stringify(err, null, 2));
-        
+
         // Extraer mensaje de error detallado
         let errorMessage = 'Error desconocido';
         if (err.detail) {
@@ -409,7 +410,6 @@ class RegisterProjectService {
       }
 
       const result = await response.json();
-
       return result;
     } catch (error) {
       throw error;
