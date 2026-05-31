@@ -3,17 +3,18 @@ import { useNavigate } from "react-router-dom";
 import logo from "../../assets/Logo-unicesar.png";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
 import * as AuthService from "../../Services/AuthService";
-import { 
-  obtenerGrupos, 
-  obtenerProfesores, 
-  crearGrupo, 
-  actualizarGrupo, 
-  eliminarGrupo, 
-  filtrarGrupos, 
-  obtenerMaterias, 
+import {
+  obtenerGrupos,
+  obtenerProfesores,
+  crearGrupo,
+  actualizarGrupo,
+  eliminarGrupo,
+  filtrarGrupos,
+  obtenerMaterias,
   crearAsignacionBulk, // Reemplazamos la función antigua del servicio
-  obtenerClasesMateria 
+  obtenerClasesMateria
 } from "../../Services/CreateGroup";
+import { eliminarAsignacionDocente } from "../../Services/CreateSubject";
 import { TablaGrupos, extractProfessorInfo } from "./GroupHelpers";
 
 export default function CreateGroup() {
@@ -44,6 +45,7 @@ export default function CreateGroup() {
   
   const [clasesMateria, setClasesMateria] = useState([]);
   const [loadingClases, setLoadingClases] = useState(false);
+  const [eliminandoClase, setEliminandoClase] = useState(null);
 
   useEffect(() => {
     const user = AuthService.getUserData();
@@ -255,6 +257,34 @@ export default function CreateGroup() {
     }
   };
 
+  const handleEliminarAsignacion = async (idDocenteMateria, nombreGrupo, nombreDocente) => {
+    if (!window.confirm(`¿Estás seguro de que deseas remover la asignación del docente "${nombreDocente}" del grupo "${nombreGrupo}"?\n\nNota: Esta operación no se puede deshacer.`)) {
+      return;
+    }
+
+    setEliminandoClase(idDocenteMateria);
+    try {
+      await eliminarAsignacionDocente(idDocenteMateria);
+      alert('✅ Asignación eliminada exitosamente');
+
+      // Recargar las clases
+      const codigoMateria = codigoMateriaSeleccionada;
+      if (codigoMateria) {
+        setLoadingClases(true);
+        try {
+          const clases = await obtenerClasesMateria(codigoMateria);
+          setClasesMateria(clases);
+        } finally {
+          setLoadingClases(false);
+        }
+      }
+    } catch (error) {
+      alert('❌ Error al eliminar asignación: ' + error.message);
+    } finally {
+      setEliminandoClase(null);
+    }
+  };
+
   const gruposFiltrados = filtrarGrupos(grupos, searchTerm, profesores);
   const spinnerPath = "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z";
 
@@ -314,15 +344,15 @@ export default function CreateGroup() {
                 <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
                   <div>
                     <label htmlFor="codigoGrupo" className="block text-sm font-medium text-gray-700 mb-2">
-                      Código del Grupo <span className="text-red-500">*</span>
+                      Nombre del Grupo <span className="text-red-500">*</span>
                     </label>
-                    <input type="number" id="codigoGrupo" value={codigoGrupo}
-                      onChange={(e) => setCodigoGrupo(e.target.value)}
-                      placeholder="Ej: 101, 102, 203"
+                    <input type="text" id="codigoGrupo" value={codigoGrupo}
+                      onChange={(e) => setCodigoGrupo(e.target.value.toUpperCase())}
+                      placeholder="Ej: DEVOPS, CLOUD COMPUTING, PATRONES DE DISEÑO"
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                      required min="1"
+                      required
                     />
-                    <p className="mt-1 text-xs text-gray-500">Código numérico único del grupo (Ej: 101, 102, 203).</p>
+                    <p className="mt-1 text-xs text-gray-500">Nombre único del grupo. Se convertirá a mayúsculas automáticamente.</p>
                   </div>
                   <div className="pt-4">
                     <button type="submit" disabled={submitting || loadingProfesores}
@@ -431,16 +461,44 @@ export default function CreateGroup() {
                           <p className="text-sm font-medium text-blue-900 mb-3">Clases existentes en esta materia:</p>
                           <div className="space-y-2">
                             {clasesMateria.map((clase, idx) => (
-                              <div key={idx} className="bg-white rounded p-2 border border-blue-100 text-sm">
-                                <div className="flex gap-4">
-                                  <div>
-                                    <span className="font-medium text-gray-700">Docente:</span>
-                                    <span className="text-gray-900 ml-2">{clase.docente_nombre || `ID: ${clase.id_docente}`}</span>
+                              <div key={idx} className="bg-white rounded p-3 border border-blue-100 text-sm">
+                                <div className="flex items-center justify-between gap-4">
+                                  <div className="flex gap-4 flex-1">
+                                    <div>
+                                      <span className="font-medium text-gray-700">Docente:</span>
+                                      <span className="text-gray-900 ml-2">{clase.docente_nombre || `ID: ${clase.id_docente}`}</span>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium text-gray-700">Grupo:</span>
+                                      <span className="text-gray-900 ml-2">{clase.nombre_grupo || clase.codigo_grupo || 'Sin asignar'}</span>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <span className="font-medium text-gray-700">Grupo:</span>
-                                    <span className="text-gray-900 ml-2">{clase.nombre_grupo || 'Sin asignar'}</span>
-                                  </div>
+                                  {(clase.id_asignacion || clase.id_docente_materia) && (
+                                    <button
+                                      onClick={() => handleEliminarAsignacion(clase.id_asignacion || clase.id_docente_materia, clase.nombre_grupo || clase.codigo_grupo, clase.docente_nombre || clase.id_docente)}
+                                      disabled={eliminandoClase === (clase.id_asignacion || clase.id_docente_materia)}
+                                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all flex-shrink-0 ${
+                                        eliminandoClase === (clase.id_asignacion || clase.id_docente_materia)
+                                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                          : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
+                                      }`}
+                                      title="Remover asignación"
+                                    >
+                                      {eliminandoClase === (clase.id_asignacion || clase.id_docente_materia) ? (
+                                        <>
+                                          <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          </svg>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <i className="pi pi-trash text-xs"></i>
+                                          Remover
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -508,9 +566,9 @@ export default function CreateGroup() {
             <form onSubmit={handleSaveEdit} className="p-6 space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Nombre del Grupo <span className="text-red-500">*</span></label>
-                <input type="text" value={codigoGrupo} onChange={(e) => setCodigoGrupo(e.target.value)}
+                <input type="text" value={codigoGrupo} onChange={(e) => setCodigoGrupo(e.target.value.toUpperCase())}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                  placeholder="Ej: 101, 102, 203"
+                  placeholder="Ej: DEVOPS, CLOUD COMPUTING, PATRONES DE DISEÑO"
                   required
                 />
               </div>

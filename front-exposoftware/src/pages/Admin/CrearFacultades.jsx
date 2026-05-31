@@ -162,10 +162,12 @@ export default function CrearFacultades() {
   };
 
   // Filtrar facultades
-  const facultadesFiltradas = facultades.filter((facultad) =>
-    facultad.nombre_facultad?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    facultad.id_facultad?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const facultadesFiltradas = facultades.filter((facultad) => {
+    const nombre = (facultad.nombre_facultad || '').toLowerCase();
+    const id = (String(facultad.id_facultad) || '').toLowerCase();
+    const termino = searchTerm.toLowerCase();
+    return nombre.includes(termino) || id.includes(termino);
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">

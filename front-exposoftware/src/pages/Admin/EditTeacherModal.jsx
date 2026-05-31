@@ -21,7 +21,7 @@ export default function EditTeacherModal({
   // Cargar programa específico si no se encuentra en la lista
   useEffect(() => {
     if (show && codigoPrograma && programas.length > 0) {
-      const existe = programas.find(p => String(p.codigo || p.id) === String(codigoPrograma));
+      const existe = programas.find(p => String(p.codigo_programa) === String(codigoPrograma));
       if (!existe && !loadingPrograma) {
         setLoadingPrograma(true);
         // Intentar cargar el programa por su código usando el endpoint correcto
@@ -136,8 +136,8 @@ export default function EditTeacherModal({
                     <p>Código actual: {codigoPrograma}</p>
                     {programas.length > 0 ? (
                       <>
-                        {programas.find(p => String(p.codigo || p.id) === String(codigoPrograma)) ?
-                          <p className="text-green-700">✓ {programas.find(p => String(p.codigo || p.id) === String(codigoPrograma)).nombre || 'Programa encontrado'}</p>
+                        {programas.find(p => String(p.codigo_programa) === String(codigoPrograma)) ?
+                          <p className="text-green-700">✓ {programas.find(p => String(p.codigo_programa) === String(codigoPrograma)).nombre_programa || 'Programa encontrado'}</p>
                           : (
                             <>
                               {loadingPrograma ? (
@@ -147,7 +147,7 @@ export default function EditTeacherModal({
                               ) : (
                                 <>
                                   <p className="text-red-700">⚠️ No encontrado en la lista</p>
-                                  <p className="text-xs mt-2">Códigos disponibles: {programas.map(p => p.codigo || p.id).join(', ')}</p>
+                                  <p className="text-xs mt-2">Códigos disponibles: {programas.map(p => p.codigo_programa).join(', ')}</p>
                                 </>
                               )}
                             </>
@@ -170,8 +170,8 @@ export default function EditTeacherModal({
                     {loadingProgramas ? 'Cargando programas...' : programas.length === 0 ? 'No hay programas disponibles' : 'Seleccionar programa'}
                   </option>
                   {programas.map((prog, idx) => (
-                    <option key={`${prog.codigo || prog.id || idx}`} value={String(prog.codigo || prog.id)}>
-                      {prog.nombre || prog.name}
+                    <option key={`${prog.codigo_programa || idx}`} value={String(prog.codigo_programa)}>
+                      {prog.nombre_programa || prog.nombre || 'Sin nombre'}
                     </option>
                   ))}
                 </select>

@@ -275,6 +275,26 @@ export const crearAsignacionDocente = async (asignacionData) => {
   }
 };
 
+/**
+ * Eliminar una asignación de docente a grupo
+ * @param {string} idDocenteMateria - ID de la asignación (id_docente_materia)
+ * @returns {Promise<Object>} Respuesta del servidor
+ */
+export const eliminarAsignacionDocente = async (idDocenteMateria) => {
+  try {
+    const response = await fetch(API_ENDPOINTS.ADMIN_ASIGNACION_DELETE(idDocenteMateria), {
+      credentials: 'include',
+      method: 'DELETE',
+      headers: AuthService.getAuthHeaders()
+    });
+
+    const resultado = await procesarRespuesta(response);
+    return resultado;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 /**
  * Actualizar una materia existente
@@ -392,11 +412,13 @@ export const filtrarMaterias = (materias, searchTerm) => {
   }
 
   const termino = searchTerm.toLowerCase();
-  return materias.filter(materia =>
-    materia.codigo_materia.toLowerCase().includes(termino) ||
-    materia.nombre_materia.toLowerCase().includes(termino) ||
-    materia.ciclo_semestral.toLowerCase().includes(termino)
-  );
+  return materias.filter(materia => {
+    const codigo = (materia.codigo_materia || '').toLowerCase();
+    const nombre = (materia.nombre_materia || '').toLowerCase();
+    const ciclo = (materia.ciclo_semestral || '').toLowerCase();
+
+    return codigo.includes(termino) || nombre.includes(termino) || ciclo.includes(termino);
+  });
 };
 
 
@@ -420,8 +442,7 @@ export const validarGruposUnicos = (grupos) => {
  */
 export const obtenerAsignacionesMateria = async (codigoMateria) => {
   try {
-    // Usar el endpoint optimizado que devuelve todas las clases
-    const url = `${API_ENDPOINTS.ADMIN_MATERIAS}/${codigoMateria}/asignaciones_docentes`;
+    const url = API_ENDPOINTS.ADMIN_MATERIA_DOCENTES(codigoMateria);
 
     const response = await fetch(url, {
       credentials: 'include',

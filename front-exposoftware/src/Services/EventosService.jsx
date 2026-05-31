@@ -118,23 +118,30 @@ class EventosService {
       if (eventoData.lugar && eventoData.lugar.trim()) {
         payload.lugar = eventoData.lugar.trim();
       }
-      
+
+      // Agregar fechas de inscripciones si están presentes
+      if (eventoData.fecha_apertura_inscripciones) {
+        payload.fecha_apertura_inscripciones = eventoData.fecha_apertura_inscripciones;
+      }
+
+      if (eventoData.fecha_cierre_inscripciones) {
+        payload.fecha_cierre_inscripciones = eventoData.fecha_cierre_inscripciones;
+      }
+
       // Validar y convertir cupo_maximo correctamente
       if (eventoData.cupo_maximo !== null && eventoData.cupo_maximo !== undefined && eventoData.cupo_maximo !== '') {
         const cupoParsed = parseInt(eventoData.cupo_maximo);
-        
+
         if (isNaN(cupoParsed)) {
           throw new Error(`cupo_maximo debe ser un número válido, recibido: ${eventoData.cupo_maximo}`);
         }
-        
+
         if (cupoParsed <= 0) {
           throw new Error(`cupo_maximo debe ser mayor a 0, recibido: ${cupoParsed}`);
         }
-        
+
         payload.cupo_maximo = cupoParsed;
       }
-      
-      console.log('📦 Payload final a enviar:', JSON.stringify(payload, null, 2));
 
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS, {
         credentials: 'include',
@@ -164,8 +171,6 @@ class EventosService {
   static async actualizarEvento(eventoId, eventoData) {
     try {
 
-      console.log('📦 Payload final:', JSON.stringify(eventoData, null, 2));
-
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_BY_ID(eventoId), {
         credentials: 'include',
         method: 'PUT',
@@ -175,14 +180,11 @@ class EventosService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Payload enviado:', JSON.stringify(eventoData, null, 2));
 
         let mensajeError = errorData.message || errorData.detail || `Error ${response.status}: ${response.statusText}`;
 
         if (errorData.errors) {
           if (Array.isArray(errorData.errors)) {
-            // Si es un array de errores
-            console.error('❌ Errores en array:', JSON.stringify(errorData.errors, null, 2));
             mensajeError = errorData.errors.map((err, idx) => {
               if (typeof err === 'string') return err;
               if (err.message) return err.message;
@@ -248,8 +250,6 @@ class EventosService {
       }
 
       const data = await response.json();
-      console.log(`✅ Asistentes obtenidos (${data.length || 0}):`, data);
-      
       return Array.isArray(data) ? data : (data.data || data.asistentes || []);
       
     } catch (error) {
@@ -279,7 +279,6 @@ class EventosService {
       return Array.isArray(data) ? data : (data.data || data.eventos || []);
 
     } catch (error) {
-      console.error('❌ Error obteniendo eventos (admin):', error);
       throw new Error('No se pudieron cargar los eventos');
     }
   }
@@ -321,8 +320,6 @@ class EventosService {
         estado: estado.toLowerCase(),
         comentario: null
       };
-
-      console.log('📦 Payload:', JSON.stringify(payload, null, 2));
 
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_ESTADO(eventoId), {
         credentials: 'include',
