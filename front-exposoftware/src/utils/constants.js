@@ -67,6 +67,7 @@ export const API_ENDPOINTS = {
   ADMIN_MATERIA_BY_CODE: (materiaCode) => `${API_BASE_URL}/api/v1/admin/materias/${materiaCode}`,
   ADMIN_MATERIA_ASIGNACIONES: (materiaCode) => `${API_BASE_URL}/api/v1/admin/materias/${materiaCode}/asignaciones`,
   ADMIN_MATERIAS_ASIGNACIONES: `${API_BASE_URL}/api/v1/admin/materias/asignaciones`,
+  ADMIN_MATERIAS_ASIGNACIONES_BULK: `${API_BASE_URL}/api/v1/admin/materias/asignaciones/bulk`,
   ASIGNACIONES_DOCENTE: `${API_BASE_URL}/api/v1/admin/asignaciones-docentes`,
   ADMIN_MATERIA_DOCENTES: (materiaCode) => `${API_BASE_URL}/api/v1/admin/materias/${materiaCode}/asignaciones/docentes`,
   ADMIN_DOCENTES_ASIGNACIONES: (docenteId) => `${API_BASE_URL}/api/v1/admin/materias/docentes/${docenteId}/asignaciones`,

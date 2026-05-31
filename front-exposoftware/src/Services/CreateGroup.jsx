@@ -411,7 +411,7 @@ export const crearAsignacionBulk = async (payload) => {
   const headers = AuthService.getAuthHeaders();
 
   try {
-    const response = await fetch("/api/v1/admin/materias/asignaciones/bulk", {
+    const response = await fetch(API_ENDPOINTS.ADMIN_MATERIAS_ASIGNACIONES_BULK, {
       credentials: "include",
       method: "POST",
       headers: headers,
