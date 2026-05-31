@@ -227,26 +227,47 @@ export function ProjectDetailsModal({
           </div>
 
           {/* Docentes Responsables */}
-          {project.id_docente && (
+          {(project.docentes_materias?.length > 0 || project.id_docente) && (
             <div>
               <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <i className="pi pi-briefcase text-blue-600"></i>
-                Docentes Responsables
+                <i className="pi pi-users text-blue-600"></i>
+                Docentes Responsables ({project.docentes_materias?.length || 1})
               </h5>
               <div className="space-y-2">
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i className="pi pi-user text-blue-600 text-sm"></i>
+                {project.docentes_materias && project.docentes_materias.length > 0 ? (
+                  project.docentes_materias.map((docente, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                    >
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i className="pi pi-user text-blue-600 text-sm"></i>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {docente.nombre_docente}
+                        </p>
+                        {docente.nombre_materia && (
+                          <p className="text-xs text-blue-700 mt-1">
+                            <i className="pi pi-book text-xs mr-1"></i>
+                            {docente.nombre_materia} (Grupo {docente.nombre_grupo})
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : project.id_docente ? (
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <i className="pi pi-user text-blue-600 text-sm"></i>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        {obtenerNombreDocente(project.id_docente)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
-                      {obtenerNombreDocente(project.id_docente)}
-                    </p>
-                    <p className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded inline-block mt-1">
-                      Docente Principal
-                    </p>
-                  </div>
-                </div>
+                ) : null}
               </div>
             </div>
           )}

@@ -80,7 +80,7 @@ export default function ProyectoDetalleDialog({ showDetalleDialog, setShowDetall
           </div>
         </div>
 
-        {/* Evento y Docente */}
+        {/* Evento y Docentes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -91,10 +91,26 @@ export default function ProyectoDetalleDialog({ showDetalleDialog, setShowDetall
           </div>
           <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <i className="pi pi-user text-teal-600"></i>
-              <label className="text-sm font-semibold text-teal-900">Docente Responsable</label>
+              <i className="pi pi-users text-teal-600"></i>
+              <label className="text-sm font-semibold text-teal-900">Docentes Responsables ({selectedProyecto.docentes_materias?.length || 0})</label>
             </div>
-            <p className="text-base font-medium text-teal-800">{selectedProyecto.nombre_docente || 'No asignado'}</p>
+            <div className="space-y-2">
+              {selectedProyecto.docentes_materias && selectedProyecto.docentes_materias.length > 0 ? (
+                selectedProyecto.docentes_materias.map((docente, idx) => (
+                  <div key={idx} className="text-sm font-medium text-teal-900 bg-white p-2 rounded border border-teal-100">
+                    <p className="font-semibold">{docente.nombre_docente}</p>
+                    {docente.nombre_materia && (
+                      <p className="text-xs text-teal-700 mt-1">
+                        <i className="pi pi-book text-xs mr-1"></i>
+                        {docente.nombre_materia} (Grupo {docente.nombre_grupo})
+                      </p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-base font-medium text-teal-800">No asignado</p>
+              )}
+            </div>
           </div>
         </div>
 

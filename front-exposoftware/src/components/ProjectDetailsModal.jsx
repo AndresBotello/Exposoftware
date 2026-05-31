@@ -192,22 +192,28 @@ export default function ProjectDetailsModal({
                     </p>
                   </div>
                 )}
-                {selectedProject.nombre_docente && (
+                {(selectedProject.docentes_materias?.length > 0 || selectedProject.nombre_docente || selectedProject.id_docente) && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Docente Responsable</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {selectedProject.nombre_docente}
-                    </p>
-                  </div>
-                )}
-                {selectedProject.id_docente && !selectedProject.nombre_docente && (
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Docente Responsable</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {typeof selectedProject.id_docente === 'object'
-                        ? selectedProject.id_docente.nombre || selectedProject.id_docente.p_nombre
-                        : selectedProject.id_docente}
-                    </p>
+                    <p className="text-xs text-gray-500 mb-2">Docente(s) Responsable(s)</p>
+                    <div className="space-y-2">
+                      {selectedProject.docentes_materias && selectedProject.docentes_materias.length > 0 ? (
+                        selectedProject.docentes_materias.map((docente, idx) => (
+                          <div key={idx} className="text-sm font-medium text-gray-900 bg-blue-50 p-2 rounded border border-blue-100">
+                            <p className="font-semibold text-blue-900">{docente.nombre_docente}</p>
+                            {docente.nombre_materia && (
+                              <p className="text-xs text-blue-700 mt-1">
+                                <i className="pi pi-book text-xs mr-1"></i>
+                                {docente.nombre_materia} (Grupo {docente.nombre_grupo})
+                              </p>
+                            )}
+                          </div>
+                        ))
+                      ) : selectedProject.nombre_docente ? (
+                        <p className="text-sm font-medium text-gray-900">{selectedProject.nombre_docente}</p>
+                      ) : (
+                        <p className="text-sm text-gray-600">No asignado</p>
+                      )}
+                    </div>
                   </div>
                 )}
                 {(eventoInfo?.nombre_evento || selectedProject.nombre_evento) && (

@@ -53,6 +53,14 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
     );
   };
 
+  const docenteTemplate = (rowData) => {
+    const docente = rowData.docentes_materias?.[0]?.nombre_docente;
+    if (!docente) {
+      return <span className="text-gray-400">No asignado</span>;
+    }
+    return <span className="text-gray-900">{docente}</span>;
+  };
+
   const accionesTemplate = (rowData) => (
     <Button icon="pi pi-eye" rounded outlined severity="info" tooltip="Ver detalles" tooltipOptions={{ position: 'top' }} onClick={() => onVerDetalles(rowData)} />
   );
@@ -188,6 +196,7 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
           >
             <Column field="titulo_proyecto" header="Nombre del Proyecto" body={nombreTemplate} sortable style={{ minWidth: '280px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
             <Column field="id_tipo_actividad" header="Tipo" body={tipoActividadTemplate} sortable style={{ minWidth: '140px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
+            <Column field="docentes_materias" header="Docente Responsable" body={docenteTemplate} sortable style={{ minWidth: '200px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
             <Column field="calificacion" header="Calificación" body={calificacionTemplate} sortable style={{ minWidth: '120px', textAlign: 'center' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600', textAlign: 'center' }} />
             <Column field="estado" header="Estado" body={estadoTemplate} sortable style={{ minWidth: '130px' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600' }} />
             <Column header="Acciones" body={accionesTemplate} exportable={false} style={{ minWidth: '80px', textAlign: 'center' }} headerStyle={{ backgroundColor: '#f8fafc', fontWeight: '600', textAlign: 'center' }} />
