@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import * as ProjectsService from "../../Services/ProjectsService";
+import { actualizarProyectoConArchivo } from "../../Services/ProjectsService";
 import EventosService from "../../Services/EventosService";
 import MisClasesService from "../../Services/MisClasesService";
 import { useProjectFilters } from "../../hooks/Student/useProjectFilters";
@@ -113,6 +114,33 @@ export default function MyProjects() {
     setShowModal(false);
     setSelectedProject(null);
     setEventoInfo(null);
+  };
+
+  const handleEditProject = async (editData, archivoPDF = null) => {
+    if (!selectedProject) return;
+
+    try {
+      const datosActualizacion = {
+        titulo_proyecto: editData.titulo_proyecto,
+        codigo_area: editData.codigo_area,
+        codigo_linea: editData.codigo_linea,
+        codigo_sublinea: editData.codigo_sublinea,
+        id_tipo_actividad: editData.id_tipo_actividad
+      };
+
+      await actualizarProyectoConArchivo(selectedProject.id_proyecto, datosActualizacion, archivoPDF);
+
+      const idEstudiante = user?.id_estudiante || user?.id_usuario;
+      if (idEstudiante) {
+        let misProyectos = await ProjectsService.obtenerMisProyectos(idEstudiante);
+        setProjects(misProyectos);
+      }
+
+      closeModal();
+      alert('✅ Proyecto actualizado exitosamente');
+    } catch (error) {
+      alert(`Error al actualizar: ${error.message}`);
+    }
   };
 
   const handleMemberAdded = async () => {
@@ -677,6 +705,7 @@ export default function MyProjects() {
         onDownloadTodosCertificados={handleDescargarTodosCertificados}
         token={localStorage.getItem('auth_token')}
         onOpenAddMember={() => setShowAddMemberModal(true)}
+        onEdit={handleEditProject}
       />
 
       {selectedProject && (

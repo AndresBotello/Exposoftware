@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from '../utils/constants';
+import { API_ENDPOINTS, API_BASE_URL } from '../utils/constants';
 
 const getAuthToken = () => {
   return localStorage.getItem('auth_token');
@@ -178,6 +178,49 @@ export const actualizarProyecto = async (projectId, projectData) => {
 };
 
 /**
+ * Actualizar proyecto con archivo (PATCH)
+ * Permite actualizar título, estado, área y reemplazar archivo PDF
+ */
+export const actualizarProyectoConArchivo = async (projectId, datosActualizacion, archivo = null) => {
+  try {
+    const url = API_ENDPOINTS.PROYECTO_BY_ID(projectId);
+    const headers = getAuthHeaders();
+
+    let requestBody;
+    let finalHeaders = { ...headers };
+
+    if (archivo) {
+      const formData = new FormData();
+      formData.append('proyecto_data', JSON.stringify(datosActualizacion));
+      formData.append('archivo', archivo);
+      requestBody = formData;
+      delete finalHeaders['Content-Type'];
+    } else {
+      requestBody = datosActualizacion;
+      finalHeaders['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: finalHeaders,
+      body: archivo ? requestBody : JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('❌ Error en actualizarProyectoConArchivo:', error);
+    throw error;
+  }
+};
+
+/**
  * Obtener proyectos del docente autenticado
  *
  * Obtiene todos los proyectos y filtra por id_docente (session-based auth)
@@ -292,6 +335,38 @@ export const eliminarProyecto = async (projectId) => {
     return true;
   } catch (error) {
     console.error(`❌ Error eliminando proyecto:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Eliminar proyecto de forma permanente (SOLO ADMIN)
+ * DELETE /api/v1/admin/proyectos/{id_proyecto}/eliminar
+ * Elimina el proyecto y todos sus datos relacionados
+ */
+export const eliminarProyectoPermanentemente = async (projectId) => {
+  try {
+    const headers = getAuthHeaders();
+    const url = `${API_BASE_URL}/api/v1/admin/proyectos/${projectId}/eliminar`;
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: headers
+    });
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = await response.text();
+      }
+      throw new Error(errorData?.message || errorData || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    return true;
+  } catch (error) {
     throw error;
   }
 };

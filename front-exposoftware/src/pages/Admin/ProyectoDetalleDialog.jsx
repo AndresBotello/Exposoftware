@@ -27,15 +27,40 @@ function EstadoTag({ estado }) {
   return <Tag value={estadoData.label} severity={estadoData.severity} icon={`pi ${estadoData.icon}`} />;
 }
 
-export default function ProyectoDetalleDialog({ showDetalleDialog, setShowDetalleDialog, selectedProyecto, nombreEvento }) {
+export default function ProyectoDetalleDialog({ showDetalleDialog, setShowDetalleDialog, selectedProyecto, nombreEvento, onEliminar, onEdit, isAdmin }) {
+
   const [calificacionPopular, setCalificacionPopular] = useState(null);
   const [loadingVotos, setLoadingVotos] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({
+    titulo_proyecto: selectedProyecto?.titulo_proyecto || '',
+    codigo_area: selectedProyecto?.codigo_area || '',
+    codigo_linea: selectedProyecto?.codigo_linea || '',
+    codigo_sublinea: selectedProyecto?.codigo_sublinea || '',
+    id_tipo_actividad: selectedProyecto?.id_tipo_actividad || ''
+  });
+  const [archivoPDF, setArchivoPDF] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (showDetalleDialog && selectedProyecto?.id_proyecto) {
       cargarCalificacionPopular();
     }
   }, [showDetalleDialog, selectedProyecto?.id_proyecto]);
+
+  useEffect(() => {
+    if (selectedProyecto) {
+      setEditData({
+        titulo_proyecto: selectedProyecto?.titulo_proyecto || '',
+        codigo_area: selectedProyecto?.codigo_area || '',
+        codigo_linea: selectedProyecto?.codigo_linea || '',
+        codigo_sublinea: selectedProyecto?.codigo_sublinea || '',
+        id_tipo_actividad: selectedProyecto?.id_tipo_actividad || ''
+      });
+      setEditMode(false);
+      setArchivoPDF(null);
+    }
+  }, [selectedProyecto]);
 
   const cargarCalificacionPopular = async () => {
     try {
@@ -51,6 +76,24 @@ export default function ProyectoDetalleDialog({ showDetalleDialog, setShowDetall
 
   if (!selectedProyecto) return null;
 
+  const handleEliminar = () => {
+    if (window.confirm(`⚠️ ADVERTENCIA: Esta acción no se puede deshacer.\n\nEliminará permanentemente:\n• El proyecto "${selectedProyecto.titulo_proyecto}"\n• Todos sus datos relacionados\n• Integrantes, clases asignadas, historial\n\n¿Está seguro de que desea continuar?`)) {
+      onEliminar(selectedProyecto.id_proyecto);
+      setShowDetalleDialog(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    try {
+      await onEdit(editData, archivoPDF);
+      setEditMode(false);
+      setArchivoPDF(null);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Dialog
       header="Detalles del Proyecto"
@@ -58,10 +101,159 @@ export default function ProyectoDetalleDialog({ showDetalleDialog, setShowDetall
       style={{ width: '700px' }}
       onHide={() => setShowDetalleDialog(false)}
       footer={
-        <Button label="Cerrar" icon="pi pi-times" onClick={() => setShowDetalleDialog(false)} className="p-button-text" />
+        <div className="flex gap-2 justify-end">
+          {editMode ? (
+            <>
+              <Button
+                label="Cancelar"
+                icon="pi pi-times"
+                onClick={() => {
+                  setEditMode(false);
+                  setArchivoPDF(null);
+                  setEditData({
+                    titulo_proyecto: selectedProyecto?.titulo_proyecto || '',
+                    codigo_area: selectedProyecto?.codigo_area || '',
+                    codigo_linea: selectedProyecto?.codigo_linea || '',
+                    codigo_sublinea: selectedProyecto?.codigo_sublinea || '',
+                    id_tipo_actividad: selectedProyecto?.id_tipo_actividad || ''
+                  });
+                }}
+                className="p-button-outlined"
+                disabled={saving}
+              />
+              <Button
+                label={saving ? 'Guardando...' : 'Guardar'}
+                icon="pi pi-save"
+                severity="success"
+                onClick={handleSaveEdit}
+                disabled={saving}
+              />
+            </>
+          ) : (
+            <>
+              <Button label="Cerrar" icon="pi pi-times" onClick={() => setShowDetalleDialog(false)} className="p-button-text" />
+              {isAdmin && onEdit && (
+                <Button
+                  label="Editar"
+                  icon="pi pi-pencil"
+                  severity="info"
+                  onClick={() => setEditMode(true)}
+                />
+              )}
+              {onEliminar && (
+                <Button
+                  label="Eliminar Permanentemente"
+                  icon="pi pi-trash"
+                  severity="danger"
+                  onClick={handleEliminar}
+                />
+              )}
+            </>
+          )}
+        </div>
       }
     >
       <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+        {/* Modo Edición */}
+        {editMode && isAdmin && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 space-y-4">
+              <h5 className="text-lg font-semibold text-blue-900">Editar Proyecto</h5>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Título del Proyecto</label>
+              <input
+                type="text"
+                value={editData.titulo_proyecto}
+                onChange={(e) => setEditData({...editData, titulo_proyecto: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Título del proyecto"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Tipo de Actividad</label>
+                <select
+                  value={editData.id_tipo_actividad}
+                  onChange={(e) => setEditData({...editData, id_tipo_actividad: Number(e.target.value)})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Seleccionar tipo</option>
+                  <option value={1}>Exposoftware</option>
+                  <option value={2}>Ponencia</option>
+                  <option value={3}>Taller</option>
+                  <option value={4}>Conferencia</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Código de Área</label>
+                <input
+                  type="number"
+                  value={editData.codigo_area}
+                  onChange={(e) => setEditData({...editData, codigo_area: Number(e.target.value) || ''})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Código de área"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Código de Línea</label>
+                <input
+                  type="number"
+                  value={editData.codigo_linea}
+                  onChange={(e) => setEditData({...editData, codigo_linea: Number(e.target.value) || ''})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Código de línea"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Código de Sublínea</label>
+                <input
+                  type="number"
+                  value={editData.codigo_sublinea}
+                  onChange={(e) => setEditData({...editData, codigo_sublinea: Number(e.target.value) || ''})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Código de sublínea"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">PDF del Proyecto (Opcional)</label>
+              {selectedProyecto?.url_cloudinary && (
+                <div className="mb-3 p-3 bg-white border border-gray-300 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <i className="pi pi-file-pdf text-red-600 text-xl"></i>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">PDF Actual</p>
+                      <a href={selectedProyecto.url_cloudinary} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                        Ver documento
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setArchivoPDF(e.target.files[0]);
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+              {archivoPDF && (
+                <p className="text-xs text-green-700 font-medium mt-2">
+                  ✓ Nuevo PDF: {archivoPDF.name} ({(archivoPDF.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Título y ID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

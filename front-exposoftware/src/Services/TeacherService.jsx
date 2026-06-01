@@ -573,6 +573,50 @@ export const updateProyectoStatus = async (proyectId, datosActualizacion) => {
 };
 
 /**
+ * Actualizar proyecto (título, estado, área, archivo)
+ * PATCH /api/v1/proyectos/{id_proyecto}
+ * @param {string} proyectId - ID del proyecto
+ * @param {Object} datosActualizacion - Datos a actualizar
+ * @param {File} archivo - Archivo PDF opcional
+ * @returns {Promise<Object>} Proyecto actualizado
+ */
+export const actualizarProyectoCompleto = async (proyectId, datosActualizacion, archivo = null) => {
+  try {
+    const headers = AuthService.getAuthHeaders();
+
+    const url = `${API_ENDPOINTS.PROYECTO_BY_ID(proyectId)}`;
+
+    const formData = new FormData();
+    formData.append('proyecto_data', JSON.stringify(datosActualizacion));
+
+    if (archivo) {
+      formData.append('archivo', archivo);
+    }
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        ...headers,
+        // NO incluir Content-Type para multipart/form-data, el navegador lo setea automáticamente
+      },
+      body: formData,
+      credentials: 'include'
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      const proyecto = result.data || result;
+      return proyecto;
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || 'Error al actualizar proyecto');
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
  * Calificar un proyecto como asistente (voto popular)
  * POST /api/v1/proyectos/{id_proyecto}/calificar_asistente
  * @param {string} proyectId - ID del proyecto

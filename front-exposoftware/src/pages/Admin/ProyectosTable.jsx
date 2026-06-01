@@ -17,9 +17,10 @@ const ESTADOS = {
   pendiente: { severity: 'warning', icon: 'pi-clock', label: 'Pendiente' },
   aprobado: { severity: 'success', icon: 'pi-check-circle', label: 'Aprobado' },
   calificado: { severity: 'info', icon: 'pi-star-fill', label: 'Calificado' },
+  rechazado: { severity: 'danger', icon: 'pi-times-circle', label: 'Rechazado' },
 };
 
-export default function ProyectosTable({ proyectos, loading, globalFilter, setGlobalFilter, cargarProyectos, onVerDetalles }) {
+export default function ProyectosTable({ proyectos, loading, globalFilter, setGlobalFilter, cargarProyectos, onVerDetalles, onEliminar }) {
   const [estadoFilter, setEstadoFilter] = useState('');
 
   const tipoActividadTemplate = (rowData) => {
@@ -62,7 +63,30 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
   };
 
   const accionesTemplate = (rowData) => (
-    <Button icon="pi pi-eye" rounded outlined severity="info" tooltip="Ver detalles" tooltipOptions={{ position: 'top' }} onClick={() => onVerDetalles(rowData)} />
+    <div className="flex gap-2">
+      <Button
+        icon="pi pi-eye"
+        rounded
+        outlined
+        severity="info"
+        tooltip="Ver detalles"
+        tooltipOptions={{ position: 'top' }}
+        onClick={() => onVerDetalles(rowData)}
+      />
+      <Button
+        icon="pi pi-trash"
+        rounded
+        outlined
+        severity="danger"
+        tooltip="Eliminar permanentemente"
+        tooltipOptions={{ position: 'top' }}
+        onClick={() => {
+          if (window.confirm(`⚠️ ADVERTENCIA: Esta acción no se puede deshacer.\n\nEliminará permanentemente:\n• El proyecto "${rowData.titulo_proyecto}"\n• Todos sus datos relacionados\n• Integrantes, clases asignadas, historial\n\n¿Está seguro de que desea continuar?`)) {
+            onEliminar(rowData.id_proyecto);
+          }
+        }}
+      />
+    </div>
   );
 
   const filteredProyectos = estadoFilter
@@ -98,11 +122,18 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
       icon: 'pi-star-fill',
       textColor: 'text-white'
     },
+    {
+      label: 'Rechazados',
+      value: proyectos.filter(p => p.estado === 'rechazado').length,
+      bgGradient: 'from-red-500 to-red-600',
+      icon: 'pi-times-circle',
+      textColor: 'text-white'
+    },
   ];
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         {statCards.map(({ label, value, bgGradient, icon, textColor }) => (
           <div key={label} className={`bg-gradient-to-br ${bgGradient} rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow`}>
             <div className="flex items-center justify-between">
@@ -149,6 +180,7 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
               <option value="pendiente">Pendiente</option>
               <option value="aprobado">Aprobado</option>
               <option value="calificado">Calificado</option>
+              <option value="rechazado">Rechazado</option>
             </select>
           </div>
         </div>

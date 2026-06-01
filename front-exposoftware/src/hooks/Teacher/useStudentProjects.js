@@ -142,7 +142,9 @@ export function useStudentProjects() {
 
           // Transformar datos: mapear integrantes a id_estudiantes y asociar materias
           const transformedProjects = (Array.isArray(myProjectsData) ? myProjectsData : []).map((p, idx) => {
-            const materiaInfo = teachingLoadMap.get(p.id_docente_materia) || {};
+            // Extraer materia del primer docente asignado
+            const docente_materia = p.docentes_materias?.[0] || {};
+            const materiaInfo = teachingLoadMap.get(p.id_docente_materia) || docente_materia || {};
 
             // Obtener nombre del grupo del mapa si no está en la materia info
             let nombreGrupo = materiaInfo.nombre_grupo || p.nombre_grupo;
@@ -238,7 +240,9 @@ export function useStudentProjects() {
         };
 
         const transformedAllProjects = allProjects.map((p) => {
-          const materiaInfo = teachingLoadMap.get(p.id_docente_materia) || {};
+          // Extraer materia del primer docente asignado
+          const docente_materia = p.docentes_materias?.[0] || {};
+          const materiaInfo = teachingLoadMap.get(p.id_docente_materia) || docente_materia || {};
 
           // Obtener nombre del grupo del mapa si no está en la materia info
           let nombreGrupo = materiaInfo.nombre_grupo || p.nombre_grupo;

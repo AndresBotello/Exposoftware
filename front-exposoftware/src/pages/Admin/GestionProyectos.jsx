@@ -7,6 +7,7 @@ import * as AuthService from '../../Services/AuthService';
 import EventosService from '../../Services/EventosService';
 import { API_ENDPOINTS } from '../../utils/constants';
 import axios from 'axios';
+import { eliminarProyectoPermanentemente, actualizarProyectoConArchivo } from '../../Services/ProjectsService';
 import ProyectosTable from './ProyectosTable';
 import ProyectoDetalleDialog from './ProyectoDetalleDialog';
 
@@ -36,8 +37,6 @@ export default function GestionProyectos() {
     try {
       setLoading(true);
       const headers = AuthService.getAuthHeaders();
-      // El endpoint soporta paginación: page (default 1) y limit (max 100, default 100)
-      // Cargar con limit=100 para obtener más proyectos por página
       const response = await axios.get(`${API_ENDPOINTS.PROYECTOS}?page=1&limit=100`, {
         headers,
         withCredentials: true
@@ -58,6 +57,38 @@ export default function GestionProyectos() {
       const eventosData = await EventosService.obtenerEventosAdmin();
       setEventos(eventosData);
     } catch (error) {
+    }
+  };
+
+  const handleEditProject = async (editData, archivoPDF = null) => {
+    if (!selectedProyecto) return;
+
+    try {
+      const datosActualizacion = {
+        titulo_proyecto: editData.titulo_proyecto,
+        codigo_area: editData.codigo_area,
+        codigo_linea: editData.codigo_linea,
+        codigo_sublinea: editData.codigo_sublinea,
+        id_tipo_actividad: editData.id_tipo_actividad
+      };
+
+      await actualizarProyectoConArchivo(selectedProyecto.id_proyecto, datosActualizacion, archivoPDF);
+      toast.current?.show({ severity: 'success', summary: 'Éxito', detail: 'Proyecto actualizado correctamente', life: 5000 });
+      setShowDetalleDialog(false);
+      setSelectedProyecto(null);
+      await cargarProyectos();
+    } catch (error) {
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: `No se pudo actualizar: ${error.message}`, life: 5000 });
+    }
+  };
+
+  const handleEliminarProyecto = async (projectId) => {
+    try {
+      await eliminarProyectoPermanentemente(projectId);
+      toast.current?.show({ severity: 'success', summary: 'Éxito', detail: 'Proyecto eliminado permanentemente', life: 5000 });
+      await cargarProyectos();
+    } catch (error) {
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: `No se pudo eliminar: ${error.message}`, life: 5000 });
     }
   };
 
@@ -127,6 +158,7 @@ export default function GestionProyectos() {
               setGlobalFilter={setGlobalFilter}
               cargarProyectos={cargarProyectos}
               onVerDetalles={verDetalles}
+              onEliminar={handleEliminarProyecto}
             />
           </main>
         </div>
@@ -137,6 +169,9 @@ export default function GestionProyectos() {
         setShowDetalleDialog={setShowDetalleDialog}
         selectedProyecto={selectedProyecto}
         nombreEvento={nombreEvento}
+        onEliminar={handleEliminarProyecto}
+        onEdit={handleEditProject}
+        isAdmin={true}
       />
     </div>
   );

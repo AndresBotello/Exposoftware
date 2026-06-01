@@ -9,13 +9,103 @@ export default function ProjectDetailsModal({
   onDownloadCertificado,
   onDownloadTodosCertificados,
   token,
-  onOpenAddMember
+  onOpenAddMember,
+  onEdit
 }) {
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({
+    titulo_proyecto: selectedProject?.titulo_proyecto || '',
+    codigo_area: selectedProject?.codigo_area || '',
+    codigo_linea: selectedProject?.codigo_linea || '',
+    codigo_sublinea: selectedProject?.codigo_sublinea || '',
+    id_tipo_actividad: selectedProject?.id_tipo_actividad || ''
+  });
+  const [archivoPDF, setArchivoPDF] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [arbolInvestigacion, setArbolInvestigacion] = useState([]);
+  const [sublinesOptions, setSublineasOptions] = useState([]);
+  const [areasOptions, setAreasOptions] = useState([]);
+
   const [investigacionNames, setInvestigacionNames] = useState({
     linea: selectedProject?.nombre_linea || null,
     sublinea: selectedProject?.nombre_sublinea || null,
     area: selectedProject?.nombre_area || null
   });
+
+  useEffect(() => {
+    if (selectedProject) {
+      setEditData({
+        titulo_proyecto: selectedProject?.titulo_proyecto || '',
+        codigo_area: selectedProject?.codigo_area || '',
+        codigo_linea: selectedProject?.codigo_linea || '',
+        codigo_sublinea: selectedProject?.codigo_sublinea || '',
+        id_tipo_actividad: selectedProject?.id_tipo_actividad || ''
+      });
+      setEditMode(false);
+      setArchivoPDF(null);
+    }
+  }, [selectedProject]);
+
+  // Cargar árbol de investigación cuando se activa modo edición
+  useEffect(() => {
+    if (editMode) {
+      cargarArbolInvestigacion();
+    }
+  }, [editMode]);
+
+  // Actualizar sublíneas cuando cambia la línea
+  useEffect(() => {
+    if (editData.codigo_linea && arbolInvestigacion.length > 0) {
+      const linea = arbolInvestigacion.find(l => l.codigo_linea === Number(editData.codigo_linea));
+      if (linea && linea.sublineas) {
+        setSublineasOptions(linea.sublineas);
+        // Solo resetear codigo_sublinea si la sublínea actual no existe en las nuevas opciones
+        const sublineaValida = linea.sublineas.find(s => s.codigo_sublinea === Number(editData.codigo_sublinea));
+        if (!sublineaValida) {
+          setEditData(prev => ({ ...prev, codigo_sublinea: '' }));
+          setAreasOptions([]);
+        }
+      }
+    }
+  }, [editData.codigo_linea, arbolInvestigacion]);
+
+  // Actualizar áreas cuando cambia la sublínea
+  useEffect(() => {
+    if (editData.codigo_sublinea && sublinesOptions.length > 0) {
+      const sublinea = sublinesOptions.find(s => s.codigo_sublinea === Number(editData.codigo_sublinea));
+      if (sublinea && sublinea.areas_tematicas) {
+        setAreasOptions(sublinea.areas_tematicas);
+        // Solo resetear codigo_area si el área actual no existe en las nuevas opciones
+        const areaValida = sublinea.areas_tematicas.find(a => a.codigo_area === Number(editData.codigo_area));
+        if (!areaValida) {
+          setEditData(prev => ({ ...prev, codigo_area: '' }));
+        }
+      }
+    }
+  }, [editData.codigo_sublinea, sublinesOptions]);
+
+  const cargarArbolInvestigacion = async () => {
+    try {
+      const arbol = await InvestigacionService.obtenerArbolCompleto();
+      setArbolInvestigacion(arbol);
+
+      if (editData.codigo_linea) {
+        const linea = arbol.find(l => l.codigo_linea === Number(editData.codigo_linea));
+        if (linea && linea.sublineas) {
+          setSublineasOptions(linea.sublineas);
+
+          if (editData.codigo_sublinea) {
+            const sublinea = linea.sublineas.find(s => s.codigo_sublinea === Number(editData.codigo_sublinea));
+            if (sublinea && sublinea.areas_tematicas) {
+              setAreasOptions(sublinea.areas_tematicas);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error cargando árbol de investigación:', error);
+    }
+  };
 
   useEffect(() => {
     // Si ya tiene nombres en el proyecto, no hacer peticiones
@@ -100,6 +190,124 @@ export default function ProjectDetailsModal({
 
         {/* Contenido */}
         <div className="p-6 space-y-6">
+          {/* Modo Edición */}
+          {editMode && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 space-y-4">
+              <h5 className="text-lg font-semibold text-blue-900">Editar Proyecto</h5>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Título del Proyecto</label>
+                <input
+                  type="text"
+                  value={editData.titulo_proyecto}
+                  onChange={(e) => setEditData({...editData, titulo_proyecto: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Título del proyecto"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Tipo de Actividad</label>
+                  <select
+                    value={editData.id_tipo_actividad}
+                    onChange={(e) => setEditData({...editData, id_tipo_actividad: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value={1}>Exposoftware</option>
+                    <option value={2}>Ponencia</option>
+                    <option value={3}>Taller</option>
+                    <option value={4}>Conferencia</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Línea de Investigación</label>
+                <select
+                  value={String(editData.codigo_linea)}
+                  onChange={(e) => setEditData({...editData, codigo_linea: Number(e.target.value) || ''})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Seleccionar línea</option>
+                  {arbolInvestigacion.map(linea => (
+                    <option key={linea.codigo_linea} value={String(linea.codigo_linea)}>
+                      {linea.nombre_linea}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Sublínea</label>
+                  <select
+                    value={String(editData.codigo_sublinea)}
+                    onChange={(e) => setEditData({...editData, codigo_sublinea: Number(e.target.value) || ''})}
+                    disabled={!editData.codigo_linea}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                  >
+                    <option value="">Seleccionar sublínea</option>
+                    {sublinesOptions.map(sublinea => (
+                      <option key={sublinea.codigo_sublinea} value={String(sublinea.codigo_sublinea)}>
+                        {sublinea.nombre_sublinea}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Área Temática</label>
+                  <select
+                    value={String(editData.codigo_area)}
+                    onChange={(e) => setEditData({...editData, codigo_area: Number(e.target.value) || ''})}
+                    disabled={!editData.codigo_sublinea}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                  >
+                    <option value="">Seleccionar área</option>
+                    {areasOptions.map(area => (
+                      <option key={area.codigo_area} value={String(area.codigo_area)}>
+                        {area.nombre_area}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">PDF del Proyecto (Opcional)</label>
+                {selectedProject?.url_cloudinary && (
+                  <div className="mb-3 p-3 bg-white border border-gray-300 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <i className="pi pi-file-pdf text-red-600 text-xl"></i>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">PDF Actual</p>
+                        <a href={selectedProject.url_cloudinary} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                          Ver documento
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setArchivoPDF(e.target.files[0]);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                />
+                {archivoPDF && (
+                  <p className="text-xs text-green-700 font-medium mt-2">
+                    ✓ Nuevo PDF: {archivoPDF.name} ({(archivoPDF.size / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Título y Estado */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -352,10 +560,18 @@ export default function ProjectDetailsModal({
           )}
         </div>
 
+        {/* Mensaje de edición */}
+        {onEdit && selectedProject.estado !== 'pendiente' && !editMode && (
+          <div className="bg-yellow-50 border-t border-yellow-200 px-6 py-3 text-sm text-yellow-800 flex items-center gap-2">
+            <i className="pi pi-info-circle text-yellow-600"></i>
+            <span>Solo se puede editar cuando el estado del proyecto esté Pendiente</span>
+          </div>
+        )}
+
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between gap-3">
-          <div>
-            {onOpenAddMember && (
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex gap-2">
+            {!editMode && onOpenAddMember && (
               <button
                 onClick={onOpenAddMember}
                 className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center gap-2"
@@ -365,12 +581,63 @@ export default function ProjectDetailsModal({
               </button>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Cerrar
-          </button>
+          <div className="flex gap-2">
+            {editMode ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditMode(false);
+                    setArchivoPDF(null);
+                    setEditData({
+                      titulo_proyecto: selectedProject?.titulo_proyecto || '',
+                      codigo_area: selectedProject?.codigo_area || '',
+                      codigo_linea: selectedProject?.codigo_linea || '',
+                      codigo_sublinea: selectedProject?.codigo_sublinea || '',
+                      id_tipo_actividad: selectedProject?.id_tipo_actividad || ''
+                    });
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                  disabled={saving}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={async () => {
+                    setSaving(true);
+                    try {
+                      await onEdit(editData, archivoPDF);
+                      setEditMode(false);
+                      setArchivoPDF(null);
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+                  disabled={saving}
+                >
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </button>
+              </>
+            ) : (
+              <>
+                {onEdit && selectedProject.estado === 'pendiente' && (
+                  <button
+                    onClick={() => setEditMode(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+                  >
+                    <i className="pi pi-pencil"></i>
+                    Editar
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
