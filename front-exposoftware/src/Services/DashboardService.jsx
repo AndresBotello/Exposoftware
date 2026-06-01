@@ -32,16 +32,20 @@ class DashboardService {
   static async getTotalProyectos() {
     try {
       const response = await axios.get(
-        API_ENDPOINTS.PROYECTOS,
+        `${API_ENDPOINTS.PROYECTOS}?limit=100`,
         this.getAuthConfig()
       );
-      
-      
+
+      // Si viene con paginación, usar total_items
+      if (response.data?.pagination?.total_items) {
+        return response.data.pagination.total_items;
+      }
+
       // La respuesta puede ser un array directo o un objeto con data
-      const proyectos = Array.isArray(response.data) 
-        ? response.data 
+      const proyectos = Array.isArray(response.data)
+        ? response.data
         : response.data?.data || response.data?.proyectos || [];
-      
+
       return proyectos.length;
     } catch (error) {
       return 0;
@@ -131,7 +135,7 @@ class DashboardService {
   static async getProyectosPorTipo() {
     try {
       const response = await axios.get(
-        API_ENDPOINTS.PROYECTOS,
+        `${API_ENDPOINTS.PROYECTOS}?limit=100`,
         this.getAuthConfig()
       );
 
@@ -184,7 +188,7 @@ class DashboardService {
   static async getProyectosPorLineaInvestigacion() {
     try {
       const response = await axios.get(
-        API_ENDPOINTS.PROYECTOS,
+        `${API_ENDPOINTS.PROYECTOS}?limit=100`,
         this.getAuthConfig()
       );
 

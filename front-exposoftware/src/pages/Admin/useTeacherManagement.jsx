@@ -293,17 +293,29 @@ export function useTeacherManagement() {
     setLoading(true);
     setServerError("");
     try {
-      const nombresCompletos = `${primerNombre} ${segundoNombre}`.trim();
-      const apellidosCompletos = `${primerApellido} ${segundoApellido}`.trim();
-      const datosDocente = formatearDatosDocente({
-        tipoDocumento, identificacion, nombres: nombresCompletos, apellidos: apellidosCompletos,
-        genero, identidadSexual, fechaNacimiento, nacionalidad, pais, departamento, municipio,
-        ciudadResidencia, tipoVia, numeroVia, numeroCruce, numeroPlaca, complemento,
-        direccionResidencia, telefono, correo, contraseña, categoriaDocente, codigoPrograma
-      });
+      // Construir payload solo con los campos del modal
+      const payload = {
+        usuario: {
+          p_nombre: primerNombre || null,
+          p_apellido: primerApellido || null,
+          telefono: telefono || null,
+          id_tipo_via: tipoVia ? parseInt(tipoVia) : 1,
+          numero_via: numeroVia || "0",
+          numero_cruce: numeroCruce || "0",
+          numero_placa: numeroPlaca || "0",
+          complemento: complemento || null,
+          codigo_municipio_residencia: municipio || "20001"
+        },
+        perfil: {
+          categoria_docente: categoriaDocente || null,
+          codigo_programa: codigoPrograma || ""
+        }
+      };
 
-      await actualizarDocente(editingId, datosDocente);
-      await cargarProfesores(); 
+      await actualizarDocente(editingId, payload);
+      setServerError("");
+      alert('✅ Docente actualizado exitosamente');
+      await cargarProfesores();
       handleCancelEdit();
     } catch (error) {
       setServerError(error.message || 'Error al actualizar docente');

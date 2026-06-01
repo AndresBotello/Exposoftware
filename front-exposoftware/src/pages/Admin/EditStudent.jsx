@@ -75,26 +75,36 @@ const EditStudent = () => {
     try {
       setCargando(true);
       setError(null);
-      
+
       // Cargar estudiante y programas en paralelo
       const [resultadoEstudiante, resultadoProgramas] = await Promise.all([
         obtenerEstudiantePorId(studentId),
         obtenerTodosProgramas()
       ]);
-      
+
       const datosEstudiante = resultadoEstudiante.data;
-      setEstudiante(datosEstudiante);
-      
+
+      // El backend retorna una estructura que puede ser:
+      // { estudiante: {...}, usuario: {...} } o { usuario: {...}, ...campos_estudiante }
+      // Normalizar para acceder consistentemente
+      const estudiante = datosEstudiante.estudiante || datosEstudiante;
+      const usuario = datosEstudiante.usuario || {};
+
+      setEstudiante({
+        ...estudiante,
+        usuario: usuario
+      });
+
       const listaProgr = Array.isArray(resultadoProgramas) ? resultadoProgramas : resultadoProgramas.data || [];
       setProgramas(listaProgr);
-      
+
       // Llenar el formulario con los datos actuales
       setFormData({
-        codigo_programa: datosEstudiante.codigo_programa || '',
-        semestre: datosEstudiante.semestre || 1,
-        periodo: datosEstudiante.periodo || '',
-        anio_ingreso: datosEstudiante.anio_ingreso || new Date().getFullYear(),
-        correo: datosEstudiante.usuario?.correo || ''
+        codigo_programa: estudiante.codigo_programa || '',
+        semestre: estudiante.semestre || 1,
+        periodo: estudiante.periodo || '',
+        anio_ingreso: estudiante.anio_ingreso || new Date().getFullYear(),
+        correo: usuario.correo || ''
       });
     } catch (err) {
       setError(err.message || 'Error al cargar los datos del estudiante');
@@ -343,7 +353,11 @@ const EditStudent = () => {
                     ))}
                   </select>
                   <p className="mt-1 text-xs text-gray-500">
-                    Programa actual: {estudiante?.programa?.nombre || 'Sin programa'}
+                    Programa actual: {
+                      programas.find(p => p.codigo === estudiante?.codigo_programa)?.nombre ||
+                      estudiante?.programa?.nombre ||
+                      'Sin programa'
+                    }
                   </p>
                 </div>
 

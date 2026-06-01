@@ -18,7 +18,7 @@ export const getAllEventos = async () => {
     async () => {
       try {
 
-        const response = await fetch(API_ENDPOINTS.ADMIN_EVENTOS, {
+        const response = await fetch(`${API_ENDPOINTS.ADMIN_EVENTOS}?limit=100`, {
           credentials: 'include',
           method: 'GET',
           headers: getAuthHeaders()

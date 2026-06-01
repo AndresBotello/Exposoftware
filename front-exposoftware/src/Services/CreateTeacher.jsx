@@ -240,6 +240,60 @@ export const crearDocente = async (datosDocente) => {
 };
 
 export const actualizarDocente = async (idDocente, datosDocente) => {
+  if (!idDocente) {
+    throw new Error("ID del docente no especificado");
+  }
+
+  // Si el payload ya viene estructurado con usuario y perfil, usarlo tal cual
+  if (datosDocente.usuario && datosDocente.perfil) {
+    try {
+      const url = `${API_ENDPOINTS.ADMIN_DOCENTES}/${idDocente}`;
+
+      const response = await fetch(url, {
+        credentials: 'include',
+        method: 'PATCH',
+        headers: {
+          ...AuthService.getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(datosDocente)
+      });
+
+      const responseText = await response.text();
+
+      if (response.ok) {
+        try {
+          const data = JSON.parse(responseText);
+          return { success: true, data };
+        } catch {
+          return { success: true, data: null };
+        }
+      } else if (response.status === 400) {
+        let errorData = {};
+        try { errorData = JSON.parse(responseText); } catch {}
+        throw new Error(`Solicitud incorrecta: ${errorData.message || errorData.detail || 'Verifique los datos'}`);
+      } else if (response.status === 404) {
+        let errorData = {};
+        try { errorData = JSON.parse(responseText); } catch {}
+        throw new Error(`No encontrado: ${errorData.message || errorData.detail || 'El docente no existe'}`);
+      } else if (response.status === 422) {
+        let errorData = {};
+        try { errorData = JSON.parse(responseText); } catch {}
+        throw new Error(`Error de validación: ${errorData.message || errorData.detail || 'Los datos enviados no son válidos'}`);
+      } else {
+        let errorData = {};
+        try { errorData = JSON.parse(responseText); } catch {}
+        throw new Error(`Error al actualizar docente (${response.status}): ${errorData.message || errorData.detail || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      if (error.message) {
+        throw error;
+      }
+      throw new Error("Error de conexión al actualizar el docente.");
+    }
+  }
+
+  // Formato antiguo: para compatibilidad con llamadas que pasan un objeto con todos los campos
   if (!datosDocente.p_nombre || !datosDocente.p_apellido) {
     throw new Error("El nombre y apellido son obligatorios");
   }
@@ -287,7 +341,7 @@ export const actualizarDocente = async (idDocente, datosDocente) => {
   try {
     const response = await fetch(`${API_ENDPOINTS.ADMIN_DOCENTES}/${idDocente}`, {
       credentials: 'include',
-      method: 'PUT',
+      method: 'PATCH',
       headers: AuthService.getAuthHeaders(),
       body: JSON.stringify(payload)
     });

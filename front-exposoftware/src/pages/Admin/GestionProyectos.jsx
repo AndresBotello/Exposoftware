@@ -36,7 +36,9 @@ export default function GestionProyectos() {
     try {
       setLoading(true);
       const headers = AuthService.getAuthHeaders();
-      const response = await axios.get(API_ENDPOINTS.PROYECTOS, {
+      // El endpoint soporta paginación: page (default 1) y limit (max 100, default 100)
+      // Cargar con limit=100 para obtener más proyectos por página
+      const response = await axios.get(`${API_ENDPOINTS.PROYECTOS}?page=1&limit=100`, {
         headers,
         withCredentials: true
       });
