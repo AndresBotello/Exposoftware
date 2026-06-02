@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
+import { fetchApi } from "../utils/apiClient";
 
 /**
  * Servicio para gestionar el perfil del estudiante autenticado
@@ -12,10 +13,9 @@ import * as AuthService from "./AuthService";
 export const obtenerMiPerfil = async () => {
 
   try {
-    const response = await fetch(API_ENDPOINTS.ESTUDIANTE_MI_PERFIL, {
+    const response = await fetchApi(API_ENDPOINTS.ESTUDIANTE_MI_PERFIL, {
       method: 'GET',
-      headers: AuthService.getAuthHeaders(),
-      credentials: 'include'
+      headers: AuthService.getAuthHeaders()
     });
 
 
@@ -90,10 +90,9 @@ export const actualizarMiPerfil = async (datosActualizados) => {
 
     console.log('📦 Payload final a enviar:', JSON.stringify(payload, null, 2));
 
-    const response = await fetch(API_ENDPOINTS.ESTUDIANTE_MI_PERFIL, {
+    const response = await fetchApi(API_ENDPOINTS.ESTUDIANTE_MI_PERFIL, {
       method: 'PUT',
       headers: AuthService.getAuthHeaders(),
-      credentials: 'include',
       body: JSON.stringify(payload)
     });
 

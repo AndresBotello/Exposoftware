@@ -57,7 +57,7 @@ function RegisterPage() {
     tipoDocumento: "",
     numeroDocumento: "",
     correo: "",
-    programa: "5095",
+    programa: "",
     facultad: "",
     semestre: "",
     sector: "",

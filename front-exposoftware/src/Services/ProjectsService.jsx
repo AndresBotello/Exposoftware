@@ -1,4 +1,5 @@
 import { API_ENDPOINTS, API_BASE_URL } from '../utils/constants';
+import { fetchApi } from '../utils/apiClient';
 
 const getAuthToken = () => {
   return localStorage.getItem('auth_token');
@@ -17,8 +18,7 @@ const getAuthHeaders = () => {
  */
 export const obtenerProyectos = async () => {
   try {
-    const response = await fetch(API_ENDPOINTS.PROYECTOS, {
-      credentials: 'include',
+    const response = await fetchApi(API_ENDPOINTS.PROYECTOS, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -49,7 +49,7 @@ export const obtenerMisProyectos = async (idEstudiante) => {
   try {
     // Usar directamente el endpoint /api/v1/proyectos/mis-proyectos
     // Este endpoint trae los proyectos donde el usuario autenticado participa
-    const response = await fetch(API_ENDPOINTS.MIS_PROYECTOS, {
+    const response = await fetchApi(API_ENDPOINTS.MIS_PROYECTOS, {
       method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include'
@@ -81,9 +81,8 @@ export const obtenerMisProyectos = async (idEstudiante) => {
  */
 export const obtenerProyectoPorId = async (projectId) => {
   try {
-    const response = await fetch(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
+    const response = await fetchApi(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
       method: 'GET',
-      credentials: 'include',
       headers: getAuthHeaders()
     });
 
@@ -105,9 +104,8 @@ export const obtenerProyectoPorId = async (projectId) => {
  */
 export const obtenerIntegrantesProyecto = async (proyectoId) => {
   try {
-    const response = await fetch(API_ENDPOINTS.PROYECTO_INTEGRANTES(proyectoId), {
+    const response = await fetchApi(API_ENDPOINTS.PROYECTO_INTEGRANTES(proyectoId), {
       method: 'GET',
-      credentials: 'include',
       headers: getAuthHeaders()
     });
 
@@ -130,8 +128,7 @@ export const obtenerIntegrantesProyecto = async (proyectoId) => {
  */
 export const crearProyecto = async (projectData) => {
   try {
-    const response = await fetch(API_ENDPOINTS.PROYECTOS, {
-      credentials: 'include',
+    const response = await fetchApi(API_ENDPOINTS.PROYECTOS, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(projectData)
@@ -156,9 +153,8 @@ export const crearProyecto = async (projectData) => {
  */
 export const actualizarProyecto = async (projectId, projectData) => {
   try {
-    const response = await fetch(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
+    const response = await fetchApi(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
       method: 'PUT',
-      credentials: 'include',
       headers: getAuthHeaders(),
       body: JSON.stringify(projectData)
     });
@@ -200,9 +196,8 @@ export const actualizarProyectoConArchivo = async (projectId, datosActualizacion
       finalHeaders['Content-Type'] = 'application/json';
     }
 
-    const response = await fetch(url, {
+    const response = await fetchApi(url, {
       method: 'PATCH',
-      credentials: 'include',
       headers: finalHeaders,
       body: archivo ? requestBody : JSON.stringify(requestBody)
     });
@@ -228,9 +223,8 @@ export const actualizarProyectoConArchivo = async (projectId, datosActualizacion
  */
 export const getTeacherProjects = async (teacherId) => {
   try {
-    const response = await fetch(API_ENDPOINTS.PROYECTOS, {
+    const response = await fetchApi(API_ENDPOINTS.PROYECTOS, {
       method: 'GET',
-      credentials: 'include',
       headers: getAuthHeaders()
     });
 
@@ -271,9 +265,8 @@ export const getTeacherProjects = async (teacherId) => {
  */
 export const updateProjectStatus = async (projectId, status) => {
   try {
-    const response = await fetch(API_ENDPOINTS.PROYECTO_ESTADO(projectId), {
+    const response = await fetchApi(API_ENDPOINTS.PROYECTO_ESTADO(projectId), {
       method: 'PATCH',
-      credentials: 'include',
       headers: getAuthHeaders(),
       body: JSON.stringify({ estado: status })
     });
@@ -297,9 +290,8 @@ export const updateProjectStatus = async (projectId, status) => {
  */
 export const obtenerMiembrosProyecto = async (projectId) => {
   try {
-    const response = await fetch(API_ENDPOINTS.PROYECTO_INTEGRANTES(projectId), {
+    const response = await fetchApi(API_ENDPOINTS.PROYECTO_INTEGRANTES(projectId), {
       method: 'GET',
-      credentials: 'include',
       headers: getAuthHeaders()
     });
 
@@ -321,9 +313,8 @@ export const obtenerMiembrosProyecto = async (projectId) => {
  */
 export const eliminarProyecto = async (projectId) => {
   try {
-    const response = await fetch(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
+    const response = await fetchApi(API_ENDPOINTS.PROYECTO_BY_ID(projectId), {
       method: 'DELETE',
-      credentials: 'include',
       headers: getAuthHeaders()
     });
 
@@ -349,9 +340,8 @@ export const eliminarProyectoPermanentemente = async (projectId) => {
     const headers = getAuthHeaders();
     const url = `${API_BASE_URL}/api/v1/admin/proyectos/${projectId}/eliminar`;
 
-    const response = await fetch(url, {
+    const response = await fetchApi(url, {
       method: 'DELETE',
-      credentials: 'include',
       headers: headers
     });
 
@@ -386,9 +376,8 @@ export const generarQRCalificacion = async (projectId, urlFront = null) => {
     const url = new URL(`${API_ENDPOINTS.PROYECTOS}/${projectId}/generar-qr`, window.location.origin);
     url.searchParams.append('url_front', baseUrl);
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchApi(url.toString(), {
       method: 'POST',
-      credentials: 'include',
       headers: getAuthHeaders()
     });
 

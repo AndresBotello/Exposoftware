@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "../utils/constants";
+import { fetchApi } from "../utils/apiClient";
 
 /**
  * Servicio para gestión académica (Facultades y Programas)
@@ -59,8 +60,7 @@ export const obtenerFacultades = async () => {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    const response = await fetch(endpoint, {
-      credentials: 'include',
+    const response = await fetchApi(endpoint, {
       method: 'GET',
       headers
     });
@@ -113,8 +113,7 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    const response = await fetch(endpoint, {
-      credentials: 'include',
+    const response = await fetchApi(endpoint, {
       method: 'GET',
       headers
     });

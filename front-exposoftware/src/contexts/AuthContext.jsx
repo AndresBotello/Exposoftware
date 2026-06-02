@@ -18,6 +18,32 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const refreshIntervalRef = React.useRef(null);
+
+  // Función para iniciar el timer de refresh automático
+  const startAutoRefresh = () => {
+    // Limpiar timer anterior si existe
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+    }
+
+    // Refrescar token cada 20 minutos (1200 segundos)
+    refreshIntervalRef.current = setInterval(async () => {
+      try {
+        await AuthService.refreshToken();
+      } catch (error) {
+        // Si refresh falla, el usuario será redirigido a login por el AuthService
+      }
+    }, 20 * 60 * 1000);
+  };
+
+  // Función para detener el timer
+  const stopAutoRefresh = () => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+  };
 
   // Simular carga de datos del usuario desde localStorage o API
   useEffect(() => {
@@ -64,6 +90,13 @@ export const AuthProvider = ({ children }) => {
     loadUserData();
   }, []);
 
+  // Cleanup: detener timer al desmontar
+  useEffect(() => {
+    return () => {
+      stopAutoRefresh();
+    };
+  }, []);
+
   // Función para hacer login
   const login = async (credentials) => {
     try {
@@ -81,6 +114,8 @@ export const AuthProvider = ({ children }) => {
         setUser(resultado.data);
         setLoading(false);
 
+        // ✅ INICIAR REFRESH AUTOMÁTICO CADA 20 MINUTOS
+        startAutoRefresh();
 
         // Si es estudiante, cargar perfil completo en SEGUNDO PLANO
         if (userRole === 'estudiante') {
@@ -140,10 +175,16 @@ export const AuthProvider = ({ children }) => {
   // Función para hacer logout
   const logout = async () => {
     try {
+      // ✅ DETENER REFRESH AUTOMÁTICO
+      stopAutoRefresh();
+
       // Llamar al servicio de logout que cierra sesión en el backend
       await AuthService.logout();
       setUser(null);
     } catch (error) {
+      // ✅ DETENER REFRESH AUTOMÁTICO AUNQUE FALLE
+      stopAutoRefresh();
+
       // Limpiar de todas formas aunque falle el backend
       setUser(null);
       localStorage.clear();

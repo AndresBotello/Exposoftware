@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from '../utils/constants';
+import { fetchApi } from '../utils/apiClient';
 
 /**
  * Obtener token de autenticación
@@ -29,8 +30,7 @@ export const obtenerMiPerfilEgresado = async () => {
     const token = getAuthToken();
     const headers = getAuthHeaders();
 
-    const response = await fetch(`${API_ENDPOINTS.API_BASE_URL || ''}/api/v1/egresados/mi-perfil`, {
-      credentials: 'include',
+    const response = await fetchApi(`${API_ENDPOINTS.API_BASE_URL || ''}/api/v1/egresados/mi-perfil`, {
       method: 'GET',
       headers: headers
     });
@@ -66,8 +66,7 @@ export const obtenerMiPerfilEgresado = async () => {
 export const obtenerPerfilEgresadoPorId = async (graduateId) => {
   try {
     
-    const response = await fetch(API_ENDPOINTS.ADMIN_EGRESADO_BY_ID(graduateId), {
-      credentials: 'include',
+    const response = await fetchApi(API_ENDPOINTS.ADMIN_EGRESADO_BY_ID(graduateId), {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -99,8 +98,7 @@ export const obtenerPerfilEgresadoPorId = async (graduateId) => {
 export const actualizarPerfilEgresado = async (graduateId, datosActualizados) => {
   try {
     
-    const response = await fetch(API_ENDPOINTS.ADMIN_EGRESADO_BY_ID(graduateId), {
-      credentials: 'include',
+    const response = await fetchApi(API_ENDPOINTS.ADMIN_EGRESADO_BY_ID(graduateId), {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(datosActualizados)

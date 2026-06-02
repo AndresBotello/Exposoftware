@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "../utils/constants";
+import { fetchApi } from "../utils/apiClient";
 
 const STORAGE_KEYS = {
   TOKEN: 'auth_token',
@@ -100,21 +101,20 @@ const extraerInfoJWT = (token) => {
  * @returns {Promise<Object>} Datos del usuario
  */
 const fetchUserData = async (token) => {
-  
+
   try {
     const headers = {
       'Accept': 'application/json'
     };
-    
+
     // Si tenemos token, agregarlo al header
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
-    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+
+    const response = await fetchApi(API_ENDPOINTS.AUTH_ME, {
       method: 'GET',
-      headers: headers,
-      credentials: 'include' // Incluir cookies si el servidor las usa
+      headers: headers
     });
 
 
@@ -154,13 +154,12 @@ export const login = async (credentials) => {
 
   try {
     // PASO 1: Enviar credenciales
-    const loginResponse = await fetch(API_ENDPOINTS.LOGIN, {
+    const loginResponse = await fetchApi(API_ENDPOINTS.LOGIN, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      credentials: 'include', // Incluir cookies si el servidor las usa
       body: JSON.stringify(payload)
     });
 
@@ -434,10 +433,9 @@ export const logout = async () => {
   // Intentar cerrar sesión en el backend siempre (con o sin token)
   // Para eliminar las cookies de sesión
   try {
-    const response = await fetch(API_ENDPOINTS.AUTH_LOGOUT, {
+    const response = await fetchApi(API_ENDPOINTS.AUTH_LOGOUT, {
       method: 'POST',
-      headers: getAuthHeaders(),
-      credentials: 'include' // Incluir cookies para que el backend las pueda eliminar
+      headers: getAuthHeaders()
     });
 
     if (response.ok) {
@@ -463,11 +461,10 @@ export const logout = async () => {
  * @returns {Promise<Object>} Datos actualizados del usuario
  */
 export const getCurrentUserInfo = async () => {
-  
+
   try {
-    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+    const response = await fetchApi(API_ENDPOINTS.AUTH_ME, {
       method: 'GET',
-      credentials: 'include', // CRITICO: la cookie auth_token es cross-site
       headers: getAuthHeaders()
     });
 
@@ -489,11 +486,10 @@ export const getCurrentUserInfo = async () => {
  * @returns {Promise<Object>} Nuevo token
  */
 export const refreshToken = async () => {
-  
+
   try {
-    const response = await fetch(API_ENDPOINTS.AUTH_REFRESH, {
+    const response = await fetchApi(API_ENDPOINTS.AUTH_REFRESH, {
       method: 'POST',
-      credentials: 'include', // CRITICO: el refresh_token vive en cookie HttpOnly
       headers: getAuthHeaders()
     });
 
@@ -669,29 +665,34 @@ export const validarCorreo = (correo) => {
  */
 export const validarPassword = (password) => {
   const errores = [];
-  
+
   if (password.length < 8) {
     errores.push('La contraseña debe tener al menos 8 caracteres');
   }
-  
+
   if (!/[A-Z]/.test(password)) {
     errores.push('Debe contener al menos una mayúscula');
   }
-  
+
   if (!/[a-z]/.test(password)) {
     errores.push('Debe contener al menos una minúscula');
   }
-  
+
   if (!/[0-9]/.test(password)) {
     errores.push('Debe contener al menos un número');
   }
-  
+
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
     errores.push('Debe contener al menos un carácter especial');
   }
-  
+
   return {
     valido: errores.length === 0,
     errores
   };
 };
+
+/**
+ * Exportar fetchApi para uso en otros servicios
+ */
+export { fetchApi };

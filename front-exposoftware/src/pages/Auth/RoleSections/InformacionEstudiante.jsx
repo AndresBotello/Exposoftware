@@ -1,4 +1,6 @@
 import { AlertCircle, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import * as AcademicService from "../../../Services/AcademicService";
 
 function InformacionEstudiante({
   formData,
@@ -8,6 +10,25 @@ function InformacionEstudiante({
   successFields,
   getInputClassName,
 }) {
+  const [programas, setProgramas] = useState([]);
+  const [cargandoProgramas, setCargandoProgramas] = useState(true);
+
+  useEffect(() => {
+    const cargarProgramas = async () => {
+      try {
+        const resultado = await AcademicService.obtenerTodosProgramas();
+        if (Array.isArray(resultado)) {
+          setProgramas(resultado);
+        }
+      } catch (error) {
+        console.error('Error al cargar programas:', error);
+      } finally {
+        setCargandoProgramas(false);
+      }
+    };
+
+    cargarProgramas();
+  }, []);
 
   return (
     <>
@@ -40,15 +61,28 @@ function InformacionEstudiante({
         )}
       </div>
 
-      {/* Programa fijo — Ingeniería de Sistemas */}
+      {/* Programa — Select con todos los programas */}
       <div className="lg:col-span-2">
-        <label className="block font-medium text-gray-700 mb-1">Programa</label>
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-green-800 font-medium text-sm">
-          <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-          Ingeniería de Sistemas
-        </div>
-        {/* Campo oculto para que formData.programa lleve el valor */}
-        <input type="hidden" name="programa" value="5095" />
+        <label className="block font-medium text-gray-700 mb-1">Programa *</label>
+        <select
+          name="programa"
+          value={formData.programa}
+          onChange={handleChange}
+          disabled={cargando || cargandoProgramas}
+          className={getInputClassName("programa")}
+        >
+          <option value="">Selecciona un Programa</option>
+          {programas.map((prog) => (
+            <option key={prog.codigo} value={prog.codigo}>
+              {prog.nombre}
+            </option>
+          ))}
+        </select>
+        {errors.programa && (
+          <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+            <AlertCircle size={14} /> {errors.programa}
+          </p>
+        )}
       </div>
 
       {/* Semestre */}

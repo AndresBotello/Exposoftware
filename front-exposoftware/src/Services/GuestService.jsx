@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from '../utils/constants';
 import * as AuthService from './AuthService';
+import { fetchApi } from '../utils/apiClient';
 
 // Definición de sectores disponibles
 const SECTORES = [
@@ -48,8 +49,7 @@ export const obtenerInformacionUsuario = async () => {
       throw new Error('No hay token de autenticación');
     }
 
-    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
-      credentials: 'include',
+    const response = await fetchApi(API_ENDPOINTS.AUTH_ME, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -83,8 +83,7 @@ export const obtenerMiPerfilInvitado = async () => {
     const token = getAuthToken();
     const headers = getAuthHeaders();
 
-    const response = await fetch(API_ENDPOINTS.INVITADO_MI_PERFIL, {
-      credentials: 'include',
+    const response = await fetchApi(API_ENDPOINTS.INVITADO_MI_PERFIL, {
       method: 'GET',
       headers: headers
     });
@@ -119,8 +118,7 @@ export const obtenerMiPerfilInvitado = async () => {
 export const obtenerPerfilInvitadoPorId = async (guestId) => {
   try {
     
-    const response = await fetch(API_ENDPOINTS.ADMIN_INVITADO_BY_ID(guestId), {
-      credentials: 'include',
+    const response = await fetchApi(API_ENDPOINTS.ADMIN_INVITADO_BY_ID(guestId), {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -153,7 +151,7 @@ export const actualizarPerfilInvitado = async (guestId, datosInvitado) => {
     
     const datosProcesados = prepararDatosParaBackend(datosInvitado);
     
-    const response = await fetch(API_ENDPOINTS.ADMIN_INVITADO_BY_ID(guestId), {
+    const response = await fetchApi(API_ENDPOINTS.ADMIN_INVITADO_BY_ID(guestId), {
       credentials: 'include',
       method: 'PUT',
       headers: getAuthHeaders(),
@@ -256,8 +254,7 @@ const prepararDatosParaBackend = (datosInvitado) => {
 export const obtenerTodosLosProyectos = async () => {
   try {
     
-    const response = await fetch(API_ENDPOINTS.PROYECTOS, {
-      credentials: 'include',
+    const response = await fetchApi(API_ENDPOINTS.PROYECTOS, {
       method: 'GET',
       headers: getAuthHeaders()
     });
