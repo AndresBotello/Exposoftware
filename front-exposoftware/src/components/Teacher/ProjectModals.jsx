@@ -75,14 +75,26 @@ export function ProjectDetailsModal({
             </div>
             <span
               className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${
-                project.calificacion
+                project.estado === "aprobado" || project.estado === "rechazado"
+                  ? project.estado === "aprobado"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-red-100 text-red-800"
+                  : project.estado === "pendiente"
+                  ? "bg-amber-100 text-amber-800"
+                  : project.calificacion
                   ? "bg-emerald-100 text-emerald-800"
                   : project.activo
                   ? "bg-yellow-100 text-yellow-800"
                   : "bg-gray-100 text-gray-800"
               }`}
             >
-              {project.calificacion
+              {project.estado === "aprobado"
+                ? "✅ Aprobado"
+                : project.estado === "pendiente"
+                ? "⏳ Pendiente"
+                : project.estado === "rechazado"
+                ? "❌ Rechazado"
+                : project.calificacion
                 ? `Calificado: ${project.calificacion}`
                 : project.activo
                 ? "Pendiente"
@@ -624,8 +636,22 @@ export function ProjectActionModal({
                   </div>
                   <div>
                     <p className="text-gray-600">Estado</p>
-                    <p className="text-lg font-semibold text-emerald-700">
-                      {project.calificacion
+                    <p className={`text-lg font-semibold ${
+                      project.estado === "aprobado"
+                        ? "text-emerald-700"
+                        : project.estado === "pendiente"
+                        ? "text-amber-700"
+                        : project.estado === "rechazado"
+                        ? "text-red-700"
+                        : "text-gray-700"
+                    }`}>
+                      {project.estado === "aprobado"
+                        ? "✅ Aprobado"
+                        : project.estado === "pendiente"
+                        ? "⏳ Pendiente"
+                        : project.estado === "rechazado"
+                        ? "❌ Rechazado"
+                        : project.calificacion
                         ? `Calificado: ${project.calificacion}`
                         : project.activo
                         ? "Pendiente"

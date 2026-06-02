@@ -48,6 +48,7 @@ export function useStudentProjects() {
   const [myProjects, setMyProjects] = useState([]);
   const [myProjectsCount, setMyProjectsCount] = useState(0);
   const [projectsForApproval, setProjectsForApproval] = useState([]);
+  const [projectsApproved, setProjectsApproved] = useState([]);
   const [approvingProject, setApprovingProject] = useState(false);
   const [rejectingProject, setRejectingProject] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
@@ -59,6 +60,7 @@ export function useStudentProjects() {
   const [sublineasMap, setSublineasMap] = useState(new Map());
   const [areasMap, setAreasMap] = useState(new Map());
   const [eventosMap, setEventosMap] = useState(new Map());
+  const [materiaGruposMap, setMateriaGruposMap] = useState(new Map());
 
   // Wrappers de un solo argumento para los consumidores (componentes)
   const getLineaName = (code) => getLineaNameUtil(lineasMap, code);
@@ -95,6 +97,7 @@ export function useStudentProjects() {
         // Cargar mi carga docente (materias y grupos que dicto)
         let teachingLoadMap = new Map(); // Mapa de id_docente_materia -> {codigo_materia, nombre_materia, nombre_grupo, id_grupo}
         let gruposMap = new Map(); // Mapa de id_grupo -> nombre_grupo
+        let materiaGruposMapLocal = new Map(); // Mapa de codigo_materia -> [grupos]
         try {
           const carga = await getMyTeachingLoad();
 
@@ -113,8 +116,25 @@ export function useStudentProjects() {
               if (clase.id_grupo && clase.nombre_grupo) {
                 gruposMap.set(clase.id_grupo, clase.nombre_grupo);
               }
+
+              // Mapear materia -> grupos
+              if (clase.codigo_materia && clase.id_grupo && clase.nombre_grupo) {
+                const codigoMateria = clase.codigo_materia.toString().toLowerCase();
+                if (!materiaGruposMapLocal.has(codigoMateria)) {
+                  materiaGruposMapLocal.set(codigoMateria, []);
+                }
+                const gruposDeMateria = materiaGruposMapLocal.get(codigoMateria);
+                if (!gruposDeMateria.some(g => g.id_grupo === clase.id_grupo)) {
+                  gruposDeMateria.push({
+                    id_grupo: clase.id_grupo,
+                    nombre_grupo: clase.nombre_grupo
+                  });
+                }
+              }
             }
           });
+
+          setMateriaGruposMap(materiaGruposMapLocal);
         } catch (err) {
           // Fallback: cargar grupos por separado si la carga docente falla
           try {
@@ -154,6 +174,19 @@ export function useStudentProjects() {
               nombreGrupo = gruposMap.get(idGrupo) || p.nombre_grupo;
             }
 
+            // Si no tenemos idGrupo pero sí tenemos nombreGrupo, buscar en materiaGruposMap
+            if (!idGrupo && nombreGrupo && materiaInfo.codigo_materia) {
+              const codigoMateria = materiaInfo.codigo_materia.toString().toLowerCase();
+              const gruposDeMateria = materiaGruposMapLocal.get(codigoMateria) || [];
+              const grupoCoincidente = gruposDeMateria.find(g =>
+                g.nombre_grupo?.toLowerCase() === nombreGrupo.toLowerCase() ||
+                g.nombre_grupo?.toLowerCase().includes(nombreGrupo.toLowerCase())
+              );
+              if (grupoCoincidente) {
+                idGrupo = grupoCoincidente.id_grupo;
+              }
+            }
+
             // Si nombreGrupo parece un UUID, no mostrarlo
             if (isUUID(nombreGrupo)) {
               nombreGrupo = null;
@@ -176,36 +209,24 @@ export function useStudentProjects() {
           });
           setMyProjects(transformedProjects);
           setMyProjectsCount(transformedProjects.length);
+
+          // Proyectos para aprobación: Los proyectos del docente con estado pendiente
+          const proyectosPendientes = transformedProjects.filter(p => p.estado === "pendiente");
+          setProjectsForApproval(proyectosPendientes);
+
+          // Proyectos aprobados: Los proyectos del docente con estado aprobado
+          const proyectosAprobados = transformedProjects.filter(p => p.estado === "aprobado");
+          setProjectsApproved(proyectosAprobados);
+
           transformedProjects.forEach(p => {
           });
         } catch (err) {
           setMyProjects([]);
           setMyProjectsCount(0);
-        }
-
-        // Cargar proyectos de eventos para aprobación
-        try {
-          const eventos = await getAllEventos();
-          const eventosAbiertosList = eventos.filter(
-            (e) =>
-              e.estado === "inscripciones_abiertas" ||
-              (typeof e.estado === "string" && e.estado.toLowerCase() === "inscripciones_abiertas")
-          );
-
-          let projectosAprobacion = [];
-          for (const evento of eventosAbiertosList) {
-            const eventoId = evento.id || evento.id_evento || evento.evento_id;
-            if (eventoId) {
-              const proyectosEvento = await getProyectosByEvento(eventoId);
-              projectosAprobacion = [...projectosAprobacion, ...(Array.isArray(proyectosEvento) ? proyectosEvento : [])];
-            }
-          }
-          setProjectsForApproval(projectosAprobacion);
-        } catch (err) {
           setProjectsForApproval([]);
         }
 
-        // Filtrar solo proyectos de eventos activos para tab "Todos"
+        // Filtrar solo proyectos de eventos activos que pertenecen a los grupos del docente
         let eventosActivosSet = null;
         let allProjects = [];
         try {
@@ -221,11 +242,17 @@ export function useStudentProjects() {
               .filter(Boolean)
           );
 
-          // Cargar todos los proyectos de eventos activos
+          // Cargar proyectos de eventos activos y filtrar solo los que pertenecen a grupos del docente
           for (const eventoId of eventosActivosSet) {
             try {
               const proyectosEvento = await getProyectosByEvento(eventoId);
-              allProjects = [...allProjects, ...(Array.isArray(proyectosEvento) ? proyectosEvento : [])];
+              const proyectosFiltrados = (Array.isArray(proyectosEvento) ? proyectosEvento : [])
+                .filter(p => {
+                  // Solo incluir proyectos cuyos grupos están en la carga docente del profesor
+                  const idGrupo = p.id_grupo || p.grupo_id;
+                  return idGrupo && gruposMap.has(idGrupo);
+                });
+              allProjects = [...allProjects, ...proyectosFiltrados];
             } catch (err) {
             }
           }
@@ -246,8 +273,23 @@ export function useStudentProjects() {
 
           // Obtener nombre del grupo del mapa si no está en la materia info
           let nombreGrupo = materiaInfo.nombre_grupo || p.nombre_grupo;
-          if (!nombreGrupo && p.id_grupo) {
-            nombreGrupo = gruposMap.get(p.id_grupo) || p.nombre_grupo;
+          let idGrupo = materiaInfo.id_grupo || p.id_grupo;
+
+          if (!nombreGrupo && idGrupo) {
+            nombreGrupo = gruposMap.get(idGrupo) || p.nombre_grupo;
+          }
+
+          // Si no tenemos idGrupo pero sí tenemos nombreGrupo, buscar en materiaGruposMap
+          if (!idGrupo && nombreGrupo && materiaInfo.codigo_materia) {
+            const codigoMateria = materiaInfo.codigo_materia.toString().toLowerCase();
+            const gruposDeMateria = materiaGruposMapLocal.get(codigoMateria) || [];
+            const grupoCoincidente = gruposDeMateria.find(g =>
+              g.nombre_grupo?.toLowerCase() === nombreGrupo.toLowerCase() ||
+              g.nombre_grupo?.toLowerCase().includes(nombreGrupo.toLowerCase())
+            );
+            if (grupoCoincidente) {
+              idGrupo = grupoCoincidente.id_grupo;
+            }
           }
 
           // Si nombreGrupo parece un UUID, no mostrarlo
@@ -261,7 +303,7 @@ export function useStudentProjects() {
             codigo_materia: materiaInfo.codigo_materia || p.codigo_materia,
             nombre_materia: materiaInfo.nombre_materia || p.nombre_materia,
             nombre_grupo: nombreGrupo || 'N/A',
-            id_grupo: materiaInfo.id_grupo || p.id_grupo,
+            id_grupo: idGrupo || 'N/A',
             activo: p.estado !== 'inactivo' && p.estado !== 'rechazado'
           };
         });
@@ -307,36 +349,42 @@ export function useStudentProjects() {
 
   // Cargar grupos cuando cambia la materia seleccionada
   useEffect(() => {
-    const loadGrupos = async () => {
-      try {
-        if (!selectedMateria || selectedMateria === "Filtrar por materia") {
-          setGruposList([]);
-          return;
-        }
-
-        const docenteId = await resolveDocenteId(user);
-        if (!docenteId) {
-          setGruposList([]);
-          return;
-        }
-
-        const grupos = await getTeacherSubjectGroups(docenteId, selectedMateria, projects);
-        const normalized = (Array.isArray(grupos) ? grupos : []).map((g) => ({
-          id: g.id_grupo || g.id || g.codigo || g.group_code || "",
-          nombre:
-            g.nombre ||
-            g.nombre_grupo ||
-            g.name ||
-            String(g.id_grupo || g.id || g.codigo),
-        }));
-        setGruposList(normalized);
-      } catch (err) {
+    try {
+      if (!selectedMateria || selectedMateria === "Filtrar por materia") {
         setGruposList([]);
+        return;
       }
-    };
 
-    loadGrupos();
-  }, [selectedMateria, user, projects]);
+      const materiaSeleccionada = selectedMateria.toString().toLowerCase();
+
+      // Primero intentar obtener del mapa de materia -> grupos (del teaching load)
+      let gruposDeMateria = materiaGruposMap.get(materiaSeleccionada);
+
+      // Si no encuentra en el mapa, buscar en myProjects (retrocompatibilidad)
+      if (!gruposDeMateria || gruposDeMateria.length === 0) {
+        const gruposDeMateriaMapa = new Map();
+        if (myProjects && myProjects.length > 0) {
+          myProjects.forEach((project) => {
+            const codigoMateria = (project.codigo_materia || "").toString().toLowerCase();
+
+            if (codigoMateria === materiaSeleccionada && project.id_grupo) {
+              if (!gruposDeMateriaMapa.has(project.id_grupo)) {
+                gruposDeMateriaMapa.set(project.id_grupo, {
+                  id_grupo: project.id_grupo,
+                  nombre_grupo: project.nombre_grupo || `Grupo ${project.id_grupo}`
+                });
+              }
+            }
+          });
+        }
+        gruposDeMateria = Array.from(gruposDeMateriaMapa.values());
+      }
+
+      setGruposList(gruposDeMateria || []);
+    } catch (err) {
+      setGruposList([]);
+    }
+  }, [selectedMateria, materiaGruposMap, myProjects]);
 
   const handleLogout = async () => {
     try {
@@ -347,26 +395,41 @@ export function useStudentProjects() {
     }
   };
 
-  const filteredProjects = projects.filter((project) => {
-    const titulo = project.titulo_proyecto?.toLowerCase() || "";
-    const materia = (project.codigo_materia || "").toString().toLowerCase();
-    const grupo = (project.id_grupo || project.grupo || "").toString();
-    const query = searchQuery.toLowerCase();
+  // Función para filtrar proyectos
+  const filterProjects = (projectsToFilter) => {
+    return projectsToFilter.filter((project) => {
+      const titulo = project.titulo_proyecto?.toLowerCase() || "";
+      const materia = (project.codigo_materia || "").toString().toLowerCase();
+      const grupo = (project.id_grupo || "").toString();
+      const query = searchQuery.toLowerCase();
 
-    const matchesQuery = titulo.includes(query) || materia.includes(query);
+      // Búsqueda por título, materia o estudiantes
+      const matchesQuery =
+        titulo.includes(query) ||
+        materia.includes(query) ||
+        (project.integrantes && project.integrantes.some(est =>
+          (est.nombre_completo?.toLowerCase() || "").includes(query) ||
+          (est.nombre?.toLowerCase() || "").includes(query)
+        ));
 
-    const materiaFilterActive =
-      selectedMateria && selectedMateria !== "Filtrar por materia";
-    const matchesMateria =
-      !materiaFilterActive || materia === selectedMateria.toString().toLowerCase();
+      const materiaFilterActive =
+        selectedMateria && selectedMateria !== "Filtrar por materia";
+      const matchesMateria =
+        !materiaFilterActive || materia === selectedMateria.toString().toLowerCase();
 
-    const groupFilterActive =
-      selectedGroup && selectedGroup !== "Filtrar por grupo";
-    const matchesGroup =
-      !groupFilterActive || grupo === selectedGroup.toString();
+      const groupFilterActive =
+        selectedGroup && selectedGroup !== "Filtrar por grupo";
+      const matchesGroup =
+        !groupFilterActive || grupo === selectedGroup;
 
-    return matchesQuery && matchesMateria && matchesGroup;
-  });
+      return matchesQuery && matchesMateria && matchesGroup;
+    });
+  };
+
+  const filteredProjects = filterProjects(projects);
+  const filteredMyProjects = filterProjects(myProjects);
+  const filteredApprovalProjects = filterProjects(projectsForApproval);
+  const filteredApprovedProjects = filterProjects(projectsApproved);
 
   const handleViewDetails = async (project) => {
     setSelectedProject(project);
@@ -697,8 +760,12 @@ export function useStudentProjects() {
     projects,
     filteredProjects,
     myProjects,
+    filteredMyProjects,
     myProjectsCount,
     projectsForApproval,
+    filteredApprovalProjects,
+    projectsApproved,
+    filteredApprovedProjects,
     approvingProject,
     rejectingProject,
     showActionModal,

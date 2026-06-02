@@ -494,24 +494,31 @@ export const refreshToken = async () => {
     });
 
     const resultado = await procesarRespuesta(response);
-    
+
     // Actualizar token en localStorage
     if (resultado.success && resultado.data) {
       const newToken = resultado.data.token || resultado.data.access_token;
       if (newToken) {
         localStorage.setItem(STORAGE_KEYS.TOKEN, newToken);
-        
+
         // Actualizar tiempo de expiración
         const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
         localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
-        
+
       }
     }
-    
+
     return resultado;
   } catch (error) {
-    // Si falla el refresh, cerrar sesión
-    logout();
+    // Solo cerrar sesión si es error 401 (credenciales inválidas/expiradas)
+    if (error.message && error.message.includes('401')) {
+      console.warn('⚠️ Token expirado o inválido, cerrando sesión...');
+      logout();
+    } else {
+      // Para otros errores (error de red, servidor caído, etc), solo loguear
+      console.warn('⚠️ Error en refresh token:', error.message);
+      console.warn('   La sesión se mantendrá. Próximo intento en 20 minutos.');
+    }
     throw error;
   }
 };

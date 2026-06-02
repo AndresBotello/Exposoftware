@@ -37,9 +37,9 @@ export default function ProjectCard({ proyecto, onViewDetails }) {
           <i className="pi pi-image text-gray-300 text-5xl"></i>
         )}
 
-        {/* Badge de Estado - Esquina Superior */}
+        {/* Badge de Estado - Esquina Superior Izquierda */}
         {proyecto.estado && (
-          <span className={`absolute top-3 right-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${getEstadoBadgeColor(proyecto.estado)}`}>
+          <span className={`absolute top-3 left-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${getEstadoBadgeColor(proyecto.estado)}`}>
             {proyecto.estado.charAt(0).toUpperCase() + proyecto.estado.slice(1)}
           </span>
         )}

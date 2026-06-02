@@ -36,7 +36,11 @@ export default function StudentProjects() {
     projects,
     filteredProjects,
     myProjects,
+    filteredMyProjects,
     projectsForApproval,
+    filteredApprovalProjects,
+    projectsApproved,
+    filteredApprovedProjects,
     approvingProject,
     rejectingProject,
     showActionModal,
@@ -74,11 +78,15 @@ export default function StudentProjects() {
   if (activeSection === "assigned") {
     displayProjects = myProjects;
     displayTitle = "Mis Proyectos Asignados";
-    displayFiltered = myProjects; // No filtering for assigned projects for now
+    displayFiltered = filteredMyProjects;
   } else if (activeSection === "approval") {
     displayProjects = projectsForApproval;
     displayTitle = "Proyectos para Aprobar";
-    displayFiltered = projectsForApproval; // No filtering for approval projects
+    displayFiltered = filteredApprovalProjects;
+  } else if (activeSection === "approved") {
+    displayProjects = projectsApproved;
+    displayTitle = "Proyectos Aprobados";
+    displayFiltered = filteredApprovedProjects;
   }
 
   const handleOpenQRModal = (project) => {
@@ -145,21 +153,21 @@ export default function StudentProjects() {
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <i className="pi pi-check-circle"></i>
+                  <i className="pi pi-hourglass"></i>
                   Proyectos para Aprobar ({projectsForApproval.length})
                 </span>
               </button>
               <button
-                onClick={() => setActiveSection("all")}
+                onClick={() => setActiveSection("approved")}
                 className={`pb-3 px-1 font-medium text-sm transition-all duration-200 border-b-2 ${
-                  activeSection === "all"
+                  activeSection === "approved"
                     ? "text-emerald-600 border-b-emerald-600"
                     : "text-gray-600 border-b-transparent hover:text-gray-800"
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <i className="pi pi-list"></i>
-                  Todos ({projects.length})
+                  <i className="pi pi-check"></i>
+                  Proyectos Aprobados ({projectsApproved.length})
                 </span>
               </button>
             </div>

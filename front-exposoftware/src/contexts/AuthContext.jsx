@@ -53,16 +53,19 @@ export const AuthProvider = ({ children }) => {
         if (AuthService.isAuthenticated()) {
           const userData = AuthService.getUserData();
           const userRole = AuthService.getUserRole();
-          
-          
+
+
           if (userData) {
             // 🚀 CARGAR DATOS INMEDIATAMENTE desde localStorage
             setUser(userData);
             setLoading(false); // ← Liberar el loading INMEDIATAMENTE
-            
+
+            // ✅ INICIAR REFRESH AUTOMÁTICO AL RECARGAR LA PÁGINA
+            startAutoRefresh();
+
             // Si es estudiante, cargar perfil completo desde el backend en SEGUNDO PLANO
             if (userRole === 'estudiante') {
-              
+
               // Esta llamada NO bloquea la UI
               StudentProfileService.obtenerMiPerfil()
                 .then(resultado => {
