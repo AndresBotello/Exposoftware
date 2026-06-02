@@ -298,11 +298,11 @@ export const handleSubmit = async (
 
     // Si llegamos aquí, el registro fue exitoso
     setMensajeExito(resultado.message || "✅ ¡Registro exitoso! Revisa tu correo para activar tu cuenta.");
-    
-    // Limpiar el formulario después de 2 segundos
+
+    // Redirigir a login después de 7 segundos
     setTimeout(() => {
       window.location.href = "/login";
-    }, 3000);
+    }, 7000);
 
   } catch (error) {
     setMensajeError(error.message || "❌ Error al registrar. Intenta nuevamente.");

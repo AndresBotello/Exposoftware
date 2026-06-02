@@ -22,6 +22,7 @@ const ESTADOS = {
 
 export default function ProyectosTable({ proyectos, loading, globalFilter, setGlobalFilter, cargarProyectos, onVerDetalles, onEliminar }) {
   const [estadoFilter, setEstadoFilter] = useState('');
+  const [docenteFilter, setDocenteFilter] = useState('');
 
   const tipoActividadTemplate = (rowData) => {
     const tipo = TIPOS_ACTIVIDAD[rowData.tipo_actividad] || { label: 'Desconocido', severity: 'secondary' };
@@ -89,9 +90,14 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
     </div>
   );
 
-  const filteredProyectos = estadoFilter
-    ? proyectos.filter(p => p.estado === estadoFilter)
-    : proyectos;
+  const filteredProyectos = proyectos.filter(p => {
+    const estadoMatch = !estadoFilter || p.estado === estadoFilter;
+    const docenteMatch = !docenteFilter ||
+      p.docentes_materias?.[0]?.nombre_docente
+        ?.toLowerCase()
+        .includes(docenteFilter.toLowerCase());
+    return estadoMatch && docenteMatch;
+  });
 
   const statCards = [
     {
@@ -182,6 +188,14 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
               <option value="calificado">Calificado</option>
               <option value="rechazado">Rechazado</option>
             </select>
+
+            <input
+              type="text"
+              placeholder="Filtrar por nombre de docente..."
+              value={docenteFilter}
+              onChange={(e) => setDocenteFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white flex-1 md:flex-none md:w-64"
+            />
           </div>
         </div>
 
@@ -201,14 +215,19 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay proyectos</h3>
             <p className="text-gray-600">
-              {estadoFilter ? `No hay proyectos con el estado "${estadoFilter}"` : 'Aún no se ha registrado ningún proyecto en el sistema'}
+              {estadoFilter || docenteFilter
+                ? `No hay proyectos que coincidan con los filtros aplicados${estadoFilter ? ` (estado: "${estadoFilter}")` : ''}${docenteFilter ? ` (docente: "${docenteFilter}")` : ''}`
+                : 'Aún no se ha registrado ningún proyecto en el sistema'}
             </p>
-            {estadoFilter && (
-              <button 
-                onClick={() => setEstadoFilter('')}
+            {(estadoFilter || docenteFilter) && (
+              <button
+                onClick={() => {
+                  setEstadoFilter('');
+                  setDocenteFilter('');
+                }}
                 className="mt-4 text-sm font-semibold text-teal-600 hover:text-teal-700 underline focus:outline-none"
               >
-                Restablecer filtro de estado
+                Restablecer filtros
               </button>
             )}
           </div>

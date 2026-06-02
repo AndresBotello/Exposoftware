@@ -31,6 +31,7 @@ function RegisterPage() {
   const [cargando, setCargando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState("");
   const [mensajeError, setMensajeError] = useState("");
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const rol = "estudiante";
 
   // Estados para términos y condiciones
@@ -69,6 +70,13 @@ function RegisterPage() {
     contraseña: "",
     confirmarcontraseña: "",
   });
+
+  // Mostrar pantalla de éxito cuando hay mensajeExito
+  useEffect(() => {
+    if (mensajeExito) {
+      setShowSuccessScreen(true);
+    }
+  }, [mensajeExito]);
 
   // Cargar catálogos de países y departamentos al montar
   useEffect(() => {
@@ -151,6 +159,64 @@ function RegisterPage() {
   const getInputClassName = (fieldName) => {
     return getInputClassNameUtil(fieldName, errors, successFields, cargando);
   };
+
+  // Si se muestra la pantalla de éxito, mostrar eso en lugar del formulario
+  if (showSuccessScreen) {
+    return (
+      <main className="min-h-screen flex items-center justify-center relative overflow-hidden py-8 md:py-20 px-4 sm:px-6">
+        <BackgroundCarousel />
+
+        {/* Pantalla de éxito */}
+        <section className="bg-white p-8 sm:p-12 rounded-2xl shadow-2xl w-full max-w-2xl relative z-10 text-center">
+          {/* Icono de éxito animado */}
+          <div className="mb-6 flex justify-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center animate-pulse">
+              <i className="pi pi-check text-4xl text-green-600"></i>
+            </div>
+          </div>
+
+          {/* Título */}
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
+            ¡Registro exitoso!
+          </h1>
+
+          {/* Mensaje principal */}
+          <p className="text-gray-700 text-lg leading-relaxed mb-8">
+            Hemos enviado un correo electrónico a la dirección registrada. Por favor, revisa tu bandeja de entrada y sigue el enlace de activación para validar tu cuenta. Una vez activada, podrás iniciar sesión y utilizar la plataforma.
+          </p>
+
+          {/* Detalles */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+            <div className="flex gap-3 items-start">
+              <i className="pi pi-info-circle text-blue-600 text-xl mt-0.5"></i>
+              <div className="text-left">
+                <p className="text-blue-900 font-semibold mb-1">Próximos pasos:</p>
+                <ul className="text-blue-800 text-sm space-y-1">
+                  <li>✓ Revisa tu correo electrónico (incluyendo la carpeta de spam)</li>
+                  <li>✓ Haz clic en el enlace de activación proporcionado</li>
+                  <li>✓ Confirma tu email para activar tu cuenta</li>
+                  <li>✓ Inicia sesión con tus credenciales</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Botón para ir a login */}
+          <button
+            onClick={() => window.location.href = "/login"}
+            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
+          >
+            Ir a Iniciar Sesión
+          </button>
+
+          {/* Mensaje de redirección automática */}
+          <p className="text-gray-500 text-sm mt-4">
+            Se te redireccionará automáticamente en unos momentos...
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center relative overflow-hidden py-8 md:py-20 px-4 sm:px-6">
