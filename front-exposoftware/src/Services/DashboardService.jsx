@@ -26,27 +26,38 @@ class DashboardService {
 
   /**
    * Obtener total de proyectos registrados
-   * GET /api/v1/proyectos
+   * Como la API no devuelve total en paginación, se hace paginación hasta el final
    * @returns {Promise<number>} - Total de proyectos
    */
   static async getTotalProyectos() {
     try {
-      const response = await axios.get(
-        `${API_ENDPOINTS.PROYECTOS}?limit=100`,
-        this.getAuthConfig()
-      );
+      let totalProyectos = 0;
+      let pagina = 1;
+      let tieneMas = true;
 
-      // Si viene con paginación, usar total_items
-      if (response.data?.pagination?.total_items) {
-        return response.data.pagination.total_items;
+      while (tieneMas) {
+        const response = await axios.get(
+          `${API_ENDPOINTS.PROYECTOS}?page=${pagina}&limit=100`,
+          this.getAuthConfig()
+        );
+
+        const proyectos = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        totalProyectos += proyectos.length;
+
+        // Si trae menos de 100, significa que es la última página
+        if (proyectos.length < 100) {
+          tieneMas = false;
+        }
+
+        pagina++;
       }
 
-      // La respuesta puede ser un array directo o un objeto con data
-      const proyectos = Array.isArray(response.data)
-        ? response.data
-        : response.data?.data || response.data?.proyectos || [];
-
-      return proyectos.length;
+      return totalProyectos;
     } catch (error) {
       return 0;
     }
@@ -54,37 +65,38 @@ class DashboardService {
 
   /**
    * Obtener total de estudiantes inscritos
-   * GET /api/v1/admin/estudiantes
+   * Como la API no devuelve total en paginación, se hace paginación hasta el final
    * @returns {Promise<number>} - Total de estudiantes
    */
   static async getTotalEstudiantes() {
     try {
-      const response = await axios.get(
-        `${API_ENDPOINTS.ADMIN_ESTUDIANTES}?limit=100`,
-        this.getAuthConfig()
-      );
+      let totalEstudiantes = 0;
+      let pagina = 1;
+      let tieneMas = true;
 
-      // Si viene con paginación, usar total_items
-      if (response.data?.pagination?.total_items) {
-        return response.data.pagination.total_items;
+      while (tieneMas) {
+        const response = await axios.get(
+          `${API_ENDPOINTS.ADMIN_ESTUDIANTES}?page=${pagina}&limit=100`,
+          this.getAuthConfig()
+        );
+
+        const estudiantes = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        totalEstudiantes += estudiantes.length;
+
+        // Si trae menos de 100, significa que es la última página
+        if (estudiantes.length < 100) {
+          tieneMas = false;
+        }
+
+        pagina++;
       }
 
-      // La API devuelve un array directamente
-      if (Array.isArray(response.data)) {
-        return response.data.length;
-      }
-
-      // Si viene en un objeto con propiedad data
-      if (response.data?.data && Array.isArray(response.data.data)) {
-        return response.data.data.length;
-      }
-
-      // Si viene con propiedad estudiantes
-      if (response.data?.estudiantes && Array.isArray(response.data.estudiantes)) {
-        return response.data.estudiantes.length;
-      }
-
-      return 0;
+      return totalEstudiantes;
     } catch (error) {
       return 0;
     }
@@ -92,37 +104,38 @@ class DashboardService {
 
   /**
    * Obtener total de docentes/profesores inscritos
-   * GET /api/v1/admin/profesores
+   * Como la API no devuelve total en paginación, se hace paginación hasta el final
    * @returns {Promise<number>} - Total de profesores
    */
   static async getTotalProfesores() {
     try {
-      const response = await axios.get(
-        `${API_ENDPOINTS.ADMIN_DOCENTES}?limit=100`,
-        this.getAuthConfig()
-      );
+      let totalProfesores = 0;
+      let pagina = 1;
+      let tieneMas = true;
 
-      // Si viene con paginación, usar total_items
-      if (response.data?.pagination?.total_items) {
-        return response.data.pagination.total_items;
+      while (tieneMas) {
+        const response = await axios.get(
+          `${API_ENDPOINTS.ADMIN_DOCENTES}?page=${pagina}&limit=100`,
+          this.getAuthConfig()
+        );
+
+        const profesores = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        totalProfesores += profesores.length;
+
+        // Si trae menos de 100, significa que es la última página
+        if (profesores.length < 100) {
+          tieneMas = false;
+        }
+
+        pagina++;
       }
 
-      // La API devuelve un array directamente
-      if (Array.isArray(response.data)) {
-        return response.data.length;
-      }
-
-      // Si viene en un objeto con propiedad data
-      if (response.data?.data && Array.isArray(response.data.data)) {
-        return response.data.data.length;
-      }
-
-      // Si viene con propiedad profesores
-      if (response.data?.profesores && Array.isArray(response.data.profesores)) {
-        return response.data.profesores.length;
-      }
-
-      return 0;
+      return totalProfesores;
     } catch (error) {
       return 0;
     }

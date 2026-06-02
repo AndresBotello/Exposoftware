@@ -37,13 +37,35 @@ export default function GestionProyectos() {
     try {
       setLoading(true);
       const headers = AuthService.getAuthHeaders();
-      const response = await axios.get(`${API_ENDPOINTS.PROYECTOS}?page=1&limit=100`, {
-        headers,
-        withCredentials: true
-      });
-      const proyectosData = Array.isArray(response.data) ? response.data : response.data?.data || response.data?.proyectos || [];
-      setProyectos(proyectosData);
-      toast.current?.show({ severity: 'success', summary: 'Proyectos Cargados', detail: `${proyectosData.length} proyecto(s) encontrado(s)`, life: 3000 });
+      let allProyectos = [];
+      let pagina = 1;
+      let tieneMas = true;
+
+      // Paginar hasta traer todos los proyectos
+      while (tieneMas) {
+        const response = await axios.get(`${API_ENDPOINTS.PROYECTOS}?page=${pagina}&limit=100`, {
+          headers,
+          withCredentials: true
+        });
+
+        const proyectosData = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        allProyectos = [...allProyectos, ...proyectosData];
+
+        // Si trae menos de 100, es la última página
+        if (proyectosData.length < 100) {
+          tieneMas = false;
+        }
+
+        pagina++;
+      }
+
+      setProyectos(allProyectos);
+      toast.current?.show({ severity: 'success', summary: 'Proyectos Cargados', detail: `${allProyectos.length} proyecto(s) encontrado(s)`, life: 3000 });
       await cargarEventos();
     } catch (error) {
       toast.current?.show({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los proyectos', life: 5000 });
