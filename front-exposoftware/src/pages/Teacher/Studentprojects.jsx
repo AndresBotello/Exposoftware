@@ -10,7 +10,7 @@ export default function StudentProjects() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedProjectForQR, setSelectedProjectForQR] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 50;
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   const {
     user,
@@ -102,9 +102,9 @@ export default function StudentProjects() {
   };
 
   // Calcular proyectos paginados
-  const totalPages = Math.ceil(displayFiltered.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const totalPages = itemsPerPage >= displayFiltered.length ? 1 : Math.ceil(displayFiltered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
   const paginatedProjects = displayFiltered.slice(startIndex, endIndex);
 
   // Resetear a página 1 cuando cambian los filtros
@@ -463,10 +463,29 @@ export default function StudentProjects() {
 
                     {/* Controles de Paginación */}
                     {displayFiltered.length > 0 && (
-                      <div className="flex items-center justify-between mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-sm text-gray-600">
-                          Página <span className="font-semibold text-gray-900">{currentPage}</span> de <span className="font-semibold text-gray-900">{totalPages}</span>
-                          <span className="ml-4 text-gray-500">({displayFiltered.length} total)</span>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                          <div className="text-sm text-gray-600">
+                            Página <span className="font-semibold text-gray-900">{currentPage}</span> de <span className="font-semibold text-gray-900">{totalPages}</span>
+                            <span className="ml-4 text-gray-500">({displayFiltered.length} total)</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm text-gray-600 font-medium">Proyectos por página:</label>
+                            <select
+                              value={itemsPerPage}
+                              onChange={(e) => {
+                                setItemsPerPage(parseInt(e.target.value));
+                                setCurrentPage(1);
+                              }}
+                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                            >
+                              <option value={10}>10</option>
+                              <option value={25}>25</option>
+                              <option value={50}>50</option>
+                              <option value={100}>100</option>
+                            </select>
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -691,11 +710,30 @@ export default function StudentProjects() {
                 </div>
 
                 {/* Controles de Paginación para Tabla */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between p-4 bg-gray-50 border-t border-gray-200">
-                    <div className="text-sm text-gray-600">
-                      Página <span className="font-semibold text-gray-900">{currentPage}</span> de <span className="font-semibold text-gray-900">{totalPages}</span>
-                      <span className="ml-4 text-gray-500">({displayFiltered.length} total)</span>
+                {displayFiltered.length > 0 && (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-gray-50 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      <div className="text-sm text-gray-600">
+                        Página <span className="font-semibold text-gray-900">{currentPage}</span> de <span className="font-semibold text-gray-900">{totalPages}</span>
+                        <span className="ml-4 text-gray-500">({displayFiltered.length} total)</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600 font-medium">Proyectos por página:</label>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => {
+                            setItemsPerPage(parseInt(e.target.value));
+                            setCurrentPage(1);
+                          }}
+                          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                        >
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                        </select>
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <button
