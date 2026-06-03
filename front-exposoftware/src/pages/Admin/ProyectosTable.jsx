@@ -5,6 +5,9 @@ import { InputText } from 'primereact/inputtext';
 import { Tag } from 'primereact/tag';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { useState } from 'react';
+import { generateApprovedProyectosPDF } from '../../utils/generateProyectosPDF';
+import { Toast } from 'primereact/toast';
+import { useRef } from 'react';
 
 const TIPOS_ACTIVIDAD = {
   1: { label: 'Exposoftware', severity: 'success' },
@@ -21,8 +24,23 @@ const ESTADOS = {
 };
 
 export default function ProyectosTable({ proyectos, loading, globalFilter, setGlobalFilter, cargarProyectos, onVerDetalles, onEliminar }) {
+  const toast = useRef(null);
   const [estadoFilter, setEstadoFilter] = useState('');
   const [docenteFilter, setDocenteFilter] = useState('');
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+
+  const handleGeneratePDF = async () => {
+    setGeneratingPDF(true);
+    try {
+      await generateApprovedProyectosPDF(proyectos);
+      toast.current?.show({ severity: 'success', summary: 'Éxito', detail: 'PDF generado correctamente', life: 3000 });
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Error al generar el PDF', life: 5000 });
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
 
   const tipoActividadTemplate = (rowData) => {
     const tipo = TIPOS_ACTIVIDAD[rowData.tipo_actividad] || { label: 'Desconocido', severity: 'secondary' };
@@ -139,6 +157,7 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
 
   return (
     <>
+      <Toast ref={toast} />
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         {statCards.map(({ label, value, bgGradient, icon, textColor }) => (
           <div key={label} className={`bg-gradient-to-br ${bgGradient} rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow`}>
@@ -172,6 +191,16 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
                 <i className="pi pi-search" />
                 <InputText value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} placeholder="Buscar proyectos..." className="w-full" />
               </span>
+              <Button
+                icon={generatingPDF ? 'pi pi-spin pi-spinner' : 'pi pi-file-pdf'}
+                rounded
+                outlined
+                severity="warning"
+                tooltip="Descargar informe PDF"
+                tooltipOptions={{ position: 'top' }}
+                onClick={handleGeneratePDF}
+                disabled={generatingPDF}
+              />
               <Button icon="pi pi-refresh" rounded outlined severity="secondary" tooltip="Actualizar lista" tooltipOptions={{ position: 'top' }} onClick={cargarProyectos} />
             </div>
           </div>
