@@ -474,7 +474,7 @@ export const getMyProjects = async () => {
       try {
         const headers = AuthService.getAuthHeaders();
 
-        const url = API_ENDPOINTS.MIS_PROYECTOS;
+        const url = `${API_ENDPOINTS.MIS_PROYECTOS}?page=1&limit=100`;
 
         const response = await fetch(url, {
           method: 'GET',
@@ -511,7 +511,7 @@ export const getProyectosByEvento = async (eventoId) => {
   try {
     const headers = AuthService.getAuthHeaders();
 
-    const url = API_ENDPOINTS.PROYECTOS_BY_EVENTO(eventoId);
+    const url = `${API_ENDPOINTS.PROYECTOS_BY_EVENTO(eventoId)}?page=1&limit=100`;
 
     const response = await fetch(url, {
       method: 'GET',
