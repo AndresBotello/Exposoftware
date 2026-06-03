@@ -18,6 +18,11 @@ export default function InvitedPage() {
   const [showModal, setShowModal] = useState(false);
   const [eventoInfo, setEventoInfo] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    const saved = localStorage.getItem('invitedPageItemsPerPage');
+    return saved ? parseInt(saved) : 21;
+  });
 
   const handleLogout = async () => {
     try {
@@ -109,6 +114,25 @@ export default function InvitedPage() {
     project.nombre_grupo?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Resetear a página 1 cuando cambia la búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Guardar preferencia de items por página
+  const handleItemsPerPageChange = (value) => {
+    const newValue = parseInt(value);
+    setItemsPerPage(newValue);
+    localStorage.setItem('invitedPageItemsPerPage', newValue.toString());
+    setCurrentPage(1);
+  };
+
+  // Calcular proyectos paginados
+  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedProjects = filteredProjects.slice(startIndex, endIndex);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -194,9 +218,9 @@ export default function InvitedPage() {
               </p>
             </div>
 
-            {/* Barra de búsqueda */}
+            {/* Barra de búsqueda y filtros */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-4">
                 <i className="pi pi-search text-gray-400"></i>
                 <input
                   type="text"
@@ -213,6 +237,27 @@ export default function InvitedPage() {
                     <i className="pi pi-times"></i>
                   </button>
                 )}
+              </div>
+
+              {/* Selector de items por página */}
+              <div className="flex items-center gap-2 text-sm">
+                <label htmlFor="itemsPerPage" className="text-gray-700 font-medium">
+                  Proyectos por página:
+                </label>
+                <select
+                  id="itemsPerPage"
+                  value={itemsPerPage}
+                  onChange={(e) => handleItemsPerPageChange(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent"
+                >
+                  <option value="21">21</option>
+                  <option value="24">24</option>
+                  <option value="30">30</option>
+                  <option value="36">36</option>
+                  <option value="48">48</option>
+                  <option value="60">60</option>
+                  <option value="120">120</option>
+                </select>
               </div>
             </div>
 
@@ -243,14 +288,14 @@ export default function InvitedPage() {
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
                     <span className="text-sm font-medium text-gray-700">
-                      Mostrando <span className="font-semibold">{filteredProjects.length}</span> de{" "}
-                      <span className="font-semibold">{projects.length}</span> proyectos
+                      Mostrando <span className="font-semibold">{startIndex + 1}-{Math.min(endIndex, filteredProjects.length)}</span> de{" "}
+                      <span className="font-semibold">{filteredProjects.length}</span> proyectos
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filteredProjects.map((project) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+                  {paginatedProjects.map((project) => (
                     <ProjectCard
                       key={project.id_proyecto}
                       proyecto={project}
@@ -258,6 +303,60 @@ export default function InvitedPage() {
                     />
                   ))}
                 </div>
+
+                {/* Controles de Paginación */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-8">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <i className="pi pi-chevron-left"></i> Anterior
+                    </button>
+
+                    <div className="flex gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => {
+                        const pageNum = i + 1;
+                        // Mostrar páginas cercanas a la actual
+                        if (
+                          pageNum === 1 ||
+                          pageNum === totalPages ||
+                          (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                currentPage === pageNum
+                                  ? "bg-emerald-600 text-white"
+                                  : "border border-gray-300 text-gray-700 hover:bg-gray-100"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                          return (
+                            <span key={pageNum} className="px-2 py-2 text-gray-500">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Siguiente <i className="pi pi-chevron-right"></i>
+                    </button>
+                  </div>
+                )}
               </>
             )}
 
