@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStudentProjects } from "../../hooks/Teacher/useStudentProjects";
 import { ProjectDetailsModal, GradeModal, ProjectActionModal } from "../../components/Teacher/ProjectModals";
 import { TeacherHeader, TeacherSidebar } from "../../components/Teacher/TeacherLayout";
@@ -9,6 +9,8 @@ export default function StudentProjects() {
   const [activeSection, setActiveSection] = useState("assigned");
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedProjectForQR, setSelectedProjectForQR] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
 
   const {
     user,
@@ -98,6 +100,17 @@ export default function StudentProjects() {
     setShowQRModal(false);
     setSelectedProjectForQR(null);
   };
+
+  // Calcular proyectos paginados
+  const totalPages = Math.ceil(displayFiltered.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedProjects = displayFiltered.slice(startIndex, endIndex);
+
+  // Resetear a página 1 cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeSection, selectedMateria, selectedGroup, searchQuery]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -419,8 +432,9 @@ export default function StudentProjects() {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {displayFiltered.map((project) => (
+                  <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+                      {paginatedProjects.map((project) => (
                       <div key={project.id_proyecto} className="relative">
                         <ProjectCard
                           proyecto={project}
@@ -445,6 +459,33 @@ export default function StudentProjects() {
                         </div>
                       </div>
                     ))}
+                    </div>
+
+                    {/* Controles de Paginación */}
+                    {displayFiltered.length > 0 && (
+                      <div className="flex items-center justify-between mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="text-sm text-gray-600">
+                          Página <span className="font-semibold text-gray-900">{currentPage}</span> de <span className="font-semibold text-gray-900">{totalPages}</span>
+                          <span className="ml-4 text-gray-500">({displayFiltered.length} total)</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <i className="pi pi-chevron-left mr-2"></i>Anterior
+                          </button>
+                          <button
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Siguiente<i className="pi pi-chevron-right ml-2"></i>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -478,7 +519,7 @@ export default function StudentProjects() {
                       </tr>
                     </thead>
                     <tbody>
-                      {displayFiltered.map((project, index) => (
+                      {paginatedProjects.map((project, index) => (
                         <tr
                           key={project.id_proyecto}
                           className={`border-b border-gray-100 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 transition-all duration-200 ${
@@ -648,6 +689,32 @@ export default function StudentProjects() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Controles de Paginación para Tabla */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between p-4 bg-gray-50 border-t border-gray-200">
+                    <div className="text-sm text-gray-600">
+                      Página <span className="font-semibold text-gray-900">{currentPage}</span> de <span className="font-semibold text-gray-900">{totalPages}</span>
+                      <span className="ml-4 text-gray-500">({displayFiltered.length} total)</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <i className="pi pi-chevron-left mr-2"></i>Anterior
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Siguiente<i className="pi pi-chevron-right ml-2"></i>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
