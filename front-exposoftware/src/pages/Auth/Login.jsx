@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import * as AuthService from "../../Services/AuthService";
 import { useAuth } from "../../contexts/AuthContext";
 import { API_BASE_URL } from "../../utils/constants";
+import { safeGetItem, safeSetItem, safeRemoveItem } from "../../utils/safeStorage";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -53,10 +54,14 @@ export default function LoginPage() {
 
   // Cargar correo guardado
   useEffect(() => {
-    const correoGuardado = localStorage.getItem("correoRecordado");
-    if (correoGuardado) {
-      setCorreo(correoGuardado);
-      setRecordarme(true);
+    try {
+      const correoGuardado = safeGetItem("correoRecordado");
+      if (correoGuardado) {
+        setCorreo(correoGuardado);
+        setRecordarme(true);
+      }
+    } catch (e) {
+      // Ignorar errores al cargar email recordado
     }
   }, []);
 
@@ -98,9 +103,9 @@ export default function LoginPage() {
 
       // Guardar correo si "Recordarme" está activado
       if (recordarme) {
-        localStorage.setItem("correoRecordado", correo);
+        safeSetItem("correoRecordado", correo);
       } else {
-        localStorage.removeItem("correoRecordado");
+        safeRemoveItem("correoRecordado");
       }
 
       // Obtener rol del usuario

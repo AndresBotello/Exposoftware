@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './constants';
+import { safeRemoveItem } from './safeStorage';
 
 let isRefreshing = false;
 let queue = [];
@@ -53,17 +54,17 @@ export const fetchApi = async (url, options = {}) => {
         // Refresh falló, redirigir a login
         queue.forEach((p) => p.reject(new Error('Session expired')));
         queue = [];
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        localStorage.removeItem('user_role');
+        safeRemoveItem('auth_token');
+        safeRemoveItem('user_data');
+        safeRemoveItem('user_role');
         window.location.href = '/login';
       }
     } catch (error) {
       queue.forEach((p) => p.reject(error));
       queue = [];
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_data');
-      localStorage.removeItem('user_role');
+      safeRemoveItem('auth_token');
+      safeRemoveItem('user_data');
+      safeRemoveItem('user_role');
       window.location.href = '/login';
     } finally {
       isRefreshing = false;

@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "../utils/constants";
 import { fetchApi } from "../utils/apiClient";
+import { safeGetItem, safeSetItem, safeRemoveItem, safeClear } from "../utils/safeStorage";
 
 const STORAGE_KEYS = {
   TOKEN: 'auth_token',
@@ -140,11 +141,11 @@ const fetchUserData = async (token) => {
  */
 export const login = async (credentials) => {
 
-  // Limpiar localStorage primero para remover token de invitado anterior
-  localStorage.removeItem(STORAGE_KEYS.TOKEN);
-  localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-  localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
-  localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
+  // Limpiar almacenamiento primero para remover token de invitado anterior
+  safeRemoveItem(STORAGE_KEYS.TOKEN);
+  safeRemoveItem(STORAGE_KEYS.USER_DATA);
+  safeRemoveItem(STORAGE_KEYS.USER_ROLE);
+  safeRemoveItem(STORAGE_KEYS.EXPIRES_AT);
 
   const payload = {
     correo: credentials.correo,
@@ -245,7 +246,7 @@ export const login = async (credentials) => {
       // para evitar que `getAuthHeaders()` siga mandando un Bearer rancio
       // que el backend prioriza sobre la cookie nueva y rechaza con 401.
       if (token) {
-        localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+        safeSetItem(STORAGE_KEYS.TOKEN, token);
 
         // Intentar extraer el nombre del JWT
         const jwtInfo = extraerInfoJWT(token);
@@ -258,19 +259,19 @@ export const login = async (credentials) => {
         // BORRAR el token viejo para que getAuthHeaders() NO mande Bearer
         // rancio (el backend prioriza Bearer sobre cookie y un Bearer
         // invalido tira 401 INVALID_TOKEN aunque la cookie sea valida).
-        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        safeRemoveItem(STORAGE_KEYS.TOKEN);
       }
 
       // Guardar datos del usuario (ahora incluye el nombre si estaba en el JWT)
-      localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+      safeSetItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
 
       // Guardar rol normalizado (admin, docente, estudiante)
       const rolNormalizado = normalizarRol(rolFinal);
-      localStorage.setItem(STORAGE_KEYS.USER_ROLE, rolNormalizado);
-      
+      safeSetItem(STORAGE_KEYS.USER_ROLE, rolNormalizado);
+
       // Guardar tiempo de expiración (24 horas por defecto)
       const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-      localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
+      safeSetItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
       
     }
     
@@ -445,14 +446,18 @@ export const logout = async () => {
     // Continuar con la limpieza incluso si hay error
   }
 
-  // Limpiar localStorage siempre
-  localStorage.removeItem(STORAGE_KEYS.TOKEN);
-  localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-  localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
-  localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
+  // Limpiar almacenamiento siempre
+  safeRemoveItem(STORAGE_KEYS.TOKEN);
+  safeRemoveItem(STORAGE_KEYS.USER_DATA);
+  safeRemoveItem(STORAGE_KEYS.USER_ROLE);
+  safeRemoveItem(STORAGE_KEYS.EXPIRES_AT);
 
   // También limpiar sessionStorage por si acaso
-  sessionStorage.clear();
+  try {
+    sessionStorage.clear();
+  } catch (e) {
+    // Ignorar si sessionStorage no está disponible
+  }
 
 };
 
@@ -470,9 +475,9 @@ export const getCurrentUserInfo = async () => {
 
     const resultado = await procesarRespuesta(response);
 
-    // Actualizar datos en localStorage
+    // Actualizar datos en almacenamiento
     if (resultado.success && resultado.data) {
-      localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(resultado.data));
+      safeSetItem(STORAGE_KEYS.USER_DATA, JSON.stringify(resultado.data));
     }
     
     return resultado;
@@ -495,15 +500,15 @@ export const refreshToken = async () => {
 
     const resultado = await procesarRespuesta(response);
 
-    // Actualizar token en localStorage
+    // Actualizar token en almacenamiento
     if (resultado.success && resultado.data) {
       const newToken = resultado.data.token || resultado.data.access_token;
       if (newToken) {
-        localStorage.setItem(STORAGE_KEYS.TOKEN, newToken);
+        safeSetItem(STORAGE_KEYS.TOKEN, newToken);
 
         // Actualizar tiempo de expiración
         const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-        localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
+        safeSetItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
 
       }
     }
@@ -528,12 +533,16 @@ export const refreshToken = async () => {
  * @returns {boolean}
  */
 export const isAuthenticated = () => {
-  // Primero buscar en localStorage (autenticación real)
-  let expiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+  // Primero buscar en almacenamiento (autenticación real)
+  let expiresAt = safeGetItem(STORAGE_KEYS.EXPIRES_AT);
 
-  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  // Si no hay, buscar en sessionStorage (invitado)
   if (!expiresAt) {
-    expiresAt = sessionStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+    try {
+      expiresAt = sessionStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+    } catch (e) {
+      // Ignorar errores
+    }
   }
 
   if (!expiresAt) {
@@ -546,11 +555,15 @@ export const isAuthenticated = () => {
   }
 
   // Verificar que hay datos de usuario (sesión válida, con o sin token JWT local)
-  let userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+  let userData = safeGetItem(STORAGE_KEYS.USER_DATA);
 
-  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  // Si no hay, buscar en sessionStorage (invitado)
   if (!userData) {
-    userData = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+    try {
+      userData = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+    } catch (e) {
+      // Ignorar errores
+    }
   }
 
   return !!userData;
@@ -561,12 +574,16 @@ export const isAuthenticated = () => {
  * @returns {string|null}
  */
 export const getToken = () => {
-  // Primero buscar en localStorage (autenticación real)
-  let token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+  // Primero buscar en almacenamiento (autenticación real)
+  let token = safeGetItem(STORAGE_KEYS.TOKEN);
 
-  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  // Si no hay, buscar en sessionStorage (invitado)
   if (!token) {
-    token = sessionStorage.getItem(STORAGE_KEYS.TOKEN);
+    try {
+      token = sessionStorage.getItem(STORAGE_KEYS.TOKEN);
+    } catch (e) {
+      // Ignorar errores
+    }
   }
 
   return token;
@@ -577,12 +594,16 @@ export const getToken = () => {
  * @returns {Object|null}
  */
 export const getUserData = () => {
-  // Primero buscar en localStorage (autenticación real)
-  let userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+  // Primero buscar en almacenamiento (autenticación real)
+  let userData = safeGetItem(STORAGE_KEYS.USER_DATA);
 
-  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  // Si no hay, buscar en sessionStorage (invitado)
   if (!userData) {
-    userData = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+    try {
+      userData = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+    } catch (e) {
+      // Ignorar errores
+    }
   }
 
   if (!userData) return null;
@@ -599,12 +620,16 @@ export const getUserData = () => {
  * @returns {string|null} 'admin' | 'estudiante' | 'docente' | 'invitado'
  */
 export const getUserRole = () => {
-  // Primero buscar en localStorage (autenticación real)
-  let role = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
+  // Primero buscar en almacenamiento (autenticación real)
+  let role = safeGetItem(STORAGE_KEYS.USER_ROLE);
 
-  // Si no hay en localStorage, buscar en sessionStorage (invitado)
+  // Si no hay, buscar en sessionStorage (invitado)
   if (!role) {
-    role = sessionStorage.getItem(STORAGE_KEYS.USER_ROLE);
+    try {
+      role = sessionStorage.getItem(STORAGE_KEYS.USER_ROLE);
+    } catch (e) {
+      // Ignorar errores
+    }
   }
 
   return role;

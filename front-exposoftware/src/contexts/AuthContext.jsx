@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as AuthService from '../Services/AuthService';
 import * as StudentProfileService from '../Services/StudentProfileService';
+import { safeSetItem, safeGetItem } from '../utils/safeStorage';
 
 // Crear el contexto de autenticación
 const AuthContext = createContext(null);
@@ -130,7 +131,7 @@ export const AuthProvider = ({ children }) => {
                 const perfilProcesado = StudentProfileService.procesarDatosPerfil(perfilResultado.data);
                 setUser(perfilProcesado);
                 // Guardar en localStorage para próximas cargas
-                localStorage.setItem('user_data', JSON.stringify(perfilProcesado));
+                safeSetItem('user_data', JSON.stringify(perfilProcesado));
               }
             })
             .catch(error => {
@@ -190,7 +191,11 @@ export const AuthProvider = ({ children }) => {
 
       // Limpiar de todas formas aunque falle el backend
       setUser(null);
-      localStorage.clear();
+      try {
+        localStorage.clear();
+      } catch (e) {
+        // Ignorar errores
+      }
     }
   };
 
@@ -199,7 +204,7 @@ export const AuthProvider = ({ children }) => {
     const updatedUser = { ...user, ...newData };
     setUser(updatedUser);
     // Actualizar también en localStorage usando las claves correctas del AuthService
-    localStorage.setItem('user_data', JSON.stringify(updatedUser));
+    safeSetItem('user_data', JSON.stringify(updatedUser));
   };
 
   // Función para recargar el perfil del usuario (útil después de actualizar datos)
@@ -269,8 +274,8 @@ export const AuthProvider = ({ children }) => {
   // Guardar perfil completo del invitado (para acceso desde otras páginas)
   const setGuestProfile = (perfilData) => {
     if (perfilData) {
-      // Guardar en localStorage para persistencia
-      localStorage.setItem('guest_profile', JSON.stringify(perfilData));
+      // Guardar en almacenamiento para persistencia
+      safeSetItem('guest_profile', JSON.stringify(perfilData));
       // Actualizar el estado del usuario con los datos completos del perfil
       setUser(prev => ({ ...prev, ...perfilData }));
     }
@@ -278,15 +283,15 @@ export const AuthProvider = ({ children }) => {
 
   // Obtener perfil del invitado desde localStorage
   const getGuestProfile = () => {
-    const stored = localStorage.getItem('guest_profile');
+    const stored = safeGetItem('guest_profile');
     return stored ? JSON.parse(stored) : null;
   };
 
   // Guardar perfil completo del egresado (para acceso desde otras páginas)
   const setGraduateProfile = (perfilData) => {
     if (perfilData) {
-      // Guardar en localStorage para persistencia
-      localStorage.setItem('graduate_profile', JSON.stringify(perfilData));
+      // Guardar en almacenamiento para persistencia
+      safeSetItem('graduate_profile', JSON.stringify(perfilData));
       // Actualizar el estado del usuario con los datos completos del perfil
       setUser(prev => ({ ...prev, ...perfilData }));
     }
@@ -294,7 +299,7 @@ export const AuthProvider = ({ children }) => {
 
   // Obtener perfil del egresado desde localStorage
   const getGraduateProfile = () => {
-    const stored = localStorage.getItem('graduate_profile');
+    const stored = safeGetItem('graduate_profile');
     return stored ? JSON.parse(stored) : null;
   };
 

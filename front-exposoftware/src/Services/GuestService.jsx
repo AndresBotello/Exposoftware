@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from '../utils/constants';
 import * as AuthService from './AuthService';
 import { fetchApi } from '../utils/apiClient';
+import { safeRemoveItem } from '../utils/safeStorage';
 
 // Definición de sectores disponibles
 const SECTORES = [
@@ -57,7 +58,7 @@ export const obtenerInformacionUsuario = async () => {
 
     if (!response.ok) {
       if (response.status === 401) {
-        localStorage.removeItem('auth_token');
+        safeRemoveItem('auth_token');
         throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
       }
       const errorData = await response.json().catch(() => ({}));

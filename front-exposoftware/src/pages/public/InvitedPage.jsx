@@ -5,6 +5,7 @@ import ProjectDetailsModal from "../../components/ProjectDetailsModal";
 import EventosService from "../../Services/EventosService";
 import { useAuth } from "../../contexts/AuthContext";
 import { API_BASE_URL } from "../../utils/constants";
+import { safeGetItem, safeSetItem } from "../../utils/safeStorage";
 import logo from "../../assets/Logo-unicesar.png";
 
 export default function InvitedPage() {
@@ -20,8 +21,12 @@ export default function InvitedPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(() => {
-    const saved = localStorage.getItem('invitedPageItemsPerPage');
-    return saved ? parseInt(saved) : 21;
+    try {
+      const saved = safeGetItem('invitedPageItemsPerPage');
+      return saved ? parseInt(saved) : 21;
+    } catch (e) {
+      return 21;
+    }
   });
 
   const handleLogout = async () => {
@@ -123,7 +128,11 @@ export default function InvitedPage() {
   const handleItemsPerPageChange = (value) => {
     const newValue = parseInt(value);
     setItemsPerPage(newValue);
-    localStorage.setItem('invitedPageItemsPerPage', newValue.toString());
+    try {
+      safeSetItem('invitedPageItemsPerPage', newValue.toString());
+    } catch (e) {
+      // Ignorar si no se puede guardar
+    }
     setCurrentPage(1);
   };
 
@@ -134,7 +143,7 @@ export default function InvitedPage() {
   const paginatedProjects = filteredProjects.slice(startIndex, endIndex);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" translate="no">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">

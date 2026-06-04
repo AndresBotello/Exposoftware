@@ -1,11 +1,12 @@
 import { API_ENDPOINTS } from '../utils/constants';
 import { fetchApi } from '../utils/apiClient';
+import { safeGetItem } from '../utils/safeStorage';
 
 /**
  * Obtener token de autenticación
  */
 const getAuthToken = () => {
-  return localStorage.getItem('auth_token');
+  return safeGetItem('auth_token');
 };
 
 /**
