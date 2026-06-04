@@ -13,6 +13,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { fetchApi } from '../../utils/apiClient';
 import { getAuthHeaders } from '../../Services/AuthService';
 import { API_BASE_URL } from '../../utils/constants';
+import QRCalificacionModal from '../Teacher/QRCalificacionModal';
 
 const TIPOS_ACTIVIDAD = {
   1: { label: 'Exposoftware', severity: 'success' },
@@ -37,6 +38,8 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
   const [selectedProyecto, setSelectedProyecto] = useState(null);
   const [nuevoEstado, setNuevoEstado] = useState('');
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedProjectForQR, setSelectedProjectForQR] = useState(null);
 
   const handleGeneratePDF = async () => {
     setGeneratingPDF(true);
@@ -133,6 +136,16 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
     setShowEstadoModal(true);
   };
 
+  const handleOpenQRModal = (project) => {
+    setSelectedProjectForQR(project);
+    setShowQRModal(true);
+  };
+
+  const handleCloseQRModal = () => {
+    setShowQRModal(false);
+    setSelectedProjectForQR(null);
+  };
+
   const tipoActividadTemplate = (rowData) => {
     const tipo = TIPOS_ACTIVIDAD[rowData.tipo_actividad] || { label: 'Desconocido', severity: 'secondary' };
     return <Tag value={tipo.label} severity={tipo.severity} />;
@@ -193,6 +206,17 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
         tooltipOptions={{ position: 'top' }}
         onClick={() => onVerDetalles(rowData)}
       />
+      {rowData.estado === 'aprobado' && (
+        <Button
+          icon="pi pi-qrcode"
+          rounded
+          outlined
+          severity="warning"
+          tooltip="Generar QR de calificación"
+          tooltipOptions={{ position: 'top' }}
+          onClick={() => handleOpenQRModal(rowData)}
+        />
+      )}
       <Button
         icon="pi pi-trash"
         rounded
@@ -450,6 +474,13 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
           </div>
         )}
       </Dialog>
+
+      <QRCalificacionModal
+        isOpen={showQRModal}
+        projectId={selectedProjectForQR?.id_proyecto}
+        projectName={selectedProjectForQR?.titulo_proyecto}
+        onClose={handleCloseQRModal}
+      />
     </>
   );
 }

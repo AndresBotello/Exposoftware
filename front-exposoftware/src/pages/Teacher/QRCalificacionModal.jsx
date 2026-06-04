@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { generarQRCalificacion } from "../../Services/ProjectsService";
+import html2canvas from "html2canvas";
 
 export default function QRCalificacionModal({ projectId, projectName, onClose, isOpen }) {
   const [qrImage, setQrImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [downloadingImage, setDownloadingImage] = useState(false);
+  const qrContainerRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && projectId) {
@@ -35,13 +38,26 @@ export default function QRCalificacionModal({ projectId, projectName, onClose, i
     }
   };
 
-  const descargarQR = () => {
-    if (!qrImage) return;
+  const descargarQR = async () => {
+    if (!qrImage || !qrContainerRef.current) return;
 
-    const link = document.createElement("a");
-    link.download = `QR-Calificacion-${projectName}-${new Date().toLocaleDateString("es-CO")}.png`;
-    link.href = qrImage;
-    link.click();
+    setDownloadingImage(true);
+    try {
+      const canvas = await html2canvas(qrContainerRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        padding: 20,
+      });
+
+      const link = document.createElement("a");
+      link.download = `QR-Calificacion-${projectName}-${new Date().toLocaleDateString("es-CO")}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('Error descargando QR:', err);
+    } finally {
+      setDownloadingImage(false);
+    }
   };
 
   const copiarEnlace = async () => {
@@ -102,7 +118,24 @@ export default function QRCalificacionModal({ projectId, projectName, onClose, i
 
           {qrImage && !loading && (
             <>
-              {/* QR Image */}
+              {/* QR Container para descargar (fuera de la vista pero capturable) */}
+              <div
+                ref={qrContainerRef}
+                className="fixed -left-[9999px] top-0 flex flex-col items-center gap-4 p-4 bg-white"
+                style={{ width: '600px' }}
+              >
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900">{projectName}</h3>
+                  <p className="text-sm text-gray-500 mt-1">Código QR de Calificación</p>
+                </div>
+                <img
+                  src={qrImage}
+                  alt="Código QR de Calificación"
+                  className="w-64 h-64"
+                />
+              </div>
+
+              {/* QR Image Preview - Lo único visible en la página */}
               <div className="flex justify-center p-4 bg-gray-50 rounded-lg border-2 border-emerald-200">
                 <img
                   src={qrImage}
@@ -134,10 +167,20 @@ export default function QRCalificacionModal({ projectId, projectName, onClose, i
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={descargarQR}
-                  className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                  disabled={downloadingImage}
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <i className="pi pi-download"></i>
-                  Descargar
+                  {downloadingImage ? (
+                    <>
+                      <i className="pi pi-spin pi-spinner"></i>
+                      Descargando...
+                    </>
+                  ) : (
+                    <>
+                      <i className="pi pi-download"></i>
+                      Descargar
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={generarQR}
