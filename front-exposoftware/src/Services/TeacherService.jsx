@@ -649,7 +649,6 @@ export const calificarProyecto = async (proyectId, calificacion, comentario = ''
       credentials: 'include'
     });
 
-
     if (response.ok) {
       const result = await response.json();
       const data = result.data || result;

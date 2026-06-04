@@ -427,10 +427,59 @@ export function GradeModal({
   gradeValue,
   setGradeValue,
   gradingProject,
+  approvingProject,
   onGrade,
+  onApprove,
   onClose,
 }) {
   if (!show || !project) return null;
+
+  const getEstadoInfo = () => {
+    switch (project.estado) {
+      case 'pendiente':
+        return {
+          titulo: 'Registrar Nota',
+          subtitulo: '(el proyecto sigue sin aprobar para el evento)',
+          botonPrincipal: 'Registrar Nota',
+          mostrarBotonAprobar: true,
+          subtituloBotonAprobar: 'Aprobar proyecto para vitrina'
+        };
+      case 'rechazado':
+        return {
+          titulo: 'Registrar Nota',
+          subtitulo: '(el proyecto sigue rechazado)',
+          botonPrincipal: 'Registrar Nota',
+          mostrarBotonAprobar: false,
+          subtituloBotonAprobar: ''
+        };
+      case 'aprobado':
+        return {
+          titulo: 'Calificar',
+          subtitulo: '(al calificar todos los docentes pasa a calificado)',
+          botonPrincipal: 'Calificar',
+          mostrarBotonAprobar: false,
+          subtituloBotonAprobar: ''
+        };
+      case 'calificado':
+        return {
+          titulo: 'Actualizar Nota',
+          subtitulo: '(corregir nota)',
+          botonPrincipal: 'Actualizar Nota',
+          mostrarBotonAprobar: false,
+          subtituloBotonAprobar: ''
+        };
+      default:
+        return {
+          titulo: 'Calificar',
+          subtitulo: '',
+          botonPrincipal: 'Calificar',
+          mostrarBotonAprobar: false,
+          subtituloBotonAprobar: ''
+        };
+    }
+  };
+
+  const estadoInfo = getEstadoInfo();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -440,11 +489,11 @@ export function GradeModal({
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <i className="pi pi-pencil text-yellow-500"></i>
-              Calificar Proyecto
+              {estadoInfo.titulo}
             </h3>
             <button
               onClick={onClose}
-              disabled={gradingProject}
+              disabled={gradingProject || approvingProject}
               className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
             >
               <i className="pi pi-times text-xl"></i>
@@ -459,6 +508,21 @@ export function GradeModal({
             <p className="text-base font-semibold text-blue-800">
               {project.titulo_proyecto}
             </p>
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-xs font-medium text-blue-700">Estado:</span>
+              <span className={`text-xs px-3 py-1 rounded-full font-semibold ${
+                project.estado === 'aprobado' ? 'bg-green-100 text-green-800' :
+                project.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                project.estado === 'rechazado' ? 'bg-red-100 text-red-800' :
+                'bg-blue-100 text-blue-800'
+              }`}>
+                {project.estado === 'aprobado' ? '✅ Aprobado' :
+                 project.estado === 'pendiente' ? '⏳ Pendiente' :
+                 project.estado === 'rechazado' ? '❌ Rechazado' :
+                 project.estado === 'calificado' ? '⭐ Calificado' :
+                 project.estado}
+              </span>
+            </div>
             {project.calificacion && (
               <p className="text-sm text-blue-700 mt-2">
                 Calificación actual:{" "}
@@ -478,7 +542,7 @@ export function GradeModal({
               step="0.1"
               value={gradeValue}
               onChange={(e) => setGradeValue(e.target.value)}
-              disabled={gradingProject}
+              disabled={gradingProject || approvingProject}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed text-lg font-semibold text-center"
               placeholder="Ej: 4.5"
             />
@@ -488,43 +552,64 @@ export function GradeModal({
             </div>
           </div>
 
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-            <p className="text-xs text-gray-600">
-              <strong>Nota:</strong> Si la nota es mayor o igual a 3.0, el proyecto será
-              marcado como{" "}
-              <span className="text-green-600 font-semibold">aprobado</span>. Si es menor
-              a 3.0, será marcado como{" "}
-              <span className="text-red-600 font-semibold">reprobado</span>.
-            </p>
-          </div>
+          {estadoInfo.subtitulo && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <p className="text-xs text-gray-600">
+                <i className="pi pi-info-circle mr-2"></i>
+                {estadoInfo.subtitulo}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 rounded-b-xl">
-          <button
-            onClick={onClose}
-            disabled={gradingProject}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onGrade}
-            disabled={gradingProject || !gradeValue}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {gradingProject ? (
-              <>
-                <i className="pi pi-spin pi-spinner"></i>
-                Guardando...
-              </>
-            ) : (
-              <>
-                <i className="pi pi-check"></i>
-                Guardar Calificación
-              </>
-            )}
-          </button>
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col gap-3 rounded-b-xl">
+          {estadoInfo.mostrarBotonAprobar && (
+            <button
+              onClick={onApprove}
+              disabled={approvingProject || gradingProject}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              title={estadoInfo.subtituloBotonAprobar}
+            >
+              {approvingProject ? (
+                <>
+                  <i className="pi pi-spin pi-spinner"></i>
+                  Aprobando...
+                </>
+              ) : (
+                <>
+                  <i className="pi pi-check-circle"></i>
+                  Aprobar y Registrar Nota
+                </>
+              )}
+            </button>
+          )}
+          <div className="flex items-center justify-end gap-3">
+            <button
+              onClick={onClose}
+              disabled={gradingProject || approvingProject}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onGrade}
+              disabled={gradingProject || approvingProject || !gradeValue}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {gradingProject ? (
+                <>
+                  <i className="pi pi-spin pi-spinner"></i>
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <i className="pi pi-check"></i>
+                  {estadoInfo.botonPrincipal}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

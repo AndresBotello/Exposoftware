@@ -59,6 +59,7 @@ export default function StudentProjects() {
     handleOpenGradeModal,
     closeGradeModal,
     handleGradeProject,
+    handleApproveProjectFromModal,
     handleOpenActionModal,
     handleCloseActionModal,
     handleGradeProjectAction,
@@ -791,7 +792,9 @@ export default function StudentProjects() {
         gradeValue={gradeValue}
         setGradeValue={setGradeValue}
         gradingProject={gradingProject}
+        approvingProject={approvingProject}
         onGrade={handleGradeProject}
+        onApprove={handleApproveProjectFromModal}
         onClose={closeGradeModal}
       />
 

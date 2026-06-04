@@ -8,6 +8,11 @@ import { useState } from 'react';
 import { generateApprovedProyectosPDF } from '../../utils/generateProyectosPDF';
 import { Toast } from 'primereact/toast';
 import { useRef } from 'react';
+import { Dialog } from 'primereact/dialog';
+import { Dropdown } from 'primereact/dropdown';
+import { fetchApi } from '../../utils/apiClient';
+import { getAuthHeaders } from '../../Services/AuthService';
+import { API_BASE_URL } from '../../utils/constants';
 
 const TIPOS_ACTIVIDAD = {
   1: { label: 'Exposoftware', severity: 'success' },
@@ -28,6 +33,10 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
   const [estadoFilter, setEstadoFilter] = useState('');
   const [docenteFilter, setDocenteFilter] = useState('');
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [showEstadoModal, setShowEstadoModal] = useState(false);
+  const [selectedProyecto, setSelectedProyecto] = useState(null);
+  const [nuevoEstado, setNuevoEstado] = useState('');
+  const [cambiandoEstado, setCambiandoEstado] = useState(false);
 
   const handleGeneratePDF = async () => {
     setGeneratingPDF(true);
@@ -40,6 +49,88 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
     } finally {
       setGeneratingPDF(false);
     }
+  };
+
+  const getEstadosPermitidos = (estadoActual) => {
+    const transiciones = {
+      pendiente: [
+        { label: 'Aprobado', value: 'aprobado' },
+        { label: 'Rechazado', value: 'rechazado' },
+        { label: 'Calificado', value: 'calificado' }
+      ],
+      aprobado: [
+        { label: 'Pendiente', value: 'pendiente' },
+        { label: 'Rechazado', value: 'rechazado' },
+        { label: 'Calificado', value: 'calificado' }
+      ],
+      rechazado: [
+        { label: 'Pendiente', value: 'pendiente' },
+        { label: 'Aprobado', value: 'aprobado' }
+      ],
+      calificado: [
+        { label: 'Pendiente', value: 'pendiente' },
+        { label: 'Aprobado', value: 'aprobado' }
+      ]
+    };
+    return transiciones[estadoActual] || [];
+  };
+
+  const cambiarEstadoProyecto = async () => {
+    if (!selectedProyecto || !nuevoEstado) {
+      toast.current?.show({ severity: 'warn', summary: 'Advertencia', detail: 'Selecciona un nuevo estado', life: 3000 });
+      return;
+    }
+
+    setCambiandoEstado(true);
+    try {
+      const endpoint = `/api/v1/proyectos/${selectedProyecto.id_proyecto}`;
+
+      console.log('Intentando cambiar estado:', {
+        endpoint,
+        proyecto: selectedProyecto.id_proyecto,
+        nuevoEstado
+      });
+
+      const response = await fetchApi(endpoint, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ estado: nuevoEstado })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: `Proyecto "${selectedProyecto.titulo_proyecto}" cambió a "${nuevoEstado}"`,
+        life: 3000
+      });
+
+      setShowEstadoModal(false);
+      setNuevoEstado('');
+      setSelectedProyecto(null);
+      cargarProyectos();
+    } catch (error) {
+      console.error('Error completo al cambiar estado:', error);
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: `No se pudo cambiar el estado: ${error.message}`,
+        life: 5000
+      });
+    } finally {
+      setCambiandoEstado(false);
+    }
+  };
+
+  const abrirModalCambioEstado = (proyecto) => {
+    setSelectedProyecto(proyecto);
+    setNuevoEstado('');
+    setShowEstadoModal(true);
   };
 
   const tipoActividadTemplate = (rowData) => {
@@ -83,6 +174,16 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
 
   const accionesTemplate = (rowData) => (
     <div className="flex gap-2">
+      <Button
+        icon="pi pi-check-circle"
+        rounded
+        outlined
+        severity="success"
+        tooltip="Cambiar estado"
+        tooltipOptions={{ position: 'top' }}
+        onClick={() => abrirModalCambioEstado(rowData)}
+        disabled={getEstadosPermitidos(rowData.estado).length === 0}
+      />
       <Button
         icon="pi pi-eye"
         rounded
@@ -283,6 +384,72 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
           </DataTable>
         )}
       </div>
+
+      <Dialog
+        visible={showEstadoModal}
+        onHide={() => {
+          setShowEstadoModal(false);
+          setNuevoEstado('');
+          setSelectedProyecto(null);
+        }}
+        header="Cambiar Estado del Proyecto"
+        modal
+        style={{ width: '35vw' }}
+        breakpoints={{ '960px': '75vw', '640px': '90vw' }}
+      >
+        {selectedProyecto && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-600 mb-1">Proyecto:</p>
+              <p className="text-base font-medium text-gray-900">{selectedProyecto.titulo_proyecto}</p>
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold text-gray-600 mb-1">Estado Actual:</p>
+              <Tag
+                value={ESTADOS[selectedProyecto.estado]?.label || 'Desconocido'}
+                severity={ESTADOS[selectedProyecto.estado]?.severity || 'secondary'}
+                icon={`pi ${ESTADOS[selectedProyecto.estado]?.icon || ''}`}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Nuevo Estado:
+              </label>
+              <Dropdown
+                value={nuevoEstado}
+                onChange={(e) => setNuevoEstado(e.value)}
+                options={getEstadosPermitidos(selectedProyecto.estado)}
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Selecciona un nuevo estado"
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end pt-4 border-t border-gray-200">
+              <Button
+                label="Cancelar"
+                severity="secondary"
+                onClick={() => {
+                  setShowEstadoModal(false);
+                  setNuevoEstado('');
+                  setSelectedProyecto(null);
+                }}
+                disabled={cambiandoEstado}
+              />
+              <Button
+                label="Cambiar Estado"
+                severity="success"
+                loading={cambiandoEstado}
+                disabled={!nuevoEstado || cambiandoEstado}
+                onClick={cambiarEstadoProyecto}
+              />
+            </div>
+          </div>
+        )}
+      </Dialog>
     </>
   );
 }

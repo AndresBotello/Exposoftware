@@ -22,6 +22,8 @@ import {
   getEventoName as getEventoNameUtil,
   resolveDocenteId,
 } from "../../utils/teacherHelpers";
+import { fetchApi } from "../../utils/apiClient";
+import { getAuthHeaders } from "../../Services/AuthService";
 
 export function useStudentProjects() {
   const { user, getFullName, getInitials, logout } = useAuth();
@@ -39,6 +41,7 @@ export function useStudentProjects() {
   const [projectToGrade, setProjectToGrade] = useState(null);
   const [gradeValue, setGradeValue] = useState("");
   const [gradingProject, setGradingProject] = useState(false);
+  const [approvingProject, setApprovingProject] = useState(false);
   const [projectCalificacionPopular, setProjectCalificacionPopular] = useState(null);
   const [loadingCalificacionPopular, setLoadingCalificacionPopular] = useState(false);
   const [projects, setProjects] = useState([]);
@@ -49,7 +52,6 @@ export function useStudentProjects() {
   const [myProjectsCount, setMyProjectsCount] = useState(0);
   const [projectsForApproval, setProjectsForApproval] = useState([]);
   const [projectsApproved, setProjectsApproved] = useState([]);
-  const [approvingProject, setApprovingProject] = useState(false);
   const [rejectingProject, setRejectingProject] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
   const [projectForAction, setProjectForAction] = useState(null);
@@ -483,18 +485,97 @@ export function useStudentProjects() {
         nota
       );
 
+      // Actualizar el proyecto en todas las listas
       setProjects((prev) =>
         prev.map((p) =>
           p.id_proyecto === proyectoActualizado.id_proyecto ? proyectoActualizado : p
         )
       );
 
-      alert(`✅ Proyecto calificado exitosamente con nota ${nota}`);
+      setMyProjects((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoActualizado.id_proyecto ? proyectoActualizado : p
+        )
+      );
+
+      setProjectsApproved((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoActualizado.id_proyecto ? proyectoActualizado : p
+        )
+      );
+
+      setProjectToGrade(proyectoActualizado);
+
+      alert(`✅ Nota registrada exitosamente: ${nota}`);
       closeGradeModal();
     } catch (err) {
       alert(`Error al calificar proyecto: ${err.message}`);
     } finally {
       setGradingProject(false);
+    }
+  };
+
+  const handleApproveProjectFromModal = async () => {
+    if (!projectToGrade) return;
+
+    try {
+      setApprovingProject(true);
+      const endpoint = `/api/v1/proyectos/${projectToGrade.id_proyecto}`;
+
+      const response = await fetchApi(endpoint, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ estado: 'aprobado' })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al aprobar proyecto');
+      }
+
+      const responseData = await response.json();
+
+      const proyectoActualizado = responseData.data || responseData;
+
+      // Actualizar en todas las listas
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoActualizado.id_proyecto
+            ? proyectoActualizado
+            : p
+        )
+      );
+
+      setMyProjects((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoActualizado.id_proyecto
+            ? proyectoActualizado
+            : p
+        )
+      );
+
+      setProjectsForApproval((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoActualizado.id_proyecto
+            ? proyectoActualizado
+            : p
+        )
+      );
+
+      setProjectsApproved((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoActualizado.id_proyecto
+            ? proyectoActualizado
+            : p
+        )
+      );
+
+      setProjectToGrade(proyectoActualizado);
+      alert(`✅ Proyecto aprobado exitosamente`);
+    } catch (err) {
+      alert(`Error al aprobar proyecto: ${err.message}`);
+    } finally {
+      setApprovingProject(false);
     }
   };
 
@@ -545,7 +626,6 @@ export function useStudentProjects() {
         nota
       );
 
-      // Transformar proyecto con activo basado en estado
       const proyectoTransformado = {
         ...proyectoActualizado,
         activo: proyectoActualizado.estado !== 'inactivo' && proyectoActualizado.estado !== 'rechazado'
@@ -570,10 +650,16 @@ export function useStudentProjects() {
         )
       );
 
+      setProjectsApproved((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
       // Actualizar el proyecto en el modal también
       setProjectForAction(proyectoTransformado);
 
-      alert(`✅ Proyecto calificado exitosamente con nota ${nota}`);
+      alert(`✅ Nota registrada exitosamente: ${nota}`);
     } catch (err) {
       alert(`Error al calificar proyecto: ${err.message}`);
     } finally {
@@ -610,6 +696,12 @@ export function useStudentProjects() {
       );
 
       setProjectsForApproval((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      setProjectsApproved((prev) =>
         prev.map((p) =>
           p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
         )
@@ -661,6 +753,12 @@ export function useStudentProjects() {
       );
 
       setProjectsForApproval((prev) =>
+        prev.map((p) =>
+          p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
+        )
+      );
+
+      setProjectsApproved((prev) =>
         prev.map((p) =>
           p.id_proyecto === proyectoTransformado.id_proyecto ? proyectoTransformado : p
         )
@@ -782,6 +880,8 @@ export function useStudentProjects() {
     handleOpenGradeModal,
     closeGradeModal,
     handleGradeProject,
+    handleApproveProjectFromModal,
+    approvingProject,
     handleOpenActionModal,
     handleCloseActionModal,
     handleGradeProjectAction,
