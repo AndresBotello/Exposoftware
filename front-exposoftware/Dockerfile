@@ -14,8 +14,11 @@ RUN rm -f package-lock.json && npm install --no-audit --no-fund
 # Copiar el resto del código y construir
 COPY . .
 
-# La URL de la API se inyecta en tiempo de build (Vite la "congela" en el bundle)
-ARG VITE_API_BASE_URL=https://exposoftware.duckdns.org
+# La URL de la API se inyecta en tiempo de build (Vite la "congela" en el bundle).
+# Default vacio = mismo origen (URLs relativas tipo /api/...). Esto resuelve cookies en
+# Safari iOS y otros moviles que bloquean cookies cross-site.
+# Para forzar otro dominio, override con --build-arg VITE_API_BASE_URL=https://...
+ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 RUN npm run build

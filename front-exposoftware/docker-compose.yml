@@ -15,8 +15,11 @@ services:
       dockerfile: Dockerfile
       args:
         # URL del backend (se queda hardcodeada en el bundle de Vite).
-        # Puedes sobreescribirla desde un .env en el VPS.
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://exposoftware.duckdns.org}
+        # Default vacio = mismo origen (URLs relativas), resuelve cookies en Safari iOS.
+        # OJO con la sintaxis `${VAR-default}` (sin dos puntos): respeta valor vacio del
+        # .env. La variante `${VAR:-default}` (con dos puntos) trataria "" como unset y
+        # caeria al default, lo cual NO queremos cuando intencionalmente lo quieres vacio.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL-}
     image: exposoftware-frontend:latest
     container_name: exposoftware-frontend
     restart: unless-stopped
