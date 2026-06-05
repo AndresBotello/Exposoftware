@@ -10,6 +10,7 @@ import axios from 'axios';
 import { eliminarProyectoPermanentemente, actualizarProyectoConArchivo } from '../../Services/ProjectsService';
 import ProyectosTable from './ProyectosTable';
 import ProyectoDetalleDialog from './ProyectoDetalleDialog';
+import DescargarQRsLote from '../../components/Admin/DescargarQRsLote';
 
 export default function GestionProyectos() {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export default function GestionProyectos() {
   const [showDetalleDialog, setShowDetalleDialog] = useState(false);
   const [nombreEvento, setNombreEvento] = useState('');
   const [eventos, setEventos] = useState([]);
+  const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
 
   useEffect(() => {
     const user = AuthService.getUserData();
@@ -173,6 +175,39 @@ export default function GestionProyectos() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
           <main className="lg:col-span-3">
+            {/* Sección de Descargar QRs */}
+            <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Descargar QRs de Proyectos Aprobados</h3>
+                  <p className="text-xs text-gray-600">Selecciona un evento para descargar los QRs de calificación de todos los proyectos aprobados en formato ZIP</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 items-stretch">
+                  <select
+                    value={eventoSeleccionado?.id_evento || ''}
+                    onChange={(e) => {
+                      const evento = eventos.find(ev => ev.id_evento === e.target.value);
+                      setEventoSeleccionado(evento);
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="">-- Seleccionar evento --</option>
+                    {eventos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.nombre_evento}
+                      </option>
+                    ))}
+                  </select>
+                  {eventoSeleccionado && (
+                    <DescargarQRsLote
+                      idEvento={eventoSeleccionado.id_evento}
+                      nombreEvento={eventoSeleccionado.nombre_evento}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
             <ProyectosTable
               proyectos={proyectos}
               loading={loading}

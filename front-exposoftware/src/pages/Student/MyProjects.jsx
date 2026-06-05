@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import * as ProjectsService from "../../Services/ProjectsService";
+import * as TeacherService from "../../Services/TeacherService";
 import { actualizarProyectoConArchivo } from "../../Services/ProjectsService";
 import EventosService from "../../Services/EventosService";
 import MisClasesService from "../../Services/MisClasesService";
@@ -24,6 +25,8 @@ export default function MyProjects() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [eventoInfo, setEventoInfo] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
+  const [calificacionPopular, setCalificacionPopular] = useState(null);
+  const [loadingCalificacionPopular, setLoadingCalificacionPopular] = useState(false);
   const { user, getFullName, getInitials, logout, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -108,12 +111,26 @@ export default function MyProjects() {
       } catch (error) {
       }
     }
+
+    // Cargar calificación popular del proyecto
+    if (project.id_proyecto) {
+      setLoadingCalificacionPopular(true);
+      try {
+        const calificacion = await TeacherService.obtenerCalificacionPopular(project.id_proyecto);
+        setCalificacionPopular(calificacion);
+      } catch (error) {
+        setCalificacionPopular(null);
+      } finally {
+        setLoadingCalificacionPopular(false);
+      }
+    }
   };
 
   const closeModal = () => {
     setShowModal(false);
     setSelectedProject(null);
     setEventoInfo(null);
+    setCalificacionPopular(null);
   };
 
   const handleEditProject = async (editData, archivoPDF = null) => {
@@ -706,6 +723,8 @@ export default function MyProjects() {
         token={localStorage.getItem('auth_token')}
         onOpenAddMember={() => setShowAddMemberModal(true)}
         onEdit={handleEditProject}
+        calificacionPopular={calificacionPopular}
+        loadingCalificacionPopular={loadingCalificacionPopular}
       />
 
       {selectedProject && (

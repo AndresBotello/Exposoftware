@@ -154,7 +154,8 @@ export const API_ENDPOINTS = {
   PROYECTO_CALIFICACION: (proyectoId) => `${API_BASE_URL}/api/v1/proyectos/${proyectoId}/calificacion`,
   PROYECTO_INTEGRANTES: (proyectoId) => `${API_BASE_URL}/api/v1/proyectos/${proyectoId}/integrantes`,
   PUBLIC_RANKING_EVENTO: (eventoId) => `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${eventoId}`,
-  
+  ADMIN_QRS_LOTE_EVENTO: (idEvento) => `${API_BASE_URL}/api/v1/proyectos/eventos/${idEvento}/generar-qrs-lote`,
+
   // ═══════════════════════════════════════════════════════════
   // 🔬 INVESTIGACIÓN - Líneas, Sublíneas, Áreas Temáticas
   // ═══════════════════════════════════════════════════════════
@@ -283,4 +284,18 @@ export const POWER_BI_CONFIG = {
     hideErrors: true,              // Ocultar errores
     autoAuth: false                // No intentar auth automática
   }
+};
+
+// Mapeo de IDs de rol a nombres descriptivos
+export const ROL_NAMES = {
+  '1': 'Docente',
+  '2': 'Estudiante',
+  '3': 'Administrador',
+  '4': 'Invitado',
+  '5': 'Egresado',
+};
+
+// Función helper para obtener el nombre de un rol por su ID
+export const getRolName = (rolId) => {
+  return ROL_NAMES[String(rolId)] || 'Desconocido';
 };

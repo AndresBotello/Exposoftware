@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getRolName } from "../../utils/constants";
 
 export function ProjectDetailsModal({
   show,
@@ -337,6 +338,34 @@ export function ProjectDetailsModal({
             </div>
           )}
 
+          {/* Calificación del Docente */}
+          {project.calificacion && (
+            <div>
+              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <i className="pi pi-user text-amber-600"></i>
+                Calificación del Docente
+              </h5>
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-center gap-6">
+                  <div className="text-center">
+                    <p className="text-4xl font-bold text-amber-700">
+                      {project.calificacion.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-amber-600 font-medium">/ 5.0</p>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Calificación:</span>
+                      <span className="text-sm text-gray-900 font-semibold">
+                        {project.calificacion.toFixed(2)} de 5.0
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Calificación Popular y Ranking */}
           {loadingCalificacionPopular ? (
             <div className="flex items-center justify-center p-4">
@@ -358,7 +387,7 @@ export function ProjectDetailsModal({
                     </p>
                     <p className="text-xs text-indigo-600 font-medium">/ 5.0</p>
                   </div>
-                  <div className="flex-1 space-y-1">
+                  <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-700">Promedio Ponderado:</span>
                       <span className="text-sm text-gray-900 font-semibold">
@@ -368,8 +397,20 @@ export function ProjectDetailsModal({
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-700">Total de Votos:</span>
                       <span className="text-sm text-gray-900 font-semibold">
-                        {calificacionPopular.total_votos || 0}
+                        {calificacionPopular.total_calificaciones || calificacionPopular.total_votos || 0} votos
                       </span>
+                    </div>
+                    <div className="flex gap-1 pt-1">
+                      {[...Array(5)].map((_, i) => (
+                        <i
+                          key={i}
+                          className={`pi text-lg ${
+                            i < Math.round(calificacionPopular.promedio_ponderado || 0)
+                              ? 'pi-star-fill text-yellow-400'
+                              : 'pi-star text-gray-300'
+                          }`}
+                        ></i>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -381,7 +422,7 @@ export function ProjectDetailsModal({
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(calificacionPopular.desglose_por_rol).map(([rol, datos]) => (
                         <div key={rol} className="bg-white rounded p-2 border border-indigo-100">
-                          <p className="text-xs font-medium text-gray-700 capitalize">{rol}</p>
+                          <p className="text-xs font-medium text-gray-700 capitalize">{getRolName(rol)}</p>
                           <p className="text-sm font-bold text-indigo-600">
                             {datos.promedio ? datos.promedio.toFixed(2) : "0.00"}
                           </p>
@@ -394,7 +435,7 @@ export function ProjectDetailsModal({
                   </div>
                 )}
 
-                {calificacionPopular.total_votos === 0 && (
+                {calificacionPopular.total_calificaciones || calificacionPopular.total_votos === 0 && (
                   <div className="text-center py-2">
                     <p className="text-sm text-gray-600">
                       <i className="pi pi-info-circle mr-2"></i>
@@ -769,7 +810,7 @@ export function ProjectActionModal({
                     <p className="text-sm text-gray-700">
                       Total de votos:{" "}
                       <span className="font-bold text-amber-700">
-                        {calificacionPopular.total_votos || 0}
+                        {calificacionPopular.total_calificaciones || calificacionPopular.total_votos || 0}
                       </span>
                     </p>
                   </div>
@@ -790,7 +831,7 @@ export function ProjectActionModal({
                               className="bg-gray-50 border border-gray-200 rounded p-3"
                             >
                               <p className="text-xs font-medium text-gray-600 capitalize mb-1">
-                                {rol}
+                                {getRolName(rol)}
                               </p>
                               <p className="text-lg font-bold text-amber-600">
                                 {datos.promedio
@@ -809,7 +850,7 @@ export function ProjectActionModal({
                       </div>
                     )}
 
-                  {calificacionPopular.total_votos === 0 && (
+                  {calificacionPopular.total_calificaciones || calificacionPopular.total_votos === 0 && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
                       <p className="text-sm text-yellow-800">
                         <i className="pi pi-info-circle mr-2"></i>

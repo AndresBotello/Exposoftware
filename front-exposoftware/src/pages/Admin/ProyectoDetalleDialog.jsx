@@ -3,6 +3,7 @@ import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { obtenerCalificacionPopular } from '../../Services/TeacherService';
+import { getRolName } from '../../utils/constants';
 
 const TIPOS_ACTIVIDAD = {
   1: { label: 'Exposoftware', severity: 'success' },
@@ -434,7 +435,7 @@ export default function ProyectoDetalleDialog({ showDetalleDialog, setShowDetall
                     {Object.entries(calificacionPopular.desglose_por_rol).map(([rol, datos]) => (
                       <div key={rol} className="flex items-center justify-between text-sm">
                         <span className="text-purple-700">
-                          Rol {rol}: <span className="font-medium">{datos.count} voto{datos.count !== 1 ? 's' : ''}</span>
+                          {getRolName(rol)}: <span className="font-medium">{datos.count} voto{datos.count !== 1 ? 's' : ''}</span>
                         </span>
                         <span className="text-purple-900 font-medium">{datos.promedio?.toFixed(2)}</span>
                       </div>

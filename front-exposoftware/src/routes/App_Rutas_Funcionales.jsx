@@ -94,7 +94,8 @@ function App() {
     "/guest/proyectos",
     "/home-dinamico",
     "/admin/evento",
-    "/invited"
+    "/invited",
+    "/ranking"
 
   ];
 

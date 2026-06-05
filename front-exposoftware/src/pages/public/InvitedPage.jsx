@@ -23,13 +23,21 @@ export default function InvitedPage() {
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     try {
       const saved = safeGetItem('invitedPageItemsPerPage');
-      return saved ? parseInt(saved) : 21;
+      return saved ? parseInt(saved) : 150;
     } catch (e) {
-      return 21;
+      return 150;
     }
   });
   const [rankingProjects, setRankingProjects] = useState([]);
   const [loadingRanking, setLoadingRanking] = useState(false);
+  const [rankingDisplayCount, setRankingDisplayCount] = useState(() => {
+    try {
+      const saved = safeGetItem('invitedPageRankingCount');
+      return saved ? Math.max(10, parseInt(saved)) : 10;
+    } catch (e) {
+      return 10;
+    }
+  });
 
   const handleLogout = async () => {
     try {
@@ -109,7 +117,7 @@ export default function InvitedPage() {
     cargarProyectosPublicos();
   }, [eventoId]);
 
-  // Cargar ranking de proyectos
+  // Cargar ranking de proyectos (todos sin límite)
   useEffect(() => {
     const cargarRanking = async () => {
       try {
@@ -123,23 +131,47 @@ export default function InvitedPage() {
 
         if (!idEvento) return;
 
-        const response = await fetch(
-          `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${idEvento}?limit=5`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        // Traer todos los rankings sin límite
+        // El backend tiene máximo 50, así que hacemos paginación si es necesario
+        let allRanking = [];
+        let offset = 0;
+        const limit = 50;
+        let hasMore = true;
 
-        if (response.ok) {
-          const data = await response.json();
-          const ranking = data.data || [];
-          setRankingProjects(ranking);
+        while (hasMore) {
+          const response = await fetch(
+            `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${idEvento}?limit=${limit}&offset=${offset}`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const ranking = data.data || [];
+
+            if (ranking.length === 0) {
+              hasMore = false;
+            } else {
+              allRanking = [...allRanking, ...ranking];
+              offset += limit;
+
+              // Si devolvió menos de lo que pedimos, ya no hay más
+              if (ranking.length < limit) {
+                hasMore = false;
+              }
+            }
+          } else {
+            hasMore = false;
+          }
         }
+
+        setRankingProjects(allRanking);
       } catch (err) {
-        // No mostrar error, solo silenciosamente ignorar
+        console.error('Error cargando ranking:', err);
       } finally {
         setLoadingRanking(false);
       }
@@ -183,6 +215,17 @@ export default function InvitedPage() {
       // Ignorar si no se puede guardar
     }
     setCurrentPage(1);
+  };
+
+  // Manejar cambio de cantidad de proyectos en el ranking
+  const handleRankingDisplayCountChange = (value) => {
+    const newValue = Math.max(10, parseInt(value));
+    setRankingDisplayCount(newValue);
+    try {
+      safeSetItem('invitedPageRankingCount', newValue.toString());
+    } catch (e) {
+      // Ignorar si no se puede guardar
+    }
   };
 
   // Calcular proyectos paginados
@@ -255,13 +298,69 @@ export default function InvitedPage() {
             </div>
 
             {/* Card de Información */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 bg-emerald-100">
                 <i className="pi pi-eye text-emerald-600 text-2xl"></i>
               </div>
               <h3 className="font-semibold text-center text-gray-900 mb-1">Invitado</h3>
               <p className="text-sm text-center text-gray-500">Acceso público a proyectos</p>
             </div>
+
+            {/* Ranking Completo */}
+            {rankingProjects.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <i className="pi pi-list text-yellow-500"></i>
+                  Ranking Completo
+                </h3>
+
+                {/* Selector de cantidad */}
+                <div className="mb-4">
+                  <label className="text-xs text-gray-600 block mb-2">Mostrar:</label>
+                  <select
+                    value={rankingDisplayCount}
+                    onChange={(e) => handleRankingDisplayCountChange(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    {[10, 15, 20, 25, 30, 50, 75, 100, 150].map(num => (
+                      <option key={num} value={num}>
+                        {num} proyectos
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Lista de proyectos */}
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {rankingProjects.slice(0, rankingDisplayCount).map((rankingProject, idx) => (
+                    <div
+                      key={rankingProject.id_proyecto}
+                      className="p-2 bg-yellow-50 rounded-lg border border-yellow-100 hover:bg-yellow-100 transition-colors cursor-pointer text-sm"
+                      onClick={() => {
+                        const fullProject = projects.find(p => p.id_proyecto === rankingProject.id_proyecto) || rankingProject;
+                        handleViewDetails(fullProject);
+                      }}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="font-bold text-yellow-600 text-xs w-6 flex-shrink-0">
+                          {rankingProject.posicion === 1 ? '🥇' : rankingProject.posicion === 2 ? '🥈' : rankingProject.posicion === 3 ? '🥉' : `${rankingProject.posicion}.`}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 line-clamp-2 text-xs">
+                            {rankingProject.titulo_proyecto}
+                          </p>
+                          {rankingProject.promedio && (
+                            <p className="text-xs text-gray-600 mt-1">
+                              ⭐ {rankingProject.promedio.toFixed(2)}/5.0
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </aside>
 
           {/* Main Content */}
@@ -293,7 +392,7 @@ export default function InvitedPage() {
                 </div>
               ) : rankingProjects.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-                  {rankingProjects.map((rankingProject) => {
+                  {rankingProjects.slice(0, 5).map((rankingProject) => {
                     // Buscar el proyecto completo para mostrar toda la información
                     const fullProject = projects.find(p => p.id_proyecto === rankingProject.id_proyecto) || rankingProject;
                     return (
@@ -403,6 +502,7 @@ export default function InvitedPage() {
                   <option value="48">48</option>
                   <option value="60">60</option>
                   <option value="120">120</option>
+                  <option value="150">150</option>
                 </select>
               </div>
             </div>

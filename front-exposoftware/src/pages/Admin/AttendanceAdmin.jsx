@@ -4,7 +4,9 @@ import logo from "../../assets/Logo-unicesar.png";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
 import AssistanceService from "../../Services/AssistanceService";
 import EventosService from "../../Services/EventosService";
+import AdminQRService from "../../Services/AdminQRService";
 import * as AuthService from "../../Services/AuthService";
+import { saveAs } from "file-saver";
 import QRPanel from "./QRPanel";
 import AttendanceTableSection from "./AttendanceTableSection";
 
@@ -21,6 +23,8 @@ export default function AttendanceAdmin() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(4);
   const [searchTerm, setSearchTerm] = useState("");
+  const [nombreEventoActual, setNombreEventoActual] = useState("");
+  const [qrBase64Original, setQrBase64Original] = useState(null);
 
   useEffect(() => {
     const user = AuthService.getUserData();
@@ -72,6 +76,15 @@ export default function AttendanceAdmin() {
       if (!qrInfo) throw new Error("Respuesta del servidor inválida");
       setQrCodeUrl(getQRImage(qrInfo));
       setQrData(buildQRData(qrInfo));
+
+      // Obtener nombre completo del evento desde el array de eventos
+      const eventoCompleto = eventos.find(e => e.id_evento === eventoSeleccionado || e.id === eventoSeleccionado);
+      const nombreEvento = eventoCompleto?.nombre_evento || qrInfo.evento_nombre || "Evento";
+      setNombreEventoActual(nombreEvento);
+
+      if (qrInfo.qr_base64) {
+        setQrBase64Original(qrInfo.qr_base64);
+      }
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
@@ -81,12 +94,23 @@ export default function AttendanceAdmin() {
     }
   };
 
-  const descargarQR = () => {
-    if (!qrCodeUrl) return;
-    const link = document.createElement("a");
-    link.download = `QR-Asistencia-${new Date().toLocaleDateString("es-CO")}.png`;
-    link.href = qrCodeUrl;
-    link.click();
+  const descargarQR = async () => {
+    if (!qrCodeUrl || !qrBase64Original) return;
+
+    try {
+      // Crear QR con el nombre del evento
+      const blob = await AdminQRService.crearQRConTitulo(
+        qrBase64Original,
+        nombreEventoActual || "Código QR de Asistencia"
+      );
+
+      // Descargar
+      const filename = `QR-Asistencia-${nombreEventoActual || "evento"}-${new Date().toLocaleDateString("es-CO")}.png`;
+      saveAs(blob, filename);
+    } catch (error) {
+      console.error("Error descargando QR:", error);
+      alert("Error al procesar el QR");
+    }
   };
 
   const handleEventoChange = async (e) => {

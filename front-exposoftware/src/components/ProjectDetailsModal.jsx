@@ -10,7 +10,9 @@ export default function ProjectDetailsModal({
   onDownloadTodosCertificados,
   token,
   onOpenAddMember,
-  onEdit
+  onEdit,
+  calificacionPopular,
+  loadingCalificacionPopular
 }) {
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({
@@ -374,6 +376,80 @@ export default function ProjectDetailsModal({
               )}
             </div>
           </div>
+
+          {/* Calificación Popular del Público */}
+          {loadingCalificacionPopular ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="w-6 h-6 border-2 border-yellow-200 border-t-yellow-500 rounded-full animate-spin"></div>
+              <p className="ml-2 text-sm text-gray-600">Cargando calificación del público...</p>
+            </div>
+          ) : calificacionPopular ? (
+            <div>
+              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <i className="pi pi-star-fill text-yellow-500"></i>
+                Calificación Popular del Público
+              </h5>
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-4">
+                {/* Nota Principal */}
+                <div className="flex items-center gap-6">
+                  <div className="text-center">
+                    <p className="text-4xl font-bold text-indigo-700">
+                      {calificacionPopular.promedio_ponderado ? calificacionPopular.promedio_ponderado.toFixed(2) : "0.00"}
+                    </p>
+                    <p className="text-xs text-indigo-600 font-medium">/ 5.0</p>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Promedio Ponderado:</span>
+                      <span className="text-sm text-gray-900 font-semibold">
+                        {calificacionPopular.promedio_ponderado ? calificacionPopular.promedio_ponderado.toFixed(2) : "0.00"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Total de Votos:</span>
+                      <span className="text-sm text-gray-900 font-semibold">
+                        {calificacionPopular.total_calificaciones || calificacionPopular.total_votos || 0} votos
+                      </span>
+                    </div>
+                    <div className="flex gap-1 pt-1">
+                      {[...Array(5)].map((_, i) => (
+                        <i
+                          key={i}
+                          className={`pi text-lg ${
+                            i < Math.round(calificacionPopular.promedio_ponderado || 0)
+                              ? 'pi-star-fill text-yellow-400'
+                              : 'pi-star text-gray-300'
+                          }`}
+                        ></i>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desglose por Rol */}
+                {calificacionPopular.desglose_por_rol && Object.keys(calificacionPopular.desglose_por_rol).length > 0 && (
+                  <div className="border-t border-indigo-100 pt-3">
+                    <p className="text-xs font-semibold text-gray-600 mb-2">Desglose por Rol:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(calificacionPopular.desglose_por_rol).map(([rol, datos]) => (
+                        <div key={rol} className="bg-white rounded p-2 border border-indigo-100">
+                          <p className="text-xs font-medium text-gray-700 capitalize">
+                            {rol === '1' ? 'Docente' : rol === '2' ? 'Estudiante' : rol === '5' ? 'Egresado' : `Rol ${rol}`}
+                          </p>
+                          <p className="text-sm font-bold text-indigo-600">
+                            {datos.promedio ? datos.promedio.toFixed(2) : "0.00"}
+                          </p>
+                          {datos.cantidad && (
+                            <p className="text-xs text-gray-500">({datos.cantidad} {datos.cantidad === 1 ? 'voto' : 'votos'})</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
 
           {/* Grid de dos columnas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
