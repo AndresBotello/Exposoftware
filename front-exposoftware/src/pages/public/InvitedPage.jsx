@@ -11,7 +11,7 @@ import logo from "../../assets/Logo-unicesar.png";
 export default function InvitedPage() {
   const { eventoId } = useParams();
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout, user, getAuthToken } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [error, setError] = useState(null);
@@ -117,7 +117,7 @@ export default function InvitedPage() {
     cargarProyectosPublicos();
   }, [eventoId]);
 
-  // Cargar ranking de proyectos (todos sin límite)
+  // Cargar ranking de proyectos
   useEffect(() => {
     const cargarRanking = async () => {
       try {
@@ -129,49 +129,40 @@ export default function InvitedPage() {
           idEvento = eventoInfo.id_evento;
         }
 
-        if (!idEvento) return;
-
-        // Traer todos los rankings sin límite
-        // El backend tiene máximo 50, así que hacemos paginación si es necesario
-        let allRanking = [];
-        let offset = 0;
-        const limit = 50;
-        let hasMore = true;
-
-        while (hasMore) {
-          const response = await fetch(
-            `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${idEvento}?limit=${limit}&offset=${offset}`,
-            {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-
-          if (response.ok) {
-            const data = await response.json();
-            const ranking = data.data || [];
-
-            if (ranking.length === 0) {
-              hasMore = false;
-            } else {
-              allRanking = [...allRanking, ...ranking];
-              offset += limit;
-
-              // Si devolvió menos de lo que pedimos, ya no hay más
-              if (ranking.length < limit) {
-                hasMore = false;
-              }
-            }
-          } else {
-            hasMore = false;
-          }
+        if (!idEvento) {
+          setLoadingRanking(false);
+          return;
         }
 
-        setRankingProjects(allRanking);
+        const token = getAuthToken();
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${idEvento}`,
+          {
+            method: 'GET',
+            headers,
+            credentials: 'include'
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const ranking = data.data || [];
+          setRankingProjects(ranking);
+        } else {
+          console.error('Error cargando ranking:', response.status);
+          setRankingProjects([]);
+        }
       } catch (err) {
         console.error('Error cargando ranking:', err);
+        setRankingProjects([]);
       } finally {
         setLoadingRanking(false);
       }
@@ -180,7 +171,7 @@ export default function InvitedPage() {
     if (eventoId || eventoInfo?.id_evento) {
       cargarRanking();
     }
-  }, [eventoId, eventoInfo?.id_evento]);
+  }, [eventoId, eventoInfo?.id_evento, getAuthToken]);
 
   const handleViewDetails = async (project) => {
     setShowModal(true);

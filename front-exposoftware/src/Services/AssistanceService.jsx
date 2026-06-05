@@ -96,26 +96,51 @@ class AssistanceService {
    * Obtiene todas las asistencias de un evento (requiere autenticación ADMIN)
    * GET /api/v1/asistencia/evento/{id_evento}
    * @param {string} idEvento - ID del evento
-   * @param {number} limit - Límite de registros a obtener (default: 100)
    */
-  static async obtenerAsistenciasEvento(idEvento, limit = 100) {
+  static async obtenerAsistenciasEvento(idEvento) {
     try {
+      let allAsistencias = [];
+      let page = 1;
+      const limit = 500; // Máximo permitido por el backend
+      let hasMore = true;
 
-      const response = await fetch(
-        `${API_ENDPOINTS.ASISTENCIAS_EVENTO(idEvento)}?limit=${limit}`,
-        {
-          method: 'GET',
-          credentials: 'include',
-          headers: getAuthHeaders()
+      while (hasMore) {
+        const response = await fetch(
+          `${API_ENDPOINTS.ASISTENCIAS_EVENTO(idEvento)}?page=${page}&limit=${limit}`,
+          {
+            method: 'GET',
+            credentials: 'include',
+            headers: getAuthHeaders()
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
-      );
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const data = await response.json();
+        const asistencias = data.data?.asistencias || [];
+
+        if (asistencias.length === 0) {
+          hasMore = false;
+        } else {
+          allAsistencias = [...allAsistencias, ...asistencias];
+          page++;
+
+          // Si devolvió menos de lo que pedimos, ya no hay más
+          if (asistencias.length < limit) {
+            hasMore = false;
+          }
+        }
       }
 
-      const data = await response.json();
-      return data;
+      // Retornar en el mismo formato que el endpoint
+      return {
+        status: 'success',
+        data: {
+          asistencias: allAsistencias
+        }
+      };
     } catch (error) {
       throw error;
     }
