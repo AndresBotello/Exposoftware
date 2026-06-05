@@ -28,11 +28,13 @@ class AssistanceService {
    * @param {string} idEvento - ID del evento
    * @param {string} urlFront - URL base del frontend (opcional)
    */
-  static async generarQrEvento(idEvento, urlFront = 'https://exposoftware2026.netlify.app') {
+  static async generarQrEvento(idEvento, urlFront = null) {
     try {
+      // Usar la URL actual del navegador si no se proporciona
+      const baseUrl = urlFront || window.location.origin;
 
       const response = await fetch(
-        `${API_ENDPOINTS.GENERAR_QR(idEvento)}?url_front=${urlFront}`,
+        `${API_ENDPOINTS.GENERAR_QR(idEvento)}?url_front=${baseUrl}`,
         {
           method: 'POST',
           credentials: 'include',

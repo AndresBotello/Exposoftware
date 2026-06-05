@@ -67,7 +67,7 @@ export default function AttendanceAdmin() {
     if (!eventoSeleccionado) { alert("⚠️ Debes seleccionar un evento antes de generar el código QR."); return; }
     setIsGenerating(true);
     try {
-      const response = await AssistanceService.generarQrEvento(eventoSeleccionado);
+      const response = await AssistanceService.generarQrEvento(eventoSeleccionado, window.location.origin);
       const qrInfo = response?.data;
       if (!qrInfo) throw new Error("Respuesta del servidor inválida");
       setQrCodeUrl(getQRImage(qrInfo));
