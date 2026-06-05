@@ -28,6 +28,8 @@ export default function InvitedPage() {
       return 21;
     }
   });
+  const [rankingProjects, setRankingProjects] = useState([]);
+  const [loadingRanking, setLoadingRanking] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -100,6 +102,49 @@ export default function InvitedPage() {
 
     cargarProyectosPublicos();
   }, [eventoId]);
+
+  // Cargar ranking de proyectos
+  useEffect(() => {
+    const cargarRanking = async () => {
+      try {
+        setLoadingRanking(true);
+
+        // Obtener id_evento
+        let idEvento = eventoId;
+        if (!idEvento && eventoInfo?.id_evento) {
+          idEvento = eventoInfo.id_evento;
+        }
+
+        if (!idEvento) return;
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${idEvento}?limit=5`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const ranking = data.data || [];
+          setRankingProjects(ranking);
+        }
+      } catch (err) {
+        console.warn('Error al cargar ranking:', err.message);
+        // No mostrar error, solo silenciosamente ignorar
+      } finally {
+        setLoadingRanking(false);
+      }
+    };
+
+    if (eventoId || eventoInfo?.id_evento) {
+      cargarRanking();
+    }
+  }, [eventoId, eventoInfo?.id_evento]);
 
   const handleViewDetails = async (project) => {
     setShowModal(true);
@@ -225,6 +270,86 @@ export default function InvitedPage() {
               <p className="text-gray-600">
                 Explora los proyectos presentados en este evento
               </p>
+            </div>
+
+            {/* Sección de Ranking */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <i className="pi pi-star-fill text-yellow-500 text-2xl"></i>
+                <h3 className="text-xl font-bold text-gray-900">🏆 Top Proyectos</h3>
+                <span className="text-sm text-gray-500">(Más votados)</span>
+              </div>
+
+              {loadingRanking ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-yellow-200 border-t-yellow-500 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-600 text-sm">Cargando ranking...</p>
+                  </div>
+                </div>
+              ) : rankingProjects.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+                  {rankingProjects.map((project, index) => (
+                    <div
+                      key={project.id_proyecto}
+                      className="relative bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border-2 border-yellow-200 p-4 hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() => handleViewDetails(project)}
+                    >
+                      {/* Medal Badge */}
+                      <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                      </div>
+
+                      {/* Título */}
+                      <h4 className="font-semibold text-gray-900 text-sm mb-2 pr-6 line-clamp-2">
+                        {project.titulo_proyecto}
+                      </h4>
+
+                      {/* Rating/Votos */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <i
+                              key={i}
+                              className={`pi text-xs ${
+                                i < Math.round(project.promedio_votos_popular || 0)
+                                  ? 'pi-star-fill text-yellow-400'
+                                  : 'pi-star text-gray-300'
+                              }`}
+                            ></i>
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-600">
+                          {(project.promedio_votos_popular || 0).toFixed(1)}/5
+                        </span>
+                      </div>
+
+                      {/* Votos */}
+                      <div className="text-xs text-gray-500">
+                        <span className="font-medium">{project.total_votos_popular || 0}</span> votos
+                      </div>
+
+                      {/* Detalles */}
+                      <div className="mt-3 pt-3 border-t border-yellow-200">
+                        <p className="text-xs text-gray-600 mb-1">
+                          <i className="pi pi-bookmark text-emerald-600 text-xs mr-1"></i>
+                          {project.nombre_materia || 'Materia N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border-2 border-yellow-200 p-12 text-center">
+                  <div className="w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <i className="pi pi-star text-3xl text-yellow-400"></i>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Aún sin votos</h4>
+                  <p className="text-gray-600 text-sm">
+                    Los proyectos aparecerán aquí una vez que reciban votos populares
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Barra de búsqueda y filtros */}

@@ -110,11 +110,8 @@ export default function LoginPage() {
 
       // Obtener rol del usuario
       const userRole = AuthService.getUserRole();
-      console.log('🔐 Rol obtenido después del login:', userRole);
-
 
       if (!userRole) {
-        console.error('❌ Error: No se obtuvo rol del usuario');
         throw new Error("No se pudo obtener el rol del usuario");
       }
 
@@ -123,39 +120,30 @@ export default function LoginPage() {
 
       // Redirigir según el rol
       const rol = userRole.toLowerCase();
-      console.log('🎯 Intentando redirigir con rol:', rol);
 
       switch(rol) {
         case 'estudiante':
-          console.log('📚 Redirigiendo a /student/dashboard');
           navigate('/student/dashboard');
           break;
         case 'docente':
         case 'profesor':
-          console.log('👨‍🏫 Redirigiendo a /teacher/dashboard');
           navigate('/teacher/dashboard');
           break;
         case 'administrador':
         case 'admin':
-          console.log('⚙️ Redirigiendo a /admin/dashboard');
           navigate('/admin/dashboard');
           break;
         case 'egresado':
-          console.log('🎓 Redirigiendo a /graduate/dashboard');
           navigate('/graduate/dashboard');
           break;
         case 'invitado':
-          console.log('👁️ Redirigiendo a /guest/dashboard');
           navigate('/guest/dashboard');
           break;
         default:
-          console.warn('⚠️ Rol no reconocido:', rol, 'Redirigiendo a /');
           navigate('/');
       }
 
     } catch (err) {
-      console.error('❌ Error en login:', err);
-
       if (err.message.includes('502') || err.message.includes('503')) {
         setError("El servidor no está disponible temporalmente. Por favor, intenta más tarde.");
       } else if (err.message.includes('conexión') || err.message.includes('network')) {
