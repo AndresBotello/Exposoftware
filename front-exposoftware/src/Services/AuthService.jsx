@@ -206,7 +206,9 @@ export const login = async (credentials) => {
     let userData;
     try {
       userData = await fetchUserData(token);
+      console.log('✅ Datos de usuario obtenidos:', userData);
     } catch (error) {
+      console.warn('⚠️ Error al obtener datos del usuario, usando fallback:', error.message);
       // Si no podemos obtener datos, usar un objeto mínimo
       userData = {
         correo: credentials.correo,
@@ -268,10 +270,12 @@ export const login = async (credentials) => {
       // Guardar rol normalizado (admin, docente, estudiante)
       const rolNormalizado = normalizarRol(rolFinal);
       safeSetItem(STORAGE_KEYS.USER_ROLE, rolNormalizado);
+      console.log('✅ Rol guardado:', rolNormalizado, 'Original:', rolFinal);
 
       // Guardar tiempo de expiración (24 horas por defecto)
       const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
       safeSetItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
+      console.log('✅ Login completado exitosamente, datos guardados');
       
     }
     

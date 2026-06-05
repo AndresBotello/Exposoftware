@@ -35,11 +35,20 @@ let storage = getAvailableStorage();
 export const safeGetItem = (key) => {
   try {
     if (storage) {
-      return storage.getItem(key);
+      const value = storage.getItem(key);
+      if (value !== null) return value;
     }
   } catch (e) {
     // Silenciosamente ignorar errores
   }
+
+  // Fallback a sessionStorage (persistente en la sesión)
+  try {
+    return sessionStorage.getItem(key);
+  } catch (e) {
+    // Ignorar errores
+  }
+
   return memoryStore[key] || null;
 };
 
@@ -47,14 +56,31 @@ export const safeGetItem = (key) => {
  * Guardar un valor en el almacenamiento seguro
  */
 export const safeSetItem = (key, value) => {
+  let guardado = false;
+
+  // Intentar localStorage primero
   try {
     if (storage) {
       storage.setItem(key, value);
+      guardado = true;
       return;
     }
   } catch (e) {
     // Silenciosamente ignorar errores si localStorage falla
   }
+
+  // Fallback a sessionStorage
+  if (!guardado) {
+    try {
+      sessionStorage.setItem(key, value);
+      guardado = true;
+      return;
+    } catch (e) {
+      // Ignorar errores
+    }
+  }
+
+  // Último fallback: memoria
   memoryStore[key] = value;
 };
 
@@ -69,6 +95,14 @@ export const safeRemoveItem = (key) => {
   } catch (e) {
     // Silenciosamente ignorar errores
   }
+
+  // También intentar remover de sessionStorage
+  try {
+    sessionStorage.removeItem(key);
+  } catch (e) {
+    // Ignorar errores
+  }
+
   delete memoryStore[key];
 };
 
@@ -83,6 +117,13 @@ export const safeClear = () => {
   } catch (e) {
     // Silenciosamente ignorar errores
   }
+
+  try {
+    sessionStorage.clear();
+  } catch (e) {
+    // Ignorar errores
+  }
+
   Object.keys(memoryStore).forEach(key => delete memoryStore[key]);
 };
 
