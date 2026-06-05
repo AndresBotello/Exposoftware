@@ -123,8 +123,7 @@ export default function InvitedPage() {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json'
-            },
-            credentials: 'include'
+            }
           }
         );
 
@@ -134,7 +133,6 @@ export default function InvitedPage() {
           setRankingProjects(ranking);
         }
       } catch (err) {
-        console.warn('Error al cargar ranking:', err.message);
         // No mostrar error, solo silenciosamente ignorar
       } finally {
         setLoadingRanking(false);
@@ -289,7 +287,7 @@ export default function InvitedPage() {
                 </div>
               ) : rankingProjects.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-                  {rankingProjects.map((project, index) => (
+                  {rankingProjects.map((project) => (
                     <div
                       key={project.id_proyecto}
                       className="relative bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border-2 border-yellow-200 p-4 hover:shadow-lg transition-shadow cursor-pointer"
@@ -297,7 +295,7 @@ export default function InvitedPage() {
                     >
                       {/* Medal Badge */}
                       <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                        {project.posicion === 1 ? '🥇' : project.posicion === 2 ? '🥈' : project.posicion === 3 ? '🥉' : project.posicion}
                       </div>
 
                       {/* Título */}
@@ -312,7 +310,7 @@ export default function InvitedPage() {
                             <i
                               key={i}
                               className={`pi text-xs ${
-                                i < Math.round(project.promedio_votos_popular || 0)
+                                i < Math.round(project.promedio_ponderado || 0)
                                   ? 'pi-star-fill text-yellow-400'
                                   : 'pi-star text-gray-300'
                               }`}
@@ -320,13 +318,13 @@ export default function InvitedPage() {
                           ))}
                         </div>
                         <span className="text-xs text-gray-600">
-                          {(project.promedio_votos_popular || 0).toFixed(1)}/5
+                          {(project.promedio_ponderado || 0).toFixed(1)}/5
                         </span>
                       </div>
 
-                      {/* Votos */}
+                      {/* Calificaciones */}
                       <div className="text-xs text-gray-500">
-                        <span className="font-medium">{project.total_votos_popular || 0}</span> votos
+                        <span className="font-medium">{project.total_calificaciones || 0}</span> calificaciones
                       </div>
 
                       {/* Detalles */}

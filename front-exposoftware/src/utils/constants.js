@@ -153,6 +153,7 @@ export const API_ENDPOINTS = {
   PROYECTO_BY_ID: (proyectoId) => `${API_BASE_URL}/api/v1/proyectos/${proyectoId}`,
   PROYECTO_CALIFICACION: (proyectoId) => `${API_BASE_URL}/api/v1/proyectos/${proyectoId}/calificacion`,
   PROYECTO_INTEGRANTES: (proyectoId) => `${API_BASE_URL}/api/v1/proyectos/${proyectoId}/integrantes`,
+  PUBLIC_RANKING_EVENTO: (eventoId) => `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${eventoId}`,
   
   // ═══════════════════════════════════════════════════════════
   // 🔬 INVESTIGACIÓN - Líneas, Sublíneas, Áreas Temáticas
