@@ -23,8 +23,10 @@ export default function ProjectCalificacion() {
     // Verificar si el usuario está autenticado
     const user = AuthService.getUserData();
     if (!user) {
-      // Redirigir a login con return URL
-      navigate(`/login?redirect=/proyecto/${id_proyecto}/calificacion`);
+      // Guardar la URL actual en sessionStorage para redirigir después de login
+      sessionStorage.setItem('redirectAfterLogin', `/proyectos/${id_proyecto}/calificar`);
+      // Redirigir a login
+      navigate('/login');
       return;
     }
     setUserData(user);
@@ -65,9 +67,29 @@ export default function ProjectCalificacion() {
       await calificarProyectoAsistente(id_proyecto, calificacionNum, comentarios.trim());
       setExito(true);
 
-      // Redirigir después de 3 segundos
+      // Redirigir según el rol del usuario después de 3 segundos
       setTimeout(() => {
-        navigate("/");
+        const userRole = AuthService.getUserRole();
+        const rol = userRole ? userRole.toLowerCase() : '';
+
+        switch(rol) {
+          case 'estudiante':
+            navigate('/student/dashboard');
+            break;
+          case 'docente':
+          case 'profesor':
+            navigate('/teacher/dashboard');
+            break;
+          case 'administrador':
+          case 'admin':
+            navigate('/admin/dashboard');
+            break;
+          case 'egresado':
+            navigate('/graduate/dashboard');
+            break;
+          default:
+            navigate('/');
+        }
       }, 3000);
     } catch (err) {
       setError(err.message || "Error al guardar la calificación");
@@ -109,10 +131,32 @@ export default function ProjectCalificacion() {
             Serás redirigido al inicio en unos momentos...
           </p>
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {
+              const userRole = AuthService.getUserRole();
+              const rol = userRole ? userRole.toLowerCase() : '';
+
+              switch(rol) {
+                case 'estudiante':
+                  navigate('/student/dashboard');
+                  break;
+                case 'docente':
+                case 'profesor':
+                  navigate('/teacher/dashboard');
+                  break;
+                case 'administrador':
+                case 'admin':
+                  navigate('/admin/dashboard');
+                  break;
+                case 'egresado':
+                  navigate('/graduate/dashboard');
+                  break;
+                default:
+                  navigate('/');
+              }
+            }}
             className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition"
           >
-            Ir a Inicio Ahora
+            Ir a Mi Dashboard
           </button>
         </div>
       </div>

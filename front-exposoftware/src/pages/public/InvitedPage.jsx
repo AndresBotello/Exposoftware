@@ -54,15 +54,17 @@ export default function InvitedPage() {
         setLoadingProjects(true);
         setError(null);
 
-        // Obtener todos los eventos primero para obtener el id_evento si no viene en params
+        // Obtener evento en curso
         let idEvento = eventoId;
         if (!idEvento) {
           const todosEventos = await EventosService.obtenerEventos();
-          if (todosEventos && todosEventos.length > 0) {
-            idEvento = todosEventos[0].id_evento;
-            setEventoInfo(todosEventos[0]);
+          // Filtrar por eventos que están en curso
+          const eventosEnCurso = todosEventos?.filter(e => e.estado === 'en-curso' || e.estado === 'en_curso') || [];
+          if (eventosEnCurso && eventosEnCurso.length > 0) {
+            idEvento = eventosEnCurso[0].id_evento;
+            setEventoInfo(eventosEnCurso[0]);
           } else {
-            throw new Error('No hay eventos disponibles');
+            throw new Error('No hay eventos en curso disponibles');
           }
         }
 
@@ -94,7 +96,11 @@ export default function InvitedPage() {
           throw new Error('Error al obtener proyectos públicos');
         }
       } catch (err) {
-        setError(err.message || 'Error al cargar los proyectos');
+        if (err.message.includes('No hay eventos en curso')) {
+          setError('No hay eventos en curso disponibles en este momento');
+        } else {
+          setError(err.message || 'Error al cargar los proyectos');
+        }
       } finally {
         setLoadingProjects(false);
       }
@@ -287,20 +293,23 @@ export default function InvitedPage() {
                 </div>
               ) : rankingProjects.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-                  {rankingProjects.map((project) => (
+                  {rankingProjects.map((rankingProject) => {
+                    // Buscar el proyecto completo para mostrar toda la información
+                    const fullProject = projects.find(p => p.id_proyecto === rankingProject.id_proyecto) || rankingProject;
+                    return (
                     <div
-                      key={project.id_proyecto}
+                      key={rankingProject.id_proyecto}
                       className="relative bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border-2 border-yellow-200 p-4 hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => handleViewDetails(project)}
+                      onClick={() => handleViewDetails(fullProject)}
                     >
                       {/* Medal Badge */}
                       <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                        {project.posicion === 1 ? '🥇' : project.posicion === 2 ? '🥈' : project.posicion === 3 ? '🥉' : project.posicion}
+                        {rankingProject.posicion === 1 ? '🥇' : rankingProject.posicion === 2 ? '🥈' : rankingProject.posicion === 3 ? '🥉' : rankingProject.posicion}
                       </div>
 
                       {/* Título */}
                       <h4 className="font-semibold text-gray-900 text-sm mb-2 pr-6 line-clamp-2">
-                        {project.titulo_proyecto}
+                        {rankingProject.titulo_proyecto}
                       </h4>
 
                       {/* Rating/Votos */}
@@ -310,7 +319,7 @@ export default function InvitedPage() {
                             <i
                               key={i}
                               className={`pi text-xs ${
-                                i < Math.round(project.promedio_ponderado || 0)
+                                i < Math.round(rankingProject.promedio_ponderado || 0)
                                   ? 'pi-star-fill text-yellow-400'
                                   : 'pi-star text-gray-300'
                               }`}
@@ -318,24 +327,29 @@ export default function InvitedPage() {
                           ))}
                         </div>
                         <span className="text-xs text-gray-600">
-                          {(project.promedio_ponderado || 0).toFixed(1)}/5
+                          {(rankingProject.promedio_ponderado || 0).toFixed(1)}/5
                         </span>
                       </div>
 
                       {/* Calificaciones */}
                       <div className="text-xs text-gray-500">
-                        <span className="font-medium">{project.total_calificaciones || 0}</span> calificaciones
+                        <span className="font-medium">{rankingProject.total_calificaciones || 0}</span> calificaciones
                       </div>
 
                       {/* Detalles */}
                       <div className="mt-3 pt-3 border-t border-yellow-200">
                         <p className="text-xs text-gray-600 mb-1">
-                          <i className="pi pi-bookmark text-emerald-600 text-xs mr-1"></i>
-                          {project.nombre_materia || 'Materia N/A'}
+                          <i className="pi pi-star text-yellow-500 text-xs mr-1"></i>
+                          <span className="font-medium">Top #{rankingProject.posicion}</span>
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          <i className="pi pi-chart-bar text-blue-600 text-xs mr-1"></i>
+                          {rankingProject.promedio_ponderado?.toFixed(2) || 0}/5 rating
                         </p>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border-2 border-yellow-200 p-12 text-center">

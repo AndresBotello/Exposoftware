@@ -118,6 +118,14 @@ export default function LoginPage() {
       // ⏱️ Pequeño delay para asegurar que el estado se propagó
       await new Promise(resolve => setTimeout(resolve, 150));
 
+      // Verificar si hay una redirección guardada (ej: desde un QR de calificación)
+      const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+      if (redirectUrl) {
+        sessionStorage.removeItem('redirectAfterLogin');
+        navigate(redirectUrl);
+        return;
+      }
+
       // Redirigir según el rol
       const rol = userRole.toLowerCase();
 
