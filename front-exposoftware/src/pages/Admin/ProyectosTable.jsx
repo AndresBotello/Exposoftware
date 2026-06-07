@@ -14,6 +14,7 @@ import { fetchApi } from '../../utils/apiClient';
 import { getAuthHeaders } from '../../Services/AuthService';
 import { API_BASE_URL } from '../../utils/constants';
 import QRCalificacionModal from '../Teacher/QRCalificacionModal';
+import JSZip from 'jszip';
 
 const TIPOS_ACTIVIDAD = {
   1: { label: 'Exposoftware', severity: 'success' },
@@ -49,6 +50,69 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
     } catch (error) {
       console.error('Error generando PDF:', error);
       toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Error al generar el PDF', life: 5000 });
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
+  const handleDescargarTodosArchivosZIP = async () => {
+    const proyectosConArchivos = proyectos.filter(p => p.url_cloudinary);
+
+    if (proyectosConArchivos.length === 0) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Sin archivos',
+        detail: 'No hay proyectos con archivos PDF para descargar',
+        life: 3000
+      });
+      return;
+    }
+
+    setGeneratingPDF(true);
+    let agregados = 0;
+    let fallidos = 0;
+
+    try {
+      const zip = new JSZip();
+
+      for (const proyecto of proyectosConArchivos) {
+        try {
+          const response = await fetch(proyecto.url_cloudinary);
+          const blob = await response.blob();
+          const nombreArchivo = `${proyecto.titulo_proyecto || 'proyecto'}.pdf`;
+          zip.file(nombreArchivo, blob);
+          agregados++;
+        } catch (error) {
+          console.error(`Error descargando ${proyecto.titulo_proyecto}:`, error);
+          fallidos++;
+        }
+      }
+
+      // Generar y descargar ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const urlBlob = window.URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = urlBlob;
+      link.download = `proyectos_${new Date().getTime()}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(urlBlob);
+
+      toast.current?.show({
+        severity: 'success',
+        summary: 'ZIP descargado',
+        detail: `${agregados} archivos incluidos${fallidos > 0 ? `, ${fallidos} fallidos` : ''}`,
+        life: 4000
+      });
+    } catch (error) {
+      console.error('Error creando ZIP:', error);
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error al crear el archivo ZIP',
+        life: 5000
+      });
     } finally {
       setGeneratingPDF(false);
     }
@@ -326,6 +390,16 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
                 onClick={handleGeneratePDF}
                 disabled={generatingPDF}
               />
+              <Button
+                icon={generatingPDF ? 'pi pi-spin pi-spinner' : 'pi pi-download'}
+                rounded
+                outlined
+                severity="info"
+                tooltip="Descargar todos los PDFs en ZIP"
+                tooltipOptions={{ position: 'top' }}
+                onClick={handleDescargarTodosArchivosZIP}
+                disabled={generatingPDF}
+              />
               <Button icon="pi pi-refresh" rounded outlined severity="secondary" tooltip="Actualizar lista" tooltipOptions={{ position: 'top' }} onClick={cargarProyectos} />
             </div>
           </div>
@@ -388,7 +462,7 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
         ) : (
         
           <DataTable
-            value={filteredProyectos} paginator rows={10} rowsPerPageOptions={[5, 10, 25, 50]}
+            value={filteredProyectos} paginator rows={10} rowsPerPageOptions={[10, 50, 100, 300]}
             globalFilter={globalFilter}
             globalFilterFields={['titulo_proyecto', 'titulo', 'id_tipo_actividad', 'estado', 'nombre_docente', 'nombre_linea', 'nombre_area', 'nombre_materia']}
             filterDisplay="menu"

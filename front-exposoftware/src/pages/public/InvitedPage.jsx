@@ -33,9 +33,9 @@ export default function InvitedPage() {
   const [rankingDisplayCount, setRankingDisplayCount] = useState(() => {
     try {
       const saved = safeGetItem('invitedPageRankingCount');
-      return saved ? Math.max(10, parseInt(saved)) : 10;
+      return saved ? Math.max(5, parseInt(saved)) : 20;
     } catch (e) {
-      return 10;
+      return 20;
     }
   });
 
@@ -144,7 +144,7 @@ export default function InvitedPage() {
         }
 
         const response = await fetch(
-          `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${idEvento}`,
+          `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${idEvento}?limit=500`,
           {
             method: 'GET',
             headers,
@@ -154,7 +154,19 @@ export default function InvitedPage() {
 
         if (response.ok) {
           const data = await response.json();
-          const ranking = data.data || [];
+          let ranking = data.data || [];
+
+          // Re-ordenar considerando promedio y cantidad de votos
+          ranking = ranking.map(proyecto => ({
+            ...proyecto,
+            scoreRanking: (proyecto.promedio_ponderado || 0) * 0.7 + (Math.log(Math.max(1, proyecto.total_calificaciones || 1)) / 3) * 0.3
+          }))
+          .sort((a, b) => b.scoreRanking - a.scoreRanking)
+          .map((proyecto, idx) => ({
+            ...proyecto,
+            posicion: idx + 1
+          }));
+
           setRankingProjects(ranking);
         } else {
           console.error('Error cargando ranking:', response.status);
@@ -210,7 +222,7 @@ export default function InvitedPage() {
 
   // Manejar cambio de cantidad de proyectos en el ranking
   const handleRankingDisplayCountChange = (value) => {
-    const newValue = Math.max(10, parseInt(value));
+    const newValue = Math.max(5, parseInt(value));
     setRankingDisplayCount(newValue);
     try {
       safeSetItem('invitedPageRankingCount', newValue.toString());
@@ -313,11 +325,18 @@ export default function InvitedPage() {
                     onChange={(e) => handleRankingDisplayCountChange(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   >
-                    {[10, 15, 20, 25, 30, 50, 75, 100, 150].map(num => (
-                      <option key={num} value={num}>
-                        {num} proyectos
-                      </option>
-                    ))}
+                    {(() => {
+                      const options = [5, 10, 15, 20, 25, 30, 50, 75, 100, 150, 200];
+                      // Si hay más proyectos que 200, agregar opción para "todos"
+                      if (rankingProjects.length > 200) {
+                        options.push(rankingProjects.length);
+                      }
+                      return options.map(num => (
+                        <option key={num} value={num}>
+                          {num === rankingProjects.length ? `Todos (${num})` : `${num} proyectos`}
+                        </option>
+                      ));
+                    })()}
                   </select>
                 </div>
 

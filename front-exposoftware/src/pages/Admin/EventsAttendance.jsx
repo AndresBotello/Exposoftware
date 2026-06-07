@@ -136,7 +136,6 @@ export default function EventsAttendance() {
     const data = registeredPeople.map(persona => {
       const fechaRegistro = persona.fecha_asistencia ? new Date(persona.fecha_asistencia) : null;
       return {
-        'ID Usuario': persona.id_usuario,
         'Nombre Completo': persona.nombre_completo,
         'Correo Electrónico': persona.correo,
         'Fecha Registro': fechaRegistro ? fechaRegistro.toLocaleDateString('es-CO') : '',
@@ -147,7 +146,7 @@ export default function EventsAttendance() {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Asistencias');
-    worksheet['!cols'] = [{ wch: 25 }, { wch: 30 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 25 }];
+    worksheet['!cols'] = [{ wch: 30 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 25 }];
     XLSX.writeFile(workbook, `Asistencias_${eventoInfo?.nombre_evento || 'Evento'}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
