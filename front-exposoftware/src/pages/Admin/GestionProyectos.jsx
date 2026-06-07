@@ -24,6 +24,7 @@ export default function GestionProyectos() {
   const [nombreEvento, setNombreEvento] = useState('');
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
+  const [eventoFiltro, setEventoFiltro] = useState('');
 
   useEffect(() => {
     const user = AuthService.getUserData();
@@ -35,7 +36,7 @@ export default function GestionProyectos() {
     cargarEventos();
   }, []);
 
-  const cargarProyectos = async () => {
+  const cargarProyectos = async (idEventoFiltro = '') => {
     try {
       setLoading(true);
       const headers = AuthService.getAuthHeaders();
@@ -43,9 +44,12 @@ export default function GestionProyectos() {
       let pagina = 1;
       let tieneMas = true;
 
+      // Construir URL con filtro de evento si existe
+      const filtroEvento = idEventoFiltro ? `&id_evento=${idEventoFiltro}` : '';
+
       // Paginar hasta traer todos los proyectos
       while (tieneMas) {
-        const response = await axios.get(`${API_ENDPOINTS.PROYECTOS}?page=${pagina}&limit=100`, {
+        const response = await axios.get(`${API_ENDPOINTS.PROYECTOS}?page=${pagina}&limit=100${filtroEvento}`, {
           headers,
           withCredentials: true
         });
@@ -67,7 +71,8 @@ export default function GestionProyectos() {
       }
 
       setProyectos(allProyectos);
-      toast.current?.show({ severity: 'success', summary: 'Proyectos Cargados', detail: `${allProyectos.length} proyecto(s) encontrado(s)`, life: 3000 });
+      const textoEvento = idEventoFiltro ? ` del evento seleccionado` : '';
+      toast.current?.show({ severity: 'success', summary: 'Proyectos Cargados', detail: `${allProyectos.length} proyecto(s) encontrado(s)${textoEvento}`, life: 3000 });
       await cargarEventos();
     } catch (error) {
       toast.current?.show({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los proyectos', life: 5000 });
@@ -141,6 +146,11 @@ export default function GestionProyectos() {
     setShowDetalleDialog(true);
   };
 
+  const handleEventoFiltroChange = async (idEvento) => {
+    setEventoFiltro(idEvento);
+    await cargarProyectos(idEvento);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Toast ref={toast} />
@@ -175,6 +185,28 @@ export default function GestionProyectos() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
           <main className="lg:col-span-3">
+            {/* Sección de Filtro por Evento */}
+            <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Filtrar Proyectos por Evento</h3>
+                  <p className="text-xs text-gray-600 mb-3">Selecciona un evento para ver solo los proyectos de ese evento, o deja en blanco para ver todos</p>
+                  <select
+                    value={eventoFiltro}
+                    onChange={(e) => handleEventoFiltroChange(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="">-- Todos los eventos --</option>
+                    {eventos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.nombre_evento}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
             {/* Sección de Descargar QRs */}
             <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
