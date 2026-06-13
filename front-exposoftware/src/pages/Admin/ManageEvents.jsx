@@ -63,11 +63,11 @@ export default function ManageEvents() {
   const formatearFechaParaInput = (fecha) => {
     if (!fecha) return "";
     const date = new Date(fecha);
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const hours = String(date.getUTCHours()).padStart(2, '0');
-    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
@@ -113,7 +113,9 @@ export default function ManageEvents() {
     if (new Date(fechaCierreInscripciones) > new Date(fechaInicio)) { alert("La fecha de cierre de inscripciones no puede ser posterior a la fecha de inicio del evento"); return; }
 
     const estadoActual = eventoEditando.estado;
-    if (estadoActual !== estado && !isValidStateTransition(estadoActual, estado)) {
+    const huboChangioDeEstado = estadoActual !== estado;
+
+    if (huboChangioDeEstado && !isValidStateTransition(estadoActual, estado)) {
       const transicionesValidas = {
         'borrador': 'inscripciones_abiertas',
         'inscripciones_abiertas': 'inscripciones_cerradas',
@@ -124,49 +126,53 @@ export default function ManageEvents() {
       return;
     }
 
-    const convertirFecha = (fechaStr) => {
-      if (!fechaStr) return null;
-      const [datePart, timePart] = fechaStr.split('T');
-      if (!datePart || !timePart) return null;
-      const [year, month, day] = datePart.split('-');
-      const [hours, minutes] = timePart.split(':');
-      try {
-        const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes), 0));
-        return date.toISOString();
-      } catch (e) {
-        return null;
-      }
-    };
-
-    const payload = {
-      nombre_evento: nombreEvento.trim(),
-      descripcion: descripcion.trim(),
-      lugar: lugarEvento.trim()
-    };
-
-    const fechaInicioISO = convertirFecha(fechaInicio);
-    const fechaFinISO = convertirFecha(fechaFin);
-    const fechaAperturaISO = convertirFecha(fechaAperturaInscripciones);
-    const fechaCierreISO = convertirFecha(fechaCierreInscripciones);
-
-    if (fechaInicioISO) payload.fecha_inicio = fechaInicioISO;
-    if (fechaFinISO) payload.fecha_fin = fechaFinISO;
-    if (fechaAperturaISO) payload.fecha_apertura_inscripciones = fechaAperturaISO;
-    if (fechaCierreISO) payload.fecha_cierre_inscripciones = fechaCierreISO;
-
-    if (cupoMaximo && cupoMaximo.toString().trim()) {
-      const cupo = parseInt(cupoMaximo);
-      if (!isNaN(cupo) && cupo > 0) {
-        payload.cupo_maximo = cupo;
-      }
-    }
-
     setGuardandoEvento(true);
     try {
-      await EventosService.actualizarEvento(eventoEditando.id_evento, payload);
-
-      if (estadoActual !== estado) {
+      if (huboChangioDeEstado && nombreEvento === eventoEditando.nombre_evento && descripcion === eventoEditando.descripcion && lugarEvento === eventoEditando.lugar) {
         await EventosService.cambiarEstadoEvento(eventoEditando.id_evento, estado);
+      } else {
+        const convertirFecha = (fechaStr) => {
+          if (!fechaStr) return null;
+          const [datePart, timePart] = fechaStr.split('T');
+          if (!datePart || !timePart) return null;
+          const [year, month, day] = datePart.split('-');
+          const [hours, minutes] = timePart.split(':');
+          try {
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes), 0);
+            return date.toISOString();
+          } catch (e) {
+            return null;
+          }
+        };
+
+        const payload = {
+          nombre_evento: nombreEvento.trim(),
+          descripcion: descripcion.trim(),
+          lugar: lugarEvento.trim()
+        };
+
+        const fechaInicioISO = convertirFecha(fechaInicio);
+        const fechaFinISO = convertirFecha(fechaFin);
+        const fechaAperturaISO = convertirFecha(fechaAperturaInscripciones);
+        const fechaCierreISO = convertirFecha(fechaCierreInscripciones);
+
+        if (fechaInicioISO) payload.fecha_inicio = fechaInicioISO;
+        if (fechaFinISO) payload.fecha_fin = fechaFinISO;
+        if (fechaAperturaISO) payload.fecha_apertura_inscripciones = fechaAperturaISO;
+        if (fechaCierreISO) payload.fecha_cierre_inscripciones = fechaCierreISO;
+
+        if (cupoMaximo && cupoMaximo.toString().trim()) {
+          const cupo = parseInt(cupoMaximo);
+          if (!isNaN(cupo) && cupo > 0) {
+            payload.cupo_maximo = cupo;
+          }
+        }
+
+        await EventosService.actualizarEvento(eventoEditando.id_evento, payload);
+
+        if (huboChangioDeEstado) {
+          await EventosService.cambiarEstadoEvento(eventoEditando.id_evento, estado);
+        }
       }
 
       alert("Evento actualizado exitosamente");

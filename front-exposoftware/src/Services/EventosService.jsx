@@ -317,8 +317,7 @@ class EventosService {
     try {
 
       const payload = {
-        estado: estado.toLowerCase(),
-        comentario: null
+        estado: estado.toLowerCase()
       };
 
       const response = await fetch(API_ENDPOINTS.ADMIN_EVENTO_ESTADO(eventoId), {
