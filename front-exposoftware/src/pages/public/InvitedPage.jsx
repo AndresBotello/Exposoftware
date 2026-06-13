@@ -105,7 +105,7 @@ export default function InvitedPage() {
         }
       } catch (err) {
         if (err.message.includes('No hay eventos en curso')) {
-          setError('No hay eventos en curso disponibles en este momento');
+          setError('Por el momento no hay eventos en curso. Vuelve más tarde para ver los proyectos de la próxima jornada.');
         } else {
           setError(err.message || 'Error al cargar los proyectos');
         }
@@ -296,7 +296,7 @@ export default function InvitedPage() {
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">Cargando evento...</p>
+                <p className="text-sm text-gray-500">{loadingProjects ? 'Cargando evento...' : 'No hay eventos disponibles'}</p>
               )}
             </div>
 
@@ -527,11 +527,11 @@ export default function InvitedPage() {
               </div>
             )}
 
-            {/* Mensaje de error */}
+            {/* Mensaje de aviso */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-red-800 flex items-center gap-2">
-                  <i className="pi pi-exclamation-circle"></i>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p className="text-blue-800 flex items-center gap-2">
+                  <i className="pi pi-info-circle"></i>
                   {error}
                 </p>
               </div>
