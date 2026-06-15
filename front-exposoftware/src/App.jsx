@@ -45,6 +45,7 @@ function NavbarWrapper() {
     "/admin/estudiantes",
     "/admin/certificados",
     "/admin/proyectos",
+    "/admin/ranking",
     "/admin/evento",
     "/admin/eventos-asistencias",
     "/admin/registro-eventos-anual",

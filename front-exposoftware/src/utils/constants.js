@@ -217,6 +217,7 @@ export const API_ENDPOINTS = {
   
   // Reportes - Certificados
   ADMIN_GENERAR_CERTIFICADO_POR_PROYECTO: `${API_BASE_URL}/api/v1/admin/reportes/certificados/generar-por-proyecto`,
+  ADMIN_GENERAR_CERTIFICADOS_POR_EVENTO: `${API_BASE_URL}/api/v1/admin/reportes/certificados/generar-por-evento`,
   ADMIN_GENERAR_CERTIFICADO_INDIVIDUAL: `${API_BASE_URL}/api/v1/admin/reportes/certificados/generar-individual`,
   ADMIN_ENVIAR_CERTIFICADOS: `${API_BASE_URL}/api/v1/admin/reportes/certificados/enviar-por-correo`,
   ADMIN_DESCARGAR_CERTIFICADO: (certificadoId) => `${API_BASE_URL}/api/v1/admin/reportes/certificados/descargar/${certificadoId}`,

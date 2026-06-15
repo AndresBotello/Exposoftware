@@ -179,6 +179,62 @@ class CertificadosService {
   }
 
   /**
+   * Generar certificados por evento (masivo)
+   * POST /api/v1/admin/reportes/certificados/generar-por-evento
+   * Genera certificados para todos los proyectos de un evento
+   * @param {string} id_evento - UUID del evento
+   * @param {boolean} incluir_calificacion - Default false
+   * @param {string} director_evento - Nombre del director (opcional)
+   * @param {string} coordinador_general - Nombre del coordinador (opcional)
+   */
+  async generarCertificadosPorEvento(id_evento, incluir_calificacion = false, director_evento = '', coordinador_general = '') {
+    try {
+      const payload = {
+        id_evento,
+        incluir_calificacion,
+        ...(director_evento && { director_evento }),
+        ...(coordinador_general && { coordinador_general })
+      };
+
+      // Usar AbortController para timeout de 20 minutos (1200 segundos)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200000);
+
+      try {
+        const response = await fetch(
+          API_ENDPOINTS.ADMIN_GENERAR_CERTIFICADOS_POR_EVENTO,
+          {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            credentials: 'include',
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.detail || errorData.mensaje || `Error ${response.status}: ${response.statusText}`;
+          throw new Error(errorMsg);
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('La operación tardó demasiado. Por favor intenta nuevamente.');
+        }
+        throw error;
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Generar certificado individual
    * POST /api/v1/admin/reportes/certificados/generar-individual
    * @param {string} id_estudiante - ID del estudiante

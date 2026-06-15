@@ -211,7 +211,8 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
   };
 
   const tipoActividadTemplate = (rowData) => {
-    const tipo = TIPOS_ACTIVIDAD[rowData.tipo_actividad] || { label: 'Desconocido', severity: 'secondary' };
+    const id = rowData.id_tipo_actividad || rowData.tipo_actividad;
+    const tipo = TIPOS_ACTIVIDAD[id] || { label: 'Desconocido', severity: 'secondary' };
     return <Tag value={tipo.label} severity={tipo.severity} />;
   };
 

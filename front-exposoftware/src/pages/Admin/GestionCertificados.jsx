@@ -5,6 +5,9 @@ import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { Checkbox } from 'primereact/checkbox';
+import { Dialog } from 'primereact/dialog';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 import AdminSidebar from '../../components/Layout/AdminSidebar';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
 import { AdminHeader } from '../../components/Admin/AdminComponents';
@@ -39,7 +42,7 @@ export default function GestionCertificados() {
   const [asuntoEmail, setAsuntoEmail] = useState('');
   const [mensajePersonalizado, setMensajePersonalizado] = useState('');
 
-  // Estados para generar certificados
+  // Estados para generar certificados por proyecto
   const [proyectos, setProyectos] = useState([]);
   const [loadingProyectos, setLoadingProyectos] = useState(false);
   const [selectedProyecto, setSelectedProyecto] = useState(null);
@@ -48,6 +51,16 @@ export default function GestionCertificados() {
   const [incluirCalificacion, setIncluirCalificacion] = useState(false);
   const [generandoCertificados, setGenerandoCertificados] = useState(false);
 
+  // Estados para generar certificados por evento
+  const [eventos, setEventos] = useState([]);
+  const [loadingEventos, setLoadingEventos] = useState(false);
+  const [selectedEvento, setSelectedEvento] = useState(null);
+  const [directorEventoMasivo, setDirectorEventoMasivo] = useState('');
+  const [coordinadorGeneralMasivo, setCoordinadorGeneralMasivo] = useState('');
+  const [generandoCertificadosMasivo, setGenerandoCertificadosMasivo] = useState(false);
+  const [resultadosCertificados, setResultadosCertificados] = useState(null);
+  const [showResultadosDialog, setShowResultadosDialog] = useState(false);
+
   const topScrollbarRef = useRef(null);
   const tableRef = useRef(null);
   const toast = useRef(null);
@@ -55,6 +68,7 @@ export default function GestionCertificados() {
   useEffect(() => {
     cargarLotes();
     cargarProyectos();
+    cargarEventos();
   }, []);
 
   useEffect(() => {
@@ -137,45 +151,8 @@ export default function GestionCertificados() {
     setLoadingProyectos(true);
     try {
       const proyectosData = await obtenerProyectos();
-
-      // Obtener eventos para filtrar por estado
-      const eventosResponse = await fetch(
-        API_ENDPOINTS.ADMIN_EVENTOS,
-        {
-          method: 'GET',
-          headers: getAuthHeaders(),
-          credentials: 'include'
-        }
-      );
-
-      let eventosMap = {};
-      if (eventosResponse.ok) {
-        const eventosData = await eventosResponse.json();
-        const eventos = Array.isArray(eventosData) ? eventosData : (eventosData.data || []);
-
-        // Crear mapa de eventos por ID para búsqueda rápida
-        eventos.forEach(evento => {
-          const eventoId = evento.id_evento || evento.id;
-          eventosMap[eventoId] = evento;
-        });
-
-      }
-
-      // Filtrar proyectos cuyo evento esté en_curso o finalizado
-      const proyectosFiltrados = proyectosData.filter(proyecto => {
-        const idEvento = proyecto.id_evento;
-        const evento = eventosMap[idEvento];
-
-        if (!evento) {
-          return false;
-        }
-
-        const estadoValido = evento.estado === 'en_curso' || evento.estado === 'finalizado';
-
-        return estadoValido;
-      });
-
-      setProyectos(proyectosFiltrados);
+      // Cargar todos los proyectos sin filtrar por estado del evento
+      setProyectos(proyectosData || []);
     } catch (error) {
       setProyectos([]);
       toast.current?.show({
@@ -186,6 +163,37 @@ export default function GestionCertificados() {
       });
     } finally {
       setLoadingProyectos(false);
+    }
+  };
+
+  const cargarEventos = async () => {
+    setLoadingEventos(true);
+    try {
+      const response = await fetch(
+        API_ENDPOINTS.ADMIN_EVENTOS,
+        {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'include'
+        }
+      );
+
+      if (!response.ok) throw new Error('Error loading events');
+
+      const eventosData = await response.json();
+      const eventosArray = Array.isArray(eventosData) ? eventosData : (eventosData.data || []);
+
+      // Filtrar eventos en estado finalizado o en_curso que sean elegibles para certificados
+      const eventosFiltrados = eventosArray.filter(evento =>
+        evento.estado === 'en_curso' || evento.estado === 'finalizado'
+      );
+
+      setEventos(eventosFiltrados);
+    } catch (error) {
+      setEventos([]);
+      console.error('Error cargando eventos:', error);
+    } finally {
+      setLoadingEventos(false);
     }
   };
 
@@ -255,6 +263,73 @@ export default function GestionCertificados() {
       });
     } finally {
       setGenerandoCertificados(false);
+    }
+  };
+
+  const generarCertificadosPorEvento = async () => {
+    if (!selectedEvento) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Evento Requerido',
+        detail: 'Por favor selecciona un evento',
+        life: 3000
+      });
+      return;
+    }
+
+    setGenerandoCertificadosMasivo(true);
+    toast.current?.show({
+      severity: 'info',
+      summary: 'Procesando',
+      detail: 'Generando certificados para todos los proyectos... Esta operación puede tomar hasta 10 minutos.',
+      life: 10000
+    });
+
+    try {
+      const idEvento = selectedEvento?.id_evento || selectedEvento?.id;
+      const response = await CertificadosService.generarCertificadosPorEvento(
+        idEvento,
+        false,
+        directorEventoMasivo,
+        coordinadorGeneralMasivo
+      );
+
+      setResultadosCertificados(response?.data || response);
+      setShowResultadosDialog(true);
+
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Proceso completado',
+        detail: response?.message || 'Los certificados se han generado correctamente',
+        life: 5000
+      });
+
+      // Limpiar formulario
+      setSelectedEvento(null);
+      setDirectorEventoMasivo('');
+      setCoordinadorGeneralMasivo('');
+
+      // Recargar lotes
+      cargarLotes();
+    } catch (error) {
+      let errorMessage = 'No se pudieron generar los certificados por evento';
+
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.data?.mensaje) {
+        errorMessage = error.response.data.mensaje;
+      }
+
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error en generación masiva',
+        detail: errorMessage,
+        life: 8000
+      });
+    } finally {
+      setGenerandoCertificadosMasivo(false);
     }
   };
 
@@ -489,6 +564,97 @@ export default function GestionCertificados() {
           />
 
           <main className="lg:col-span-3 space-y-6">
+            {/* Sección: Generar Certificados Masivos por Evento */}
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-300 shadow-lg p-6">
+              <div className="mb-6 pb-4 border-b border-purple-300">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                      <i className="pi pi-bolt mr-2 text-purple-600"></i>
+                      Generar Certificados por Evento (Masivo)
+                    </h2>
+                    <p className="text-sm text-gray-700">
+                      Genera certificados para TODOS los proyectos del evento. Idempotente: no duplica si ya existen.
+                    </p>
+                  </div>
+                  <div className="text-4xl text-purple-200">
+                    <i className="pi pi-send"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center">
+                    <i className="pi pi-calendar text-purple-600 mr-2"></i>
+                    Selecciona el Evento
+                  </label>
+                  <Dropdown
+                    value={selectedEvento}
+                    onChange={(e) => setSelectedEvento(e.value)}
+                    options={eventos}
+                    optionLabel={(option) => option?.nombre_evento || option?.nombre || 'Sin nombre'}
+                    placeholder="Selecciona un evento..."
+                    filter
+                    loading={loadingEventos}
+                    className="w-full"
+                    style={{ width: '100%' }}
+                  />
+                  {selectedEvento && (
+                    <div className="mt-2 p-3 bg-purple-100 border border-purple-300 rounded text-xs text-purple-800">
+                      <i className="pi pi-check-circle mr-2"></i>
+                      Evento seleccionado: {selectedEvento?.nombre_evento || selectedEvento?.nombre}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center">
+                    <i className="pi pi-user text-purple-600 mr-2"></i>
+                    Director del Evento <span className="text-gray-500 font-normal ml-1">(opcional)</span>
+                  </label>
+                  <InputText
+                    value={directorEventoMasivo}
+                    onChange={(e) => setDirectorEventoMasivo(e.target.value)}
+                    placeholder="Ej: Dr. Juan Pérez"
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center">
+                    <i className="pi pi-users text-purple-600 mr-2"></i>
+                    Coordinador General <span className="text-gray-500 font-normal ml-1">(opcional)</span>
+                  </label>
+                  <InputText
+                    value={coordinadorGeneralMasivo}
+                    onChange={(e) => setCoordinadorGeneralMasivo(e.target.value)}
+                    placeholder="Ej: Ing. María González"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-5">
+                <div className="flex gap-3">
+                  <i className="pi pi-info-circle text-yellow-600 mt-1"></i>
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-semibold mb-1">Tiempo estimado: 5-10 minutos</p>
+                    <p>El sistema procesará todos los proyectos del evento y generará certificados para los integrantes con asistencia.</p>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                label={generandoCertificadosMasivo ? "Generando certificados..." : "Generar Certificados Masivos"}
+                icon="pi pi-lightning"
+                onClick={generarCertificadosPorEvento}
+                loading={generandoCertificadosMasivo}
+                className="w-full p-button-lg bg-gradient-to-r from-purple-500 to-purple-600 border-0 hover:from-purple-600 hover:to-purple-700"
+                disabled={!selectedEvento || generandoCertificadosMasivo}
+              />
+            </div>
+
             {/* Sección: Generar Certificados */}
             <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg border border-blue-200 shadow-md p-6">
               <div className="mb-6 pb-4 border-b border-blue-200">
@@ -636,6 +802,123 @@ export default function GestionCertificados() {
         onHideError={() => setShowErrorDialog(false)}
         errorDetails={errorDetails}
       />
+
+      {/* Diálogo de Resultados de Generación Masiva */}
+      <Dialog
+        visible={showResultadosDialog}
+        onHide={() => setShowResultadosDialog(false)}
+        header="Resultados de Generación de Certificados"
+        modal
+        style={{ width: '90vw', maxWidth: '1000px' }}
+        className="p-dialog-large"
+      >
+        {resultadosCertificados && (
+          <div className="space-y-4">
+            {/* Resumen */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-xs text-green-600 font-semibold uppercase">Certificados Creados</p>
+                <p className="text-2xl font-bold text-green-700">{resultadosCertificados.total_certificados_nuevos || 0}</p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-xs text-blue-600 font-semibold uppercase">Certificados Reutilizados</p>
+                <p className="text-2xl font-bold text-blue-700">{resultadosCertificados.total_certificados_existentes || 0}</p>
+              </div>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <p className="text-xs text-orange-600 font-semibold uppercase">Proyectos con Error</p>
+                <p className="text-2xl font-bold text-orange-700">{resultadosCertificados.proyectos_con_error || 0}</p>
+              </div>
+            </div>
+
+            {/* Estadísticas */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <p className="text-gray-600">Evento</p>
+                  <p className="font-semibold text-gray-900">{resultadosCertificados.nombre_evento}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Total Proyectos</p>
+                  <p className="font-semibold text-gray-900">{resultadosCertificados.total_proyectos}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Procesados</p>
+                  <p className="font-semibold text-gray-900">{resultadosCertificados.proyectos_procesados}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Fecha</p>
+                  <p className="font-semibold text-gray-900">{new Date(resultadosCertificados.fecha_generacion).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabla de Proyectos */}
+            {resultadosCertificados.proyectos && resultadosCertificados.proyectos.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Detalle por Proyecto</h3>
+                <DataTable
+                  value={resultadosCertificados.proyectos}
+                  scrollable
+                  scrollHeight="300px"
+                  className="text-sm"
+                  stripedRows
+                >
+                  <Column field="titulo_proyecto" header="Proyecto" style={{ width: '40%' }} />
+                  <Column
+                    field="certificados_creados"
+                    header="Creados"
+                    style={{ width: '15%' }}
+                    className="text-center"
+                  />
+                  <Column
+                    field="certificados_ya_existian"
+                    header="Existentes"
+                    style={{ width: '15%' }}
+                    className="text-center"
+                  />
+                  <Column
+                    field="error"
+                    header="Error"
+                    style={{ width: '30%' }}
+                    body={(rowData) =>
+                      rowData.error ? (
+                        <span className="text-red-600 text-xs font-medium">{rowData.error}</span>
+                      ) : (
+                        <span className="text-green-600 text-xs font-medium">✓ OK</span>
+                      )
+                    }
+                  />
+                </DataTable>
+              </div>
+            )}
+
+            {/* Mensaje de resumen */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <i className="pi pi-info-circle mr-2"></i>
+                {resultadosCertificados.message}
+              </p>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+              <Button
+                label="Cerrar"
+                onClick={() => setShowResultadosDialog(false)}
+                className="p-button-outlined"
+              />
+              <Button
+                label="Cerrar y Recargar Lotes"
+                onClick={() => {
+                  setShowResultadosDialog(false);
+                  cargarLotes();
+                }}
+                className="p-button-success"
+              />
+            </div>
+          </div>
+        )}
+      </Dialog>
     </div>
   );
 }
