@@ -50,6 +50,7 @@ export default function GestionCertificados() {
   const [coordinadorGeneral, setCoordinadorGeneral] = useState('');
   const [incluirCalificacion, setIncluirCalificacion] = useState(false);
   const [generandoCertificados, setGenerandoCertificados] = useState(false);
+  const [generandoZipGeneral, setGenerandoZipGeneral] = useState(false);
 
   // Estados para generar certificados por evento
   const [eventos, setEventos] = useState([]);
@@ -382,6 +383,46 @@ export default function GestionCertificados() {
         detail: errorMessage,
         life: 6000
       });
+    }
+  };
+
+  const descargarTodosLosCertificados = async () => {
+    if (!lotes.length) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Sin lotes',
+        detail: 'No hay lotes de certificados para comprimir',
+        life: 3000
+      });
+      return;
+    }
+
+    setGenerandoZipGeneral(true);
+    toast.current?.show({
+      severity: 'info',
+      summary: 'Generando ZIP',
+      detail: 'Se está preparando el archivo con todos los certificados. Esto puede tardar unos minutos.',
+      life: 6000
+    });
+
+    try {
+      const result = await CertificadosService.descargarTodosLosCertificadosEnZip(lotes);
+
+      toast.current?.show({
+        severity: 'success',
+        summary: 'ZIP descargado',
+        detail: `Se incluyeron ${result.lotesProcesados} lote(s)${result.lotesFallidos > 0 ? `, ${result.lotesFallidos} fallido(s)` : ''}`,
+        life: 5000
+      });
+    } catch (error) {
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error al generar ZIP',
+        detail: error.message || 'No se pudo crear el ZIP con todos los certificados',
+        life: 6000
+      });
+    } finally {
+      setGenerandoZipGeneral(false);
     }
   };
 
@@ -772,6 +813,15 @@ export default function GestionCertificados() {
                   onClick={cargarLotes}
                   loading={loading}
                   severity="secondary"
+                />
+                <Button
+                  icon="pi pi-download"
+                  label="Descargar todo ZIP"
+                  className="p-button-outlined p-button-sm"
+                  onClick={descargarTodosLosCertificados}
+                  loading={generandoZipGeneral}
+                  severity="help"
+                  disabled={loading || lotes.length === 0}
                 />
               </div>
 

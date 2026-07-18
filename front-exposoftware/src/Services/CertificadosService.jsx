@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from '../utils/constants';
 import * as AuthService from './AuthService';
+import JSZip from 'jszip';
 
 const getAuthHeaders = () => {
   const token = AuthService.getToken();
@@ -13,27 +14,130 @@ const getAuthHeaders = () => {
  * Servicio para gestionar certificados
  */
 class CertificadosService {
+  descargarBlob(blob, fileName) {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  async obtenerZipLoteBlob(id_proyecto) {
+    const response = await fetch(
+      API_ENDPOINTS.ADMIN_DESCARGAR_CERTIFICADOS_ZIP(id_proyecto),
+      {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include'
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMsg = errorData.detail || `Error ${response.status}: ${response.statusText}`;
+      throw new Error(errorMsg);
+    }
+
+    const contentType = response.headers.get('content-type');
+
+    if (contentType && !contentType.includes('application/zip') && !contentType.includes('application/octet-stream')) {
+      throw new Error(`Tipo de archivo inesperado: ${contentType}. Se esperaba un archivo ZIP.`);
+    }
+
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get('content-disposition');
+    let fileName = `certificados_proyecto_${id_proyecto}.zip`;
+
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (fileNameMatch && fileNameMatch[1]) {
+        fileName = fileNameMatch[1].replace(/['"]/g, '');
+      }
+    }
+
+    return { blob, fileName };
+  }
+
   /**
    * Obtener listado de lotes de certificados
    * GET /api/v1/admin/reportes/certificados/lotes
    */
-  async obtenerLotesCertificados() {
+  async obtenerLotesCertificados({ limit = 100 } = {}) {
     try {
-      const response = await fetch(
-        API_ENDPOINTS.ADMIN_LOTES_CERTIFICADOS,
-        {
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+
+      const buildUrl = (page) => {
+        const url = new URL(API_ENDPOINTS.ADMIN_LOTES_CERTIFICADOS, baseUrl);
+        if (page) url.searchParams.set('page', String(page));
+        if (limit) url.searchParams.set('limit', String(limit));
+        return url.toString();
+      };
+
+      const fetchPage = async (page) => {
+        const response = await fetch(buildUrl(page), {
           method: 'GET',
           headers: getAuthHeaders(),
           credentials: 'include'
-        }
-      );
+        });
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        return response.json();
+      };
+
+      const firstResponse = await fetchPage(1);
+
+      if (Array.isArray(firstResponse)) {
+        return firstResponse;
       }
 
-      const data = await response.json();
-      return data;
+      const firstData = firstResponse?.data;
+      const firstLotes = Array.isArray(firstData?.lotes)
+        ? firstData.lotes
+        : Array.isArray(firstData)
+          ? firstData
+          : [];
+
+      const totalPages = firstData?.pagination?.total_pages || firstResponse?.pagination?.total_pages || 1;
+
+      if (totalPages <= 1) {
+        return firstResponse;
+      }
+
+      const lotesAcumulados = [...firstLotes];
+
+      for (let page = 2; page <= totalPages; page += 1) {
+        const pageResponse = await fetchPage(page);
+        const pageData = pageResponse?.data;
+        const pageLotes = Array.isArray(pageData?.lotes)
+          ? pageData.lotes
+          : Array.isArray(pageData)
+            ? pageData
+            : [];
+
+        lotesAcumulados.push(...pageLotes);
+      }
+
+      return {
+        ...firstResponse,
+        data: firstData && !Array.isArray(firstData)
+          ? {
+              ...firstData,
+              lotes: lotesAcumulados,
+              pagination: firstData.pagination
+                ? {
+                    ...firstData.pagination,
+                    total_items: lotesAcumulados.length
+                  }
+                : firstData.pagination
+            }
+          : lotesAcumulados
+      };
     } catch (error) {
       throw error;
     }
@@ -85,56 +189,72 @@ class CertificadosService {
    */
   async descargarLoteCertificados(id_proyecto) {
     try {
-
-      const response = await fetch(
-        API_ENDPOINTS.ADMIN_DESCARGAR_CERTIFICADOS_ZIP(id_proyecto),
-        {
-          method: 'GET',
-          headers: getAuthHeaders(),
-          credentials: 'include'
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.detail || `Error ${response.status}: ${response.statusText}`;
-        throw new Error(errorMsg);
-      }
-
-      // Verificar si realmente es un archivo ZIP
-      const contentType = response.headers.get('content-type');
-
-      if (contentType && !contentType.includes('application/zip') && !contentType.includes('application/octet-stream')) {
-        throw new Error(`Tipo de archivo inesperado: ${contentType}. Se esperaba un archivo ZIP.`);
-      }
-
-      // Crear un enlace temporal para descargar el archivo
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-
-      // Obtener el nombre del archivo desde los headers o usar uno por defecto
-      const contentDisposition = response.headers.get('content-disposition');
-      let fileName = `certificados_proyecto_${id_proyecto}.zip`;
-
-      if (contentDisposition) {
-        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (fileNameMatch && fileNameMatch[1]) {
-          fileName = fileNameMatch[1].replace(/['"]/g, '');
-        }
-      }
-
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      const { blob, fileName } = await this.obtenerZipLoteBlob(id_proyecto);
+      this.descargarBlob(blob, fileName);
 
       return { success: true, fileName };
     } catch (error) {
       throw error;
     }
+  }
+
+  async descargarTodosLosCertificadosEnZip(lotes = []) {
+    if (!Array.isArray(lotes) || lotes.length === 0) {
+      throw new Error('No hay lotes de certificados para comprimir');
+    }
+
+    const zipMaestro = new JSZip();
+    let lotesProcesados = 0;
+    let lotesFallidos = 0;
+
+    for (const lote of lotes) {
+      const idProyecto = lote?.id_proyecto || lote?.proyecto?.id_proyecto;
+
+      if (!idProyecto) {
+        lotesFallidos += 1;
+        continue;
+      }
+
+      try {
+        const { blob } = await this.obtenerZipLoteBlob(idProyecto);
+        const innerZip = await JSZip.loadAsync(blob);
+        const folderName = (lote?.titulo_proyecto || lote?.proyecto?.nombre_proyecto || `proyecto_${idProyecto}`)
+          .toString()
+          .replace(/[\\/:*?"<>|]/g, '_')
+          .trim() || `proyecto_${idProyecto}`;
+
+        const folder = zipMaestro.folder(folderName);
+
+        for (const [relativePath, file] of Object.entries(innerZip.files)) {
+          if (!file.dir) {
+            const fileBlob = await file.async('blob');
+            folder.file(relativePath, fileBlob);
+          }
+        }
+
+        lotesProcesados += 1;
+      } catch (error) {
+        console.error(`Error agregando lote ${idProyecto} al ZIP maestro:`, error);
+        lotesFallidos += 1;
+      }
+    }
+
+    if (lotesProcesados === 0) {
+      throw new Error('No se pudo incluir ningún lote en el ZIP maestro');
+    }
+
+    const blob = await zipMaestro.generateAsync({ type: 'blob' });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `certificados_todos_los_lotes_${timestamp}.zip`;
+
+    this.descargarBlob(blob, fileName);
+
+    return {
+      success: true,
+      fileName,
+      lotesProcesados,
+      lotesFallidos
+    };
   }
 
   /**
