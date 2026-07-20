@@ -15,6 +15,7 @@
     "classnames": "^2.5.1",
     "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
+    "html2pdf.js": "^0.14.0",
     "html5-qrcode": "^2.3.8",
     "jspdf": "^3.0.4",
     "jszip": "^3.10.1",

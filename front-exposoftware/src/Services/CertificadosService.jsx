@@ -65,19 +65,19 @@ class CertificadosService {
    * Obtener listado de lotes de certificados
    * GET /api/v1/admin/reportes/certificados/lotes
    */
-  async obtenerLotesCertificados({ limit = 100 } = {}) {
+  async obtenerLotesCertificados() {
     try {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+      const lotesAcumulados = [];
+      let page = 1;
+      let hasMore = true;
 
-      const buildUrl = (page) => {
+      while (hasMore) {
         const url = new URL(API_ENDPOINTS.ADMIN_LOTES_CERTIFICADOS, baseUrl);
-        if (page) url.searchParams.set('page', String(page));
-        if (limit) url.searchParams.set('limit', String(limit));
-        return url.toString();
-      };
+        url.searchParams.set('page', String(page));
+        url.searchParams.set('limit', '100');
 
-      const fetchPage = async (page) => {
-        const response = await fetch(buildUrl(page), {
+        const response = await fetch(url.toString(), {
           method: 'GET',
           headers: getAuthHeaders(),
           credentials: 'include'
@@ -87,57 +87,26 @@ class CertificadosService {
           throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
 
-        return response.json();
-      };
+        const data = await response.json();
 
-      const firstResponse = await fetchPage(1);
+        let pageLotes = [];
+        if (Array.isArray(data)) {
+          pageLotes = data;
+        } else if (data?.data?.lotes && Array.isArray(data.data.lotes)) {
+          pageLotes = data.data.lotes;
+        } else if (data?.lotes && Array.isArray(data.lotes)) {
+          pageLotes = data.lotes;
+        }
 
-      if (Array.isArray(firstResponse)) {
-        return firstResponse;
+        if (pageLotes.length === 0) {
+          hasMore = false;
+        } else {
+          lotesAcumulados.push(...pageLotes);
+          page += 1;
+        }
       }
 
-      const firstData = firstResponse?.data;
-      const firstLotes = Array.isArray(firstData?.lotes)
-        ? firstData.lotes
-        : Array.isArray(firstData)
-          ? firstData
-          : [];
-
-      const totalPages = firstData?.pagination?.total_pages || firstResponse?.pagination?.total_pages || 1;
-
-      if (totalPages <= 1) {
-        return firstResponse;
-      }
-
-      const lotesAcumulados = [...firstLotes];
-
-      for (let page = 2; page <= totalPages; page += 1) {
-        const pageResponse = await fetchPage(page);
-        const pageData = pageResponse?.data;
-        const pageLotes = Array.isArray(pageData?.lotes)
-          ? pageData.lotes
-          : Array.isArray(pageData)
-            ? pageData
-            : [];
-
-        lotesAcumulados.push(...pageLotes);
-      }
-
-      return {
-        ...firstResponse,
-        data: firstData && !Array.isArray(firstData)
-          ? {
-              ...firstData,
-              lotes: lotesAcumulados,
-              pagination: firstData.pagination
-                ? {
-                    ...firstData.pagination,
-                    total_items: lotesAcumulados.length
-                  }
-                : firstData.pagination
-            }
-          : lotesAcumulados
-      };
+      return lotesAcumulados.length > 0 ? lotesAcumulados : [];
     } catch (error) {
       throw error;
     }
