@@ -71,6 +71,7 @@ export const fetchApi = async (url, options = {}) => {
     }
   }
 
+  // Retornar el response completo (no parsear JSON automáticamente)
   return response;
 };
 

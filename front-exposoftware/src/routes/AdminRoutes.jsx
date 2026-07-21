@@ -34,6 +34,9 @@ const GestionCertificados = lazy(() => import("../pages/Admin/GestionCertificado
 const GestionProyectos = lazy(() => import("../pages/Admin/GestionProyectos"));
 const AdminRanking = lazy(() => import("../pages/Admin/AdminRanking"));
 
+// Reportes de Eventos
+const EventReports = lazy(() => import("../pages/Admin/EventReports"));
+
 const LoadingFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
@@ -291,6 +294,18 @@ export default function AdminRoutes() {
           <AdminRoute>
             <Suspense fallback={<LoadingFallback />}>
               <AdminRanking />
+            </Suspense>
+          </AdminRoute>
+        }
+      />
+
+      {/* 📊 REPORTES DE EVENTOS */}
+      <Route
+        path="reportes"
+        element={
+          <AdminRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <EventReports />
             </Suspense>
           </AdminRoute>
         }

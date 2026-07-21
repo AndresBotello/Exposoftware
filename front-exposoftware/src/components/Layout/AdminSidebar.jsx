@@ -102,6 +102,11 @@ const AdminSidebar = memo(({ userName = "Carlos Mendoza", userRole = "Administra
       icon: "pi-star-fill",
       label: "Ranking de Proyectos"
     },
+    {
+      to: "/admin/reportes",
+      icon: "pi-file-pdf",
+      label: "Reportes de Eventos"
+    },
     // {
     //   to: "/admin/profile",
     //   icon: "pi-cog",
