@@ -61,14 +61,14 @@ export default function Home() {
       )}
       {/* Hero Section - Completamente Responsive */}
       
-      <section className="relative py-6 sm:py-8 md:py-12 lg:py-16 xl:py-20 overflow-hidden min-h-screen flex items-center">
+      <section className="relative overflow-hidden bg-black">
 
-        {/* Banner estático en lugar del carrusel */}
-        <div className="absolute inset-[1.5%] z-0 flex items-center justify-center">
+        {/* Banner fluido: siempre ocupa todo el ancho y mantiene su proporción en cualquier pantalla */}
+        <div className="relative w-full">
           <img
             src={exposoftwareBackground}
             alt="XXIII Jornada de Investigación Exposoftware"
-            className="w-full h-full object-contain"
+            className="block w-full h-40 sm:h-auto object-cover object-[25%_center] sm:object-contain"
           />
           {/* Degradado: suaviza los bordes y funde el banner con la sección siguiente */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/5 bg-gradient-to-t from-white/40 to-transparent" />
