@@ -12,7 +12,7 @@ export function EventProvider({ children }) {
       ? JSON.parse(eventoGuardado)
       : {
           nombre: "Exposoftware UPC",
-          edicion: "XXI",
+          edicion: "XXIII",
           periodo: "2025-I",
           fechaInicio: "2025-11-15",
           fechaFin: "2025-11-20",

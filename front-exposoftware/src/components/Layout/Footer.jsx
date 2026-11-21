@@ -60,7 +60,7 @@ export default function Footer() {
             </li>
             <li className="flex items-center justify-center sm:justify-start gap-2">
               <FaEnvelope className="text-green-600 flex-shrink-0" /> 
-              <span>exposoftware@unicesar.edu.co</span>
+              <span>hemesunicesar@gmail.com</span>
             </li>
           </ul>
         </div>

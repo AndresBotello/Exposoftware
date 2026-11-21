@@ -2,16 +2,87 @@ import { useState, useEffect, useMemo } from "react";
 import { obtenerMisProyectos } from "../../Services/ProjectsService";
 import MisClasesService from "../../Services/MisClasesService";
 import InvestigacionService from "../../Services/InvestigacionService";
+import EventosService from "../../Services/EventosService";
+import {
+  EVENTO_AUTO,
+  EVENTO_TODOS,
+  elegirEventoActual,
+  construirEventosDisponibles,
+  idEvento as idEventoDe,
+} from "../../utils/eventoActual";
 
 export function useStudentMetrics(user) {
-  const [metricasEstudiante, setMetricasEstudiante] = useState({
-    totalProyectos: 0,
-    proyectosAprobados: 0,
-    proyectosReprobados: 0,
-    proyectosPendientes: 0,
-  });
-  const [cargandoMetricas, setCargandoMetricas] = useState(false);
-  const [proyectos, setProyectos] = useState([]);
+  const [cargandoMetricas, setCargandoMetricas] = useState(true);
+  const [proyectosTodos, setProyectosTodos] = useState([]);
+  const [eventosRaw, setEventosRaw] = useState([]);
+  const [eventoElegido, setEventoElegido] = useState(EVENTO_AUTO);
+  // Hasta conocer los eventos no se sabe cuál es el actual: se mantiene la carga para no mostrar datos viejos
+  const [eventosCargados, setEventosCargados] = useState(false);
+
+  // Eventos (para saber cuál es el actual)
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const lista = await EventosService.obtenerEventos();
+        if (!cancelado) setEventosRaw(Array.isArray(lista) ? lista : []);
+      } catch {
+        if (!cancelado) setEventosRaw([]);
+      } finally {
+        if (!cancelado) setEventosCargados(true);
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const eventosDisponibles = useMemo(
+    () => construirEventosDisponibles(eventosRaw, proyectosTodos),
+    [eventosRaw, proyectosTodos]
+  );
+
+  // Evento actual: inscripciones abiertas > en curso > cerradas > finalizado
+  const eventoActualId = useMemo(() => {
+    const actual = elegirEventoActual(eventosRaw);
+    if (actual) return String(idEventoDe(actual));
+    return eventosDisponibles.length > 0 ? eventosDisponibles[0].id : null;
+  }, [eventosRaw, eventosDisponibles]);
+
+  const eventoEfectivo = eventoElegido === EVENTO_AUTO ? eventoActualId || EVENTO_TODOS : eventoElegido;
+
+  // Proyectos del evento elegido (antes se contaban los de todos los eventos, incluidos los anteriores)
+  const proyectos = useMemo(
+    () =>
+      eventoEfectivo === EVENTO_TODOS
+        ? proyectosTodos
+        : proyectosTodos.filter((p) => String(p.id_evento) === String(eventoEfectivo)),
+    [proyectosTodos, eventoEfectivo]
+  );
+
+  const metricasEstudiante = useMemo(() => {
+    const totalProyectos = proyectos.length;
+    const proyectosAprobados = proyectos.filter((p) => {
+      if (p.estado_calificacion) return p.estado_calificacion === 'aprobado';
+      if (p.estado === 'aprobado') return true;
+      if (p.calificacion !== null && !isNaN(p.calificacion)) {
+        return parseFloat(p.calificacion) >= 3.0;
+      }
+      return false;
+    }).length;
+
+    const proyectosReprobados = proyectos.filter((p) => {
+      if (p.estado_calificacion) return p.estado_calificacion === 'reprobado';
+      if (p.estado === 'rechazado') return true;
+      if (p.calificacion !== null && !isNaN(p.calificacion)) {
+        return parseFloat(p.calificacion) < 3.0;
+      }
+      return false;
+    }).length;
+
+    const proyectosPendientes = totalProyectos - proyectosAprobados - proyectosReprobados;
+    return { totalProyectos, proyectosAprobados, proyectosReprobados, proyectosPendientes };
+  }, [proyectos]);
 
   useEffect(() => {
     const loadStudentMetrics = async () => {
@@ -58,33 +129,9 @@ export function useStudentMetrics(user) {
           })
         );
 
-        setProyectos(proyectosData);
-
-        const totalProyectos = proyectosData.length;
-        const proyectosAprobados = proyectosData.filter(p => {
-          if (p.estado_calificacion) return p.estado_calificacion === 'aprobado';
-          if (p.estado === 'aprobado') return true;
-          if (p.calificacion !== null && !isNaN(p.calificacion)) {
-            return parseFloat(p.calificacion) >= 3.0;
-          }
-          return false;
-        }).length;
-
-        const proyectosReprobados = proyectosData.filter(p => {
-          if (p.estado_calificacion) return p.estado_calificacion === 'reprobado';
-          if (p.estado === 'rechazado') return true;
-          if (p.calificacion !== null && !isNaN(p.calificacion)) {
-            return parseFloat(p.calificacion) < 3.0;
-          }
-          return false;
-        }).length;
-
-        const proyectosPendientes = totalProyectos - proyectosAprobados - proyectosReprobados;
-
-        setMetricasEstudiante({ totalProyectos, proyectosAprobados, proyectosReprobados, proyectosPendientes });
+        setProyectosTodos(proyectosData);
       } catch (err) {
-        setMetricasEstudiante({ totalProyectos: 0, proyectosAprobados: 0, proyectosReprobados: 0, proyectosPendientes: 0 });
-        setProyectos([]);
+        setProyectosTodos([]);
       } finally {
         setCargandoMetricas(false);
       }
@@ -144,5 +191,15 @@ export function useStudentMetrics(user) {
     })).sort((a, b) => b.value - a.value);
   }, [proyectos]);
 
-  return { metricasEstudiante, cargandoMetricas, proyectos, proyectosPorMateriaData, proyectosPorSublineaData };
+  return {
+    metricasEstudiante,
+    cargandoMetricas: cargandoMetricas || !eventosCargados,
+    proyectos,
+    proyectosPorMateriaData,
+    proyectosPorSublineaData,
+    eventosDisponibles,
+    eventoActualId,
+    selectedEvento: eventoEfectivo,
+    setSelectedEvento: setEventoElegido,
+  };
 }

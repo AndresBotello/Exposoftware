@@ -105,7 +105,7 @@ export default function PublicProjects() {
             Universidad Popular del Cesar
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-5 tracking-tight">
-            Expo-Software <span className="text-emerald-200">2025</span>
+            Expo-Software <span className="text-emerald-200">2026</span>
           </h1>
           <p className="text-lg md:text-xl text-emerald-100/90 max-w-2xl mx-auto leading-relaxed">
             Descubre los proyectos innovadores desarrollados por nuestros estudiantes

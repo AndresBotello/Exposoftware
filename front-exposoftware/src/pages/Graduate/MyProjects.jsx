@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import * as ProjectsService from "../../Services/ProjectsService";
 import EventosService from "../../Services/EventosService";
 import logo from "../../assets/Logo-unicesar.png";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function GraduateMyProjects() {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -64,6 +65,7 @@ export default function GraduateMyProjects() {
   }, [user, loading]);
 
   const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
     try {
       await logout();
       navigate('/login', { replace: true });

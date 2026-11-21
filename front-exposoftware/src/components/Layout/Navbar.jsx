@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FiLogIn, FiMenu, FiX, FiLogOut } from "react-icons/fi";
 import { useAuth } from "../../contexts/AuthContext";
 import logo from "../../assets/Logo-unicesar.png";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function Navbar() {
   const location = useLocation();
@@ -15,6 +16,7 @@ export default function Navbar() {
     location.pathname === "/login" || location.pathname === "/register";
 
   const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
     await logout();
     navigate("/");
     closeMenu();
@@ -62,7 +64,7 @@ export default function Navbar() {
                 className="bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-red-700 transition duration-300"
               >
                 <FiLogOut size={18} />
-                Salir
+                Cerrar Sesión
               </button>
             </li>
           </>
@@ -126,7 +128,7 @@ export default function Navbar() {
                     className="w-full bg-red-600 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition duration-300 font-medium"
                   >
                     <FiLogOut size={20} />
-                    Salir
+                    Cerrar Sesión
                   </button>
                 </li>
               </>

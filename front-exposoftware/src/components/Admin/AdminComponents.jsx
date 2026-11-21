@@ -105,24 +105,51 @@ export function GenericModal({
   );
 }
 
+// Encabezado de página del administrador: ícono, título, subtítulo y línea de acento
+export function AdminPageHeader({ icon = "pi-cog", title, subtitle, children }) {
+  return (
+    <div className="mb-6">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
+            <i className={`pi ${icon} text-xl text-white`}></i>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">{title}</h2>
+            {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+          </div>
+        </div>
+        {children}
+      </div>
+      <div className="h-1 w-24 rounded-full bg-gradient-to-r from-teal-500 to-cyan-600"></div>
+    </div>
+  );
+}
+
 export function TabNavigation({ tabs, activeTab, onChange }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-2 mb-6">
-      <div className="flex gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onChange(tab.id)}
-            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
-              activeTab === tab.id
-                ? "bg-teal-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            {tab.icon && <span className="mr-1">{tab.icon}</span>}
-            {tab.label}
-          </button>
-        ))}
+    <div className="mb-6 overflow-x-auto">
+      <div role="tablist" className="flex min-w-max gap-1 rounded-xl border border-gray-200 bg-white p-1 shadow-sm sm:min-w-0">
+        {tabs.map((tab) => {
+          const activa = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activa}
+              onClick={() => onChange(tab.id)}
+              className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                activa
+                  ? "bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              {tab.icon && <span>{tab.icon}</span>}
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

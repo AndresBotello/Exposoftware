@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../assets/Logo-unicesar.png';
 import AdminSidebar from '../../components/Layout/AdminSidebar';
+import { AdminHeader, AdminPageHeader } from "../../components/Admin/AdminComponents";
 import * as AuthService from '../../Services/AuthService';
 import * as FacultadService from '../../Services/CreateFaculty';
 import * as ProgramasService from '../../Services/CreateProgram';
 import ProgramsListSection from './ProgramsListSection';
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 function CreatePrograms() {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ function CreatePrograms() {
   const getUserInitials = () => getUserName().charAt(0).toUpperCase();
 
   const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
+    if (await confirmarCierreSesion()) {
       try { await AuthService.logout(); navigate('/login'); } catch (error) { console.error('❌ Error al cerrar sesión:', error); }
     }
   };
@@ -167,37 +168,19 @@ function CreatePrograms() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo Unicesar" className="w-10 h-auto" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Expo-software</h1>
-                <p className="text-xs text-gray-500">Universidad Popular del Cesar</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-700 hidden sm:block">{getUserName()}</span>
-                <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                  <span className="text-teal-600 font-bold text-lg">{getUserInitials()}</span>
-                </div>
-              </div>
-              <button onClick={handleLogout} className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors flex items-center gap-2">
-                <i className="pi pi-sign-out"></i>
-                <span className="hidden sm:inline">Cerrar Sesión</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
 
           <main className="lg:col-span-3">
+            <AdminPageHeader
+              icon="pi-graduation-cap"
+              title="Gestión de Programas"
+              subtitle="Agrega programas académicos y consúltalos por facultad"
+            />
+
             <div className="bg-white rounded-lg border border-gray-200 p-8 mb-8">
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Crear Nuevo Programa</h2>

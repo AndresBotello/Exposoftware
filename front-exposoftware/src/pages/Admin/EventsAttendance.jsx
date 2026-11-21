@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/Logo-unicesar.png";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
+import { AdminHeader, AdminPageHeader } from "../../components/Admin/AdminComponents";
 import AssistanceService from "../../Services/AssistanceService";
 import EventosService from "../../Services/EventosService";
 import * as AuthService from "../../Services/AuthService";
@@ -9,6 +9,8 @@ import ReportGenerator from "../../components/ReportGenerator2";
 import * as XLSX from 'xlsx';
 import AttendanceTable from "./AttendanceTable";
 import AttendanceChart from "./AttendanceChart";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
+import { etiquetaEstadoEvento, ordenarEventos } from "../../utils/eventoActual";
 
 export default function EventsAttendance() {
   const [eventos, setEventos] = useState([]);
@@ -39,7 +41,7 @@ export default function EventsAttendance() {
       } else if (Array.isArray(response)) {
         todosLosEventos = response;
       }
-      setEventos(todosLosEventos);
+      setEventos(ordenarEventos(todosLosEventos));
     } catch (error) {
       setError('No se pudieron cargar los eventos. Por favor, inténtelo de nuevo.');
     } finally {
@@ -70,7 +72,7 @@ export default function EventsAttendance() {
   };
 
   const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
+    if (await confirmarCierreSesion()) {
       try { await AuthService.logout(); navigate('/login'); } catch (error) { console.error('❌ Error:', error); }
     }
   };
@@ -82,11 +84,16 @@ export default function EventsAttendance() {
 
   const getUserInitials = () => getUserName().charAt(0).toUpperCase();
 
-  const filteredPeople = registeredPeople.filter(
-    (person) =>
-      person.nombre_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.id_usuario?.includes(searchTerm) ||
-      person.correo?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Se recalcula solo cuando cambian las asistencias o la búsqueda (antes, en cada render)
+  const filteredPeople = useMemo(
+    () =>
+      registeredPeople.filter(
+        (person) =>
+          person.nombre_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          person.id_usuario?.includes(searchTerm) ||
+          person.correo?.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    [registeredPeople, searchTerm]
   );
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -117,7 +124,7 @@ export default function EventsAttendance() {
     };
   };
 
-  const chartData = procesarDatosGrafica();
+  const chartData = useMemo(procesarDatosGrafica, [registeredPeople]);
   const chartOptions = {
     responsive: true, maintainAspectRatio: false,
     plugins: {
@@ -165,7 +172,7 @@ export default function EventsAttendance() {
         horaInicio: eventoInfo ? new Date(eventoInfo.fecha_inicio).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '',
         fechaFin: eventoInfo ? new Date(eventoInfo.fecha_fin).toLocaleDateString('es-CO') : '',
         horaFin: eventoInfo ? new Date(eventoInfo.fecha_fin).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '',
-        estado: eventoInfo?.estado === 'ACTIVO' ? 'Activo' : 'Inactivo',
+        estado: etiquetaEstadoEvento(eventoInfo) || 'Sin estado',
         totalAsistencias, horaPico, promedioPorHora,
         horasRegistradas: chartData.labels.length,
         asistenciasPorHora: asistenciasData,
@@ -193,31 +200,7 @@ export default function EventsAttendance() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo Unicesar" className="w-10 h-auto" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Expo-software</h1>
-                <p className="text-xs text-gray-500">Universidad Popular del Cesar</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-700 hidden sm:block">{getUserName()}</span>
-                <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                  <span className="text-teal-600 font-bold text-lg">{getUserInitials()}</span>
-                </div>
-              </div>
-              <button onClick={handleLogout} className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors flex items-center gap-2">
-                <i className="pi pi-sign-out"></i>
-                <span className="hidden sm:inline">Cerrar Sesión</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -239,22 +222,28 @@ export default function EventsAttendance() {
               </div>
             )}
 
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Asistencias por Evento</h2>
-              <p className="text-gray-600">Selecciona un evento para ver los registros de asistencia</p>
-            </div>
+            <AdminPageHeader
+              icon="pi-chart-bar"
+              title="Asistencias por Evento"
+              subtitle="Selecciona un evento para ver los registros de asistencia"
+            />
 
-            <div className="mb-6">
-              <label className="block font-semibold mb-2 text-gray-700">Selecciona un evento:</label>
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <label htmlFor="evento-asistencias" className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <i className="pi pi-calendar text-teal-600"></i>
+                Selecciona un evento
+              </label>
               <select
+                id="evento-asistencias"
                 value={eventoSeleccionado}
                 onChange={handleEventoChange}
-                className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="">-- Selecciona un evento --</option>
                 {eventos.map((evento) => (
                   <option key={evento.id_evento} value={evento.id_evento}>
-                    {evento.nombre_evento} ({evento.fecha_inicio.split("T")[0]})
+                    {evento.nombre_evento} ({(evento.fecha_inicio || "").split("T")[0]})
+                    {etiquetaEstadoEvento(evento) ? ` · ${etiquetaEstadoEvento(evento)}` : ""}
                   </option>
                 ))}
               </select>

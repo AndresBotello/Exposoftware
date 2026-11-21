@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/Logo-unicesar.png";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function StudentHeader({ user, getFullName, getInitials, logout }) {
   const navigate = useNavigate();
   const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
     try { await logout(); navigate('/login'); } catch (error) { navigate('/login'); }
   };
 
@@ -13,7 +15,7 @@ export default function StudentHeader({ user, getFullName, getInitials, logout }
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <img src={logo} alt="Logo" className="w-8 sm:w-10" />
-            <div className="hidden sm:block"><h1 className="text-lg font-bold text-gray-900">Expo-software</h1><p className="text-xs text-gray-500">UPC</p></div>
+            <div className="hidden sm:block"><h1 className="text-lg font-bold text-gray-900">Expo-software</h1><p className="text-xs text-gray-500">Universidad Popular del Cesar</p></div>
             <div className="sm:hidden"><h1 className="text-sm font-bold">Expo-software</h1></div>
           </div>
           <div className="flex items-center gap-4">
@@ -23,7 +25,7 @@ export default function StudentHeader({ user, getFullName, getInitials, logout }
               </div>
               <div className="hidden lg:block"><p className="text-sm font-medium">{getFullName()}</p><p className="text-xs text-gray-500">{user?.rol}</p></div>
             </div>
-            <button onClick={handleLogout} className="text-red-600 hover:text-red-700 flex items-center gap-2"><i className="pi pi-sign-out"></i><span className="hidden sm:inline text-sm">Cerrar</span></button>
+            <button onClick={handleLogout} className="text-red-600 hover:text-red-700 flex items-center gap-2"><i className="pi pi-sign-out"></i><span className="hidden sm:inline text-sm">Cerrar Sesión</span></button>
           </div>
         </div>
       </div>

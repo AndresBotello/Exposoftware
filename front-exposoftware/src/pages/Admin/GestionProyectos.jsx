@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
 import AdminSidebar from '../../components/Layout/AdminSidebar';
-import logo from '../../assets/Logo-unicesar.png';
+import { AdminHeader, AdminPageHeader } from "../../components/Admin/AdminComponents";
 import * as AuthService from '../../Services/AuthService';
 import EventosService from '../../Services/EventosService';
 import { API_ENDPOINTS } from '../../utils/constants';
@@ -11,6 +11,8 @@ import { eliminarProyectoPermanentemente, actualizarProyectoConArchivo } from '.
 import ProyectosTable from './ProyectosTable';
 import ProyectoDetalleDialog from './ProyectoDetalleDialog';
 import DescargarQRsLote from '../../components/Admin/DescargarQRsLote';
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
+import { ordenarEventos, etiquetaEstadoEvento, elegirEventoActual, idEvento as idEventoDe } from '../../utils/eventoActual';
 
 export default function GestionProyectos() {
   const navigate = useNavigate();
@@ -25,18 +27,38 @@ export default function GestionProyectos() {
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
   const [eventoFiltro, setEventoFiltro] = useState('');
+  const eventoFiltroRef = useRef('');
 
   useEffect(() => {
     const user = AuthService.getUserData();
     if (user) { setUserData(user); } else { navigate('/login'); }
   }, [navigate]);
 
+  // Al entrar: primero se conocen los eventos y se abre el evento actual
+  // (inscripciones abiertas > en curso > cerradas > finalizado), en vez de listar todos
+  // los proyectos, donde aparecía primero lo del evento anterior.
   useEffect(() => {
-    cargarProyectos();
-    cargarEventos();
+    const iniciar = async () => {
+      let idActual = '';
+      try {
+        const eventosData = await EventosService.obtenerEventosAdmin();
+        const lista = Array.isArray(eventosData) ? eventosData : [];
+        setEventos(ordenarEventos(lista));
+        const actual = elegirEventoActual(lista);
+        if (actual) idActual = String(idEventoDe(actual));
+      } catch (error) {
+        // Si no se pueden leer los eventos, se cargan todos los proyectos como antes
+      }
+      eventoFiltroRef.current = idActual;
+      setEventoFiltro(idActual);
+      await cargarProyectos(idActual);
+    };
+    iniciar();
   }, []);
 
-  const cargarProyectos = async (idEventoFiltro = '') => {
+  const cargarProyectos = async (arg) => {
+    // Si no se indica un evento (texto), se usa el que está elegido en el selector
+    const idEventoFiltro = typeof arg === 'string' ? arg : eventoFiltroRef.current;
     try {
       setLoading(true);
       const headers = AuthService.getAuthHeaders();
@@ -70,6 +92,12 @@ export default function GestionProyectos() {
         pagina++;
       }
 
+      // El backend no siempre respeta el parámetro id_evento: se filtra también aquí para
+      // que, con un evento elegido, nunca se mezclen proyectos de eventos anteriores.
+      if (idEventoFiltro) {
+        allProyectos = allProyectos.filter((p) => String(p.id_evento) === String(idEventoFiltro));
+      }
+
       setProyectos(allProyectos);
       const textoEvento = idEventoFiltro ? ` del evento seleccionado` : '';
       toast.current?.show({ severity: 'success', summary: 'Proyectos Cargados', detail: `${allProyectos.length} proyecto(s) encontrado(s)${textoEvento}`, life: 3000 });
@@ -84,7 +112,7 @@ export default function GestionProyectos() {
   const cargarEventos = async () => {
     try {
       const eventosData = await EventosService.obtenerEventosAdmin();
-      setEventos(eventosData);
+      setEventos(ordenarEventos(eventosData));
     } catch (error) {
     }
   };
@@ -122,7 +150,7 @@ export default function GestionProyectos() {
   };
 
   const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
+    if (await confirmarCierreSesion()) {
       try { await AuthService.logout(); navigate('/login'); } catch (error) { console.error('❌ Error:', error); }
     }
   };
@@ -147,6 +175,7 @@ export default function GestionProyectos() {
   };
 
   const handleEventoFiltroChange = async (idEvento) => {
+    eventoFiltroRef.current = idEvento;
     setEventoFiltro(idEvento);
     await cargarProyectos(idEvento);
   };
@@ -155,42 +184,24 @@ export default function GestionProyectos() {
     <div className="min-h-screen bg-gray-50">
       <Toast ref={toast} />
 
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo Unicesar" className="w-10 h-auto" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Expo-software</h1>
-                <p className="text-xs text-gray-500">Universidad Popular del Cesar</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-700 hidden sm:block">{getUserName()}</span>
-                <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                  <span className="text-teal-600 font-bold text-lg">{getUserInitials()}</span>
-                </div>
-              </div>
-              <button onClick={handleLogout} className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors flex items-center gap-2">
-                <i className="pi pi-sign-out"></i>
-                <span className="hidden sm:inline">Cerrar Sesión</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
           <main className="lg:col-span-3">
+            <AdminPageHeader
+              icon="pi-briefcase"
+              title="Gestión de Proyectos"
+              subtitle="Consulta, edita y administra los proyectos inscritos por evento"
+            />
+
             {/* Sección de Filtro por Evento */}
             <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex flex-col gap-4">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-2">Filtrar Proyectos por Evento</h3>
-                  <p className="text-xs text-gray-600 mb-3">Selecciona un evento para ver solo los proyectos de ese evento, o deja en blanco para ver todos</p>
+                  <p className="text-xs text-gray-600 mb-3">Por defecto se muestra el evento actual. Elige otro evento o "Todos los eventos" para ver los anteriores</p>
                   <select
                     value={eventoFiltro}
                     onChange={(e) => handleEventoFiltroChange(e.target.value)}
@@ -198,8 +209,9 @@ export default function GestionProyectos() {
                   >
                     <option value="">-- Todos los eventos --</option>
                     {eventos.map((evento) => (
-                      <option key={evento.id_evento} value={evento.id_evento}>
+                      <option key={evento.id_evento || evento.id} value={evento.id_evento || evento.id}>
                         {evento.nombre_evento}
+                        {etiquetaEstadoEvento(evento) ? ` · ${etiquetaEstadoEvento(evento)}` : ''}
                       </option>
                     ))}
                   </select>

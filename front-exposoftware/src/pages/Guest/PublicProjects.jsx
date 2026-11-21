@@ -6,6 +6,8 @@ import * as AuthService from "../../Services/AuthService";
 import { FiLogOut } from "react-icons/fi";
 import logo from "../../assets/Logo-unicesar.png";
 import { API_BASE_URL } from "../../utils/constants";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
+import { esEventoEnCurso, elegirEventoParaVotacion } from "../../utils/eventoActual";
 
 const obtenerProyectosPublicos = async () => {
   try {
@@ -31,11 +33,10 @@ const obtenerEventosActivos = async () => {
     if (!Array.isArray(eventos)) {
       eventos = Object.values(data).find((v) => Array.isArray(v)) || [];
     }
-    const activos = eventos.filter(
-      (e) =>
-        e.activo === true ||
-        (typeof e.estado === "string" && e.estado.toLowerCase() === "activo")
-    );
+    // Evento(s) en curso; si no hay ninguno, el más relevante (en curso > último finalizado > ...).
+    // Antes se buscaba el estado "activo", que no existe, y la lista siempre salía vacía.
+    const enCurso = eventos.filter(esEventoEnCurso);
+    const activos = enCurso.length > 0 ? enCurso : [elegirEventoParaVotacion(eventos)].filter(Boolean);
     return new Set(
       activos.map((e) => e.id_evento || e.id || e._id).filter(Boolean)
     );
@@ -65,6 +66,7 @@ export default function PublicProjects() {
   const isGuest = user?.rol === 'invitado';
 
   const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
     try {
       await logout();
       navigate('/');
@@ -167,7 +169,7 @@ export default function PublicProjects() {
                     className="text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors flex items-center gap-2 px-4 py-1.5 rounded-lg"
                   >
                     <FiLogOut size={16} />
-                    <span className="hidden sm:inline">Salir</span>
+                    <span className="hidden sm:inline">Cerrar Sesión</span>
                   </button>
                 </>
               ) : (

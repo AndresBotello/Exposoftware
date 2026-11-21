@@ -6,6 +6,7 @@ import StudentHeader from "../../components/Student/StudentHeader";
 import StudentSidebar from "../../components/Student/StudentSidebar";
 import StudentLayout from "../../components/Student/StudentLayout";
 import StudentProfileForm from "./StudentProfileForm";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function Profile() {
   const { user, getFullName, getInitials, updateUser, logout } = useAuth();
@@ -21,6 +22,7 @@ export default function Profile() {
   const { profileData, setProfileData, loading, handleInputChange, handleSave } = useStudentProfile(user, updateUser);
 
   const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
     try {
       await logout();
       navigate("/login");

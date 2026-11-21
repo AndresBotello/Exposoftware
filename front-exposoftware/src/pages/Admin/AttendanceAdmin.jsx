@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/Logo-unicesar.png";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
+import { AdminHeader, AdminPageHeader } from "../../components/Admin/AdminComponents";
 import AssistanceService from "../../Services/AssistanceService";
 import EventosService from "../../Services/EventosService";
 import AdminQRService from "../../Services/AdminQRService";
@@ -9,6 +9,8 @@ import * as AuthService from "../../Services/AuthService";
 import { saveAs } from "file-saver";
 import QRPanel from "./QRPanel";
 import AttendanceTableSection from "./AttendanceTableSection";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
+import { ordenarEventos } from "../../utils/eventoActual";
 
 export default function AttendanceAdmin() {
   const navigate = useNavigate();
@@ -39,7 +41,7 @@ export default function AttendanceAdmin() {
       try {
         const response = await EventosService.obtenerEventosAdmin();
         const eventosEnCurso = (response || []).filter(evento => evento.estado === 'en_curso');
-        setEventos(eventosEnCurso);
+        setEventos(ordenarEventos(eventosEnCurso));
       } catch (error) {
         setEventos([]);
       }
@@ -54,7 +56,7 @@ export default function AttendanceAdmin() {
   const getUserInitials = () => getUserName().charAt(0).toUpperCase();
 
   const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
+    if (await confirmarCierreSesion()) {
       try { await AuthService.logout(); navigate('/login'); } catch (error) { console.error('❌ Error al cerrar sesión:', error); }
     }
   };
@@ -152,54 +154,37 @@ export default function AttendanceAdmin() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo Unicesar" className="w-10 h-auto" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Expo-software</h1>
-                <p className="text-xs text-gray-500">Universidad Popular del Cesar</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-700 hidden sm:block">{getUserName()}</span>
-                <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                  <span className="text-teal-600 font-bold text-lg">{getUserInitials()}</span>
-                </div>
-              </div>
-              <button onClick={handleLogout} className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors flex items-center gap-2">
-                <i className="pi pi-sign-out"></i>
-                <span className="hidden sm:inline">Cerrar Sesión</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
 
           <main className="lg:col-span-3">
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Control de Asistencia</h2>
-              <p className="text-gray-600">Genera y gestiona el código QR para el registro de asistencia diaria</p>
-            </div>
+            <AdminPageHeader
+              icon="pi-qrcode"
+              title="Control de Asistencia"
+              subtitle="Genera y gestiona el código QR para el registro de asistencia diaria"
+            />
 
-            <div className="mb-6">
-              <label className="block font-semibold mb-2 text-gray-700">Selecciona un evento:</label>
-              <select value={eventoSeleccionado} onChange={handleEventoChange}
-                className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-green-500"
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <label htmlFor="evento-asistencia" className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <i className="pi pi-calendar text-teal-600"></i>
+                Selecciona un evento
+              </label>
+              <select id="evento-asistencia" value={eventoSeleccionado} onChange={handleEventoChange}
+                className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="">-- Selecciona un evento --</option>
                 {eventos.map((evento) => (
                   <option key={evento.id_evento} value={evento.id_evento}>
-                    {evento.nombre_evento} ({evento.fecha_inicio.split("T")[0]})
+                    {evento.nombre_evento} ({(evento.fecha_inicio || "").split("T")[0]})
                   </option>
                 ))}
               </select>
+              {eventos.length === 0 && (
+                <p className="mt-2 text-xs text-gray-500">No hay eventos en curso. Solo se puede registrar asistencia en eventos en curso.</p>
+              )}
             </div>
 
             {showSuccess && (

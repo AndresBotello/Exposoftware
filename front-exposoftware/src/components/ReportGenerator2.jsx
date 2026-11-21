@@ -300,7 +300,7 @@ export class ReportGenerator {
       chartTitles,
       chartData,
       institutionName = 'Universidad Popular del Cesar',
-      eventName = 'Expo-software 2025'
+      eventName = 'Expo-software 2026'
     } = config;
 
     try {

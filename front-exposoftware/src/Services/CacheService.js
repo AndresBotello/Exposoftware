@@ -46,7 +46,7 @@ class CacheService {
   async withCache(key, fn, ttl = this.DEFAULT_TTL) {
     // Si existe en caché, devolverlo
     const cached = this.get(key);
-    if (cached) {
+    if (cached !== null) {
       return cached;
     }
 
@@ -58,7 +58,10 @@ class CacheService {
     // Crear nueva petición
     const promise = fn()
       .then((result) => {
-        this.set(key, result, ttl);
+        // No cachear resultados vacíos: un [] transitorio (404, sesión aún no lista)
+        // dejaba las listas del docente en cero durante 5 minutos
+        const vacio = result == null || (Array.isArray(result) && result.length === 0);
+        if (!vacio) this.set(key, result, ttl);
         this.pendingRequests.delete(key);
         return result;
       })

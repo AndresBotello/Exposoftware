@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { actualizarPerfilInvitado } from "../../Services/GuestService";
 import { SECTORES } from "../../data/sectores";
 import logo from "../../assets/Logo-unicesar.png";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function GuestProfile() {
   const location = useLocation();
@@ -70,8 +71,8 @@ export default function GuestProfile() {
     }
   };
 
-  const handleLogout = () => {
-    if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+  const handleLogout = async () => {
+    if (await confirmarCierreSesion()) {
       logout();
       navigate("/login");
     }

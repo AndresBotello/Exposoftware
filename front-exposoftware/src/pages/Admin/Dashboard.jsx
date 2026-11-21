@@ -7,6 +7,71 @@ import DashboardService from "../../Services/DashboardService";
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Chart } from 'primereact/chart';
 import ReportGenerator from "../../components/ReportGenerator";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
+
+const saludo = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Buenos días';
+  if (h < 19) return 'Buenas tardes';
+  return 'Buenas noches';
+};
+
+const ACCESOS_RAPIDOS = [
+  { to: '/admin/gestionar-eventos', label: 'Eventos', icono: 'pi-calendar', gradiente: 'from-teal-500 to-cyan-600' },
+  { to: '/admin/proyectos', label: 'Proyectos', icono: 'pi-briefcase', gradiente: 'from-emerald-500 to-teal-600' },
+  { to: '/admin/ranking', label: 'Ranking', icono: 'pi-star', gradiente: 'from-amber-500 to-orange-500' },
+  { to: '/admin/certificados', label: 'Certificados', icono: 'pi-verified', gradiente: 'from-purple-500 to-indigo-600' },
+  { to: '/admin/reportes', label: 'Reportes', icono: 'pi-file-pdf', gradiente: 'from-blue-500 to-blue-600' },
+];
+
+const TONOS = {
+  teal: { caja: 'from-teal-50 to-white', nota: 'text-teal-600', icono: 'bg-teal-100 text-teal-600' },
+  blue: { caja: 'from-blue-50 to-white', nota: 'text-blue-600', icono: 'bg-blue-100 text-blue-600' },
+  purple: { caja: 'from-purple-50 to-white', nota: 'text-purple-600', icono: 'bg-purple-100 text-purple-600' },
+};
+
+function StatCard({ titulo, valor, nota, notaIcono, icono, tono, cargando, to }) {
+  const t = TONOS[tono];
+
+  if (cargando) {
+    return (
+      <div className="animate-pulse rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 space-y-3">
+            <div className="h-3 w-32 rounded bg-gray-200"></div>
+            <div className="h-8 w-16 rounded bg-gray-200"></div>
+            <div className="h-3 w-24 rounded bg-gray-100"></div>
+          </div>
+          <div className="h-12 w-12 rounded-full bg-gray-200"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      to={to}
+      className={`group block rounded-xl border border-gray-200 bg-gradient-to-br ${t.caja} p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500`}
+      aria-label={`${titulo}: ${valor}. Ver detalle`}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <p className="mb-1 text-sm text-gray-600">{titulo}</p>
+          <h3 className="text-3xl font-bold text-gray-900">{valor}</h3>
+          <div className="mt-2 flex items-center gap-1">
+            <i className={`pi ${notaIcono} text-xs ${t.nota}`}></i>
+            <span className={`text-xs font-medium ${t.nota}`}>{nota}</span>
+          </div>
+        </div>
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-full ${t.icono} transition-transform duration-300 group-hover:scale-110`}
+        >
+          <i className={`pi ${icono} text-xl`}></i>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 // Main Dashboard Component
 export default function AdminDashboard() {
@@ -24,6 +89,8 @@ export default function AdminDashboard() {
     }
   });
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true);
+  const [errorEstadisticas, setErrorEstadisticas] = useState(false);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
 
   // Cargar datos del usuario autenticado
   useEffect(() => {
@@ -51,9 +118,12 @@ export default function AdminDashboard() {
   const cargarEstadisticas = async () => {
     try {
       setLoadingEstadisticas(true);
+      setErrorEstadisticas(false);
       const stats = await DashboardService.getEstadisticasCompletas();
       setEstadisticas(stats);
+      setUltimaActualizacion(new Date());
     } catch (error) {
+      setErrorEstadisticas(true);
     } finally {
       setLoadingEstadisticas(false);
     }
@@ -61,7 +131,7 @@ export default function AdminDashboard() {
 
   // Función para cerrar sesión
   const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
+    if (await confirmarCierreSesion()) {
       try {
         await AuthService.logout();
         navigate('/login');
@@ -100,7 +170,7 @@ export default function AdminDashboard() {
       chartTitles: ['Proyectos por Línea de Investigación'],
       chartData: [lineasData],
       institutionName: 'Universidad Popular del Cesar',
-      eventName: 'Expo-software 2025'
+      eventName: 'Expo-software 2026'
     });
   };
 
@@ -114,6 +184,14 @@ export default function AdminDashboard() {
     const name = getUserName();
     return name.charAt(0).toUpperCase();
   };
+
+  // Datos derivados para exportar y listar (misma lógica que antes, calculada una sola vez)
+  const lineasData =
+    estadisticas.proyectosPorLinea?.labels?.map((label, index) => ({
+      name: label,
+      value: estadisticas.proyectosPorLinea?.valores?.[index] || 0
+    })) || [];
+  const proyectosRecientes = (estadisticas.proyectosPorLinea?.proyectos || []).slice(0, 5);
 
   // Configuración de la gráfica de dona (donut chart)
   const chartData = {
@@ -211,134 +289,144 @@ export default function AdminDashboard() {
           />
 
           {/* Main Content */}
-          <main className="lg:col-span-3">
-            {/* Header con botón de actualización */}
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Panel de Administración</h2>
-                <p className="text-sm text-gray-500">Estadísticas en tiempo real del sistema</p>
-              </div>
-              <button
-                onClick={cargarEstadisticas}
-                disabled={loadingEstadisticas}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                title="Actualizar estadísticas"
-              >
-                <i className={`pi pi-refresh ${loadingEstadisticas ? 'pi-spin' : ''}`}></i>
-                <span className="hidden sm:inline">Actualizar</span>
-              </button>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {/* Card 1 - Total Proyectos Registrados */}
-              <div className="bg-gradient-to-br from-teal-50 to-white rounded-lg border border-gray-200 p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-600 mb-1">Total Proyectos Registrados</p>
-                    {loadingEstadisticas ? (
-                      <div className="flex items-center gap-2">
-                        <ProgressSpinner style={{width: '30px', height: '30px'}} strokeWidth="4" />
-                        <span className="text-sm text-gray-500">Cargando...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <h3 className="text-3xl font-bold text-gray-900">{estadisticas.totalProyectos}</h3>
-                        <div className="flex items-center gap-1 mt-2">
-                          <i className="pi pi-chart-line text-xs text-teal-600"></i>
-                          <span className="text-xs text-teal-600 font-medium">Datos en tiempo real</span>
-                        </div>
-                      </>
-                    )}
+          <main className="lg:col-span-3 space-y-6">
+            {/* Encabezado */}
+            <div>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
+                    <i className="pi pi-chart-line text-xl text-white"></i>
                   </div>
-                  <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
-                    <i className="pi pi-briefcase text-xl text-teal-600"></i>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+                      {saludo()}, {getUserName()}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Panel de Administración
+                      {ultimaActualizacion && (
+                        <span className="ml-2 text-gray-400">
+                          · Actualizado a las{' '}
+                          {ultimaActualizacion.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Card 2 - Estudiantes Inscritos */}
-              <div className="bg-gradient-to-br from-blue-50 to-white rounded-lg border border-gray-200 p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-600 mb-1">Estudiantes Inscritos</p>
-                    {loadingEstadisticas ? (
-                      <div className="flex items-center gap-2">
-                        <ProgressSpinner style={{width: '30px', height: '30px'}} strokeWidth="4" />
-                        <span className="text-sm text-gray-500">Cargando...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <h3 className="text-3xl font-bold text-gray-900">{estadisticas.totalEstudiantes}</h3>
-                        <div className="flex items-center gap-1 mt-2">
-                          <i className="pi pi-users text-xs text-blue-600"></i>
-                          <span className="text-xs text-blue-600 font-medium">Usuarios activos</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i className="pi pi-users text-xl text-blue-600"></i>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 3 - Docentes Inscritos */}
-              <div className="bg-gradient-to-br from-purple-50 to-white rounded-lg border border-gray-200 p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-600 mb-1">Docentes Inscritos</p>
-                    {loadingEstadisticas ? (
-                      <div className="flex items-center gap-2">
-                        <ProgressSpinner style={{width: '30px', height: '30px'}} strokeWidth="4" />
-                        <span className="text-sm text-gray-500">Cargando...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <h3 className="text-3xl font-bold text-gray-900">{estadisticas.totalProfesores}</h3>
-                        <div className="flex items-center gap-1 mt-2">
-                          <i className="pi pi-user text-xs text-purple-600"></i>
-                          <span className="text-xs text-purple-600 font-medium">Profesores activos</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <i className="pi pi-id-card text-xl text-purple-600"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Botón Exportar Reporte Completo */}
-                <div className="flex justify-end mb-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={cargarEstadisticas}
+                    disabled={loadingEstadisticas}
+                    className="flex items-center gap-2 rounded-lg border border-teal-200 bg-white px-4 py-2 font-medium text-teal-700 transition-colors hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    title="Actualizar estadísticas"
+                  >
+                    <i className={`pi pi-refresh ${loadingEstadisticas ? 'pi-spin' : ''}`}></i>
+                    <span className="hidden sm:inline">Actualizar</span>
+                  </button>
                   <button
                     onClick={exportarReporteCompleto}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg font-medium hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 font-medium text-white shadow-lg transition-all duration-300 hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl"
                   >
                     <i className="pi pi-file-pdf"></i>
-                    Exportar Reporte Completo
+                    <span className="hidden sm:inline">Exportar reporte completo</span>
+                    <span className="sm:hidden">Reporte</span>
                   </button>
                 </div>
+              </div>
+              <div className="h-1 w-24 rounded-full bg-gradient-to-r from-teal-500 to-cyan-600"></div>
+            </div>
 
-            {/* Charts Row - Gráficas de Power BI */}
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Analytics en Tiempo Real</h2>
-                <p className="text-sm text-gray-500">Gráficas interactivas desde Power BI</p>
+            {/* Aviso si falló la carga (antes se quedaban los ceros sin explicación) */}
+            {errorEstadisticas && !loadingEstadisticas && (
+              <div
+                role="alert"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
+              >
+                <p className="flex items-center gap-2 text-sm text-red-700">
+                  <i className="pi pi-exclamation-triangle"></i>
+                  No se pudieron cargar las estadísticas. Las cifras pueden estar incompletas.
+                </p>
+                <button
+                  onClick={cargarEstadisticas}
+                  className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700"
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+
+            {/* Tarjetas de estadísticas */}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              <StatCard
+                titulo="Total Proyectos Registrados"
+                valor={estadisticas.totalProyectos}
+                nota="Datos en tiempo real"
+                notaIcono="pi-chart-line"
+                icono="pi-briefcase"
+                tono="teal"
+                cargando={loadingEstadisticas}
+                to="/admin/proyectos"
+              />
+              <StatCard
+                titulo="Estudiantes Inscritos"
+                valor={estadisticas.totalEstudiantes}
+                nota="Usuarios activos"
+                notaIcono="pi-users"
+                icono="pi-users"
+                tono="blue"
+                cargando={loadingEstadisticas}
+                to="/admin/estudiantes"
+              />
+              <StatCard
+                titulo="Docentes Inscritos"
+                valor={estadisticas.totalProfesores}
+                nota="Profesores activos"
+                notaIcono="pi-user"
+                icono="pi-id-card"
+                tono="purple"
+                cargando={loadingEstadisticas}
+                to="/admin/crear-profesor"
+              />
+            </div>
+
+            {/* Accesos rápidos */}
+            <div>
+              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-600">Accesos rápidos</h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                {ACCESOS_RAPIDOS.map((a) => (
+                  <Link
+                    key={a.to}
+                    to={a.to}
+                    className="group flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
+                  >
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${a.gradiente} shadow transition-transform duration-200 group-hover:scale-110`}
+                    >
+                      <i className={`pi ${a.icono} text-white`}></i>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700 sm:text-sm">{a.label}</span>
+                  </Link>
+                ))}
               </div>
             </div>
 
-            <div className="mb-6">
-              {/* Gráfica: Calificaciones por Tipo de Actividad */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                      En Vivo
-                    </span>
+            {/* Analytics Power BI */}
+            <div>
+              <div className="mb-3">
+                <h2 className="text-xl font-bold text-gray-900">Analytics en tiempo real</h2>
+                <p className="text-sm text-gray-500">Gráficas interactivas desde Power BI</p>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-teal-50 to-cyan-50 px-6 py-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <i className="pi pi-chart-bar text-teal-600"></i>
+                    Dashboard Exposoftware
                   </div>
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
+                    <span className="mr-2 h-2 w-2 animate-pulse rounded-full bg-green-500"></span>
+                    En vivo
+                  </span>
                 </div>
                 <div style={{ height: '541px', position: 'relative' }}>
                   <iframe
@@ -354,17 +442,15 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Proyectos por Línea de Investigación */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
+            {/* Proyectos por línea de investigación */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center">
-                    <i className="pi pi-chart-pie text-white text-sm"></i>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600">
+                    <i className="pi pi-chart-pie text-sm text-white"></i>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Proyectos por Línea de Investigación
-                    </h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Proyectos por línea de investigación</h3>
                     <p className="text-sm text-gray-500">
                       Distribución de {estadisticas.proyectosPorLinea?.total || 0} proyectos registrados
                     </p>
@@ -373,21 +459,17 @@ export default function AdminDashboard() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => exportarGraficaComoImagen('proyectos-linea-chart', 'Proyectos_por_Linea')}
-                    className="p-2 bg-teal-50 hover:bg-teal-100 text-teal-600 rounded-lg transition-colors duration-200"
+                    className="rounded-lg bg-teal-50 p-2 text-teal-600 transition-colors duration-200 hover:bg-teal-100"
                     title="Exportar como imagen"
+                    aria-label="Exportar gráfica como imagen"
                   >
                     <i className="pi pi-image text-lg"></i>
                   </button>
                   <button
-                    onClick={() => {
-                      const lineasData = estadisticas.proyectosPorLinea?.labels?.map((label, index) => ({
-                        name: label,
-                        value: estadisticas.proyectosPorLinea?.valores?.[index] || 0
-                      })) || [];
-                      exportarGraficaComoPDF('proyectos-linea-chart', 'Proyectos por Línea de Investigación', lineasData);
-                    }}
-                    className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors duration-200"
+                    onClick={() => exportarGraficaComoPDF('proyectos-linea-chart', 'Proyectos por Línea de Investigación', lineasData)}
+                    className="rounded-lg bg-red-50 p-2 text-red-600 transition-colors duration-200 hover:bg-red-100"
                     title="Exportar como PDF"
+                    aria-label="Exportar gráfica como PDF"
                   >
                     <i className="pi pi-file-pdf text-lg"></i>
                   </button>
@@ -395,56 +477,53 @@ export default function AdminDashboard() {
               </div>
 
               {loadingEstadisticas ? (
-                <div className="flex items-center justify-center h-96">
-                  <div className="text-center">
-                    <ProgressSpinner style={{width: '50px', height: '50px'}} strokeWidth="4" />
-                    <p className="text-sm text-gray-500 mt-4">Cargando datos de proyectos...</p>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <div className="mx-auto h-72 w-72 animate-pulse rounded-full bg-gray-100"></div>
+                  <div className="space-y-3">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 animate-pulse rounded-lg bg-gray-100"></div>
+                    ))}
                   </div>
                 </div>
               ) : estadisticas.proyectosPorLinea?.total > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Gráfica Circular */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  {/* Gráfica circular */}
                   <div className="flex items-center justify-center">
                     <div id="proyectos-linea-chart" style={{ width: '100%', maxWidth: '350px', height: '350px' }}>
                       <Chart type="doughnut" data={chartData} options={chartOptions} />
                     </div>
                   </div>
 
-                  {/* Lista de Proyectos Recientes */}
+                  {/* Proyectos recientes */}
                   <div>
-                    <h4 className="text-md font-semibold text-gray-800 mb-4">
-                      Proyectos Recientes
-                    </h4>
+                    <h4 className="text-md mb-4 font-semibold text-gray-800">Proyectos recientes</h4>
                     <div className="space-y-3">
-                      {estadisticas.proyectosPorLinea?.proyectos.slice(0, 5).map((proyecto, index) => {
-                        const nombreProyecto = proyecto.titulo_proyecto ||
-                                              proyecto.titulo_proyecto ||
-                                              proyecto.titulo_proyecto ||
-                                              'Proyecto sin nombre';
-                        const nombreLinea = proyecto.id_linea_investigacion?.nombre ||
-                                           proyecto.linea_investigacion?.nombre ||
-                                           proyecto.nombre_linea ||
-                                           'Sin línea definida';
+                      {proyectosRecientes.map((proyecto, index) => {
+                        const nombreProyecto = proyecto.titulo_proyecto || 'Proyecto sin nombre';
+                        const nombreLinea =
+                          proyecto.id_linea_investigacion?.nombre ||
+                          proyecto.linea_investigacion?.nombre ||
+                          proyecto.nombre_linea ||
+                          'Sin línea definida';
+                        const nota = Number(proyecto.calificacion);
                         return (
                           <div
                             key={proyecto.id_proyecto || index}
-                            className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                            className="flex items-start gap-3 rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100"
                           >
-                            <div className="flex-shrink-0 mt-1">
-                              <div className="w-2 h-2 rounded-full bg-teal-500"></div>
+                            <div className="mt-1 flex-shrink-0">
+                              <div className="h-2 w-2 rounded-full bg-teal-500"></div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate" title={nombreProyecto}>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-gray-900" title={nombreProyecto}>
                                 {nombreProyecto}
                               </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800">
+                              <div className="mt-1 flex items-center gap-2">
+                                <span className="inline-flex items-center rounded bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-800">
                                   {nombreLinea}
                                 </span>
-                                {proyecto.calificacion && (
-                                  <span className="text-xs text-gray-500">
-                                    ⭐ {proyecto.calificacion.toFixed(1)}
-                                  </span>
+                                {Number.isFinite(nota) && nota > 0 && (
+                                  <span className="text-xs text-gray-500">⭐ {nota.toFixed(1)}</span>
                                 )}
                               </div>
                             </div>
@@ -467,9 +546,9 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-64 text-gray-500">
+                <div className="flex h-64 items-center justify-center text-gray-500">
                   <div className="text-center">
-                    <i className="pi pi-folder text-4xl mb-3 text-gray-400"></i>
+                    <i className="pi pi-folder mb-3 text-4xl text-gray-400"></i>
                     <p className="font-medium">No hay proyectos registrados</p>
                     <p className="text-sm">Los proyectos aparecerán aquí una vez sean creados</p>
                   </div>

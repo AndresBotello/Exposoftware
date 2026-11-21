@@ -8,6 +8,7 @@ import colombia from "../../data/colombia.json";
 import countryList from 'react-select-country-list';
 import { API_ENDPOINTS } from "../../utils/constants";
 import GraduateProfileForm from "./GraduateProfileForm";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function GraduateProfile() {
   const navigate = useNavigate();
@@ -216,7 +217,7 @@ export default function GraduateProfile() {
 
   // Función para cerrar sesión
   const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
+    if (await confirmarCierreSesion()) {
       try {
         await AuthService.logout();
         navigate('/login');

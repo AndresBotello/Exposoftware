@@ -1,9 +1,64 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import exposoftwareBackground from "../../assets/exposoftware-background.png";
+import exposoftwareAnuncio from "../../assets/exposoftware-anuncio.jpg";
+
+const CLAVE_ANUNCIO = "exposoftware_anuncio_visto";
+
+// Se muestra solo la primera vez por sesión del navegador (sessionStorage puede fallar en modo privado)
+// Respaldo en memoria: sobrevive si algo limpia sessionStorage (p. ej. al cerrar sesión)
+let anuncioMostradoEnMemoria = false;
+
+const anuncioYaVisto = () => {
+  if (anuncioMostradoEnMemoria) return true;
+  try {
+    return sessionStorage.getItem(CLAVE_ANUNCIO) === "1";
+  } catch {
+    return false;
+  }
+};
 
 export default function Home() {
+  const [mostrarAnuncio, setMostrarAnuncio] = useState(() => !anuncioYaVisto());
+
+  useEffect(() => {
+    if (!mostrarAnuncio) return;
+    anuncioMostradoEnMemoria = true;
+    try {
+      sessionStorage.setItem(CLAVE_ANUNCIO, "1");
+    } catch {
+      /* ignorar */
+    }
+  }, [mostrarAnuncio]);
+
   return (
     <div className="w-full overflow-x-hidden">
+      {/* Anuncio vertical emergente */}
+      {mostrarAnuncio && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setMostrarAnuncio(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Anuncio XXIII Feria Tecnológica Exposoftware"
+        >
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setMostrarAnuncio(false)}
+              aria-label="Cerrar anuncio"
+              className="absolute -top-3 -right-3 z-10 w-10 h-10 rounded-full bg-white text-gray-800 text-xl font-bold shadow-lg hover:bg-gray-100 hover:scale-105 transition flex items-center justify-center"
+            >
+              ✕
+            </button>
+            <img
+              src={exposoftwareAnuncio}
+              alt="Anuncio XXIII Feria Tecnológica Exposoftware"
+              className="max-h-[88vh] max-w-[92vw] w-auto h-auto rounded-xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
       {/* Hero Section - Completamente Responsive */}
       
       <section className="relative py-6 sm:py-8 md:py-12 lg:py-16 xl:py-20 overflow-hidden min-h-screen flex items-center">
@@ -12,9 +67,11 @@ export default function Home() {
         <div className="absolute inset-[1.5%] z-0 flex items-center justify-center">
           <img
             src={exposoftwareBackground}
-            alt="XXII Jornada de Investigación Exposoftware"
+            alt="XXIII Jornada de Investigación Exposoftware"
             className="w-full h-full object-contain"
           />
+          {/* Degradado: suaviza los bordes y funde el banner con la sección siguiente */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/5 bg-gradient-to-t from-white/40 to-transparent" />
         </div>
       </section>
       

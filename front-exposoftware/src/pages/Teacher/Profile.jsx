@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getTeacherProfile } from "../../Services/TeacherService.jsx";
 import logo from "../../assets/Logo-unicesar.png";
 import ProfileForm from "./ProfileForm";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function TeacherProfile() {
   const { user, getFullName, getInitials, logout } = useAuth();
@@ -119,6 +120,7 @@ export default function TeacherProfile() {
   };
 
   const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
     try {
       await logout();
       navigate("/login");

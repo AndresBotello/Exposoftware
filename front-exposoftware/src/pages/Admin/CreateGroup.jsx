@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import logo from "../../assets/Logo-unicesar.png";
+import { useState, useEffect, useMemo } from "react";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
-import * as AuthService from "../../Services/AuthService";
+import { useAdminAuth } from "../../hooks/useAdminAuth";
+import { AdminHeader, AdminPageHeader, TabNavigation } from "../../components/Admin/AdminComponents";
 import {
   obtenerGrupos,
   obtenerProfesores,
@@ -18,8 +17,7 @@ import { eliminarAsignacionDocente } from "../../Services/CreateSubject";
 import { TablaGrupos, extractProfessorInfo } from "./GroupHelpers";
 
 export default function CreateGroup() {
-  const navigate = useNavigate();
-  const [userData, setUserData] = useState(null);
+  const { getUserName, getUserInitials, handleLogout } = useAdminAuth();
   const [activeTab, setActiveTab] = useState("crear");
   const [codigoGrupo, setCodigoGrupo] = useState("");
   const [idDocente, setIdDocente] = useState("");
@@ -48,11 +46,6 @@ export default function CreateGroup() {
   const [eliminandoClase, setEliminandoClase] = useState(null);
 
   useEffect(() => {
-    const user = AuthService.getUserData();
-    if (user) setUserData(user);
-  }, []);
-
-  useEffect(() => {
     cargarGrupos();
     cargarProfesores();
     cargarMaterias();
@@ -67,18 +60,6 @@ export default function CreateGroup() {
       setMaterias([]);
     } finally {
       setLoadingMaterias(false);
-    }
-  };
-
-  const getUserName = () => {
-    if (!userData) return 'Administrador';
-    return userData.nombre || userData.nombres || userData.correo?.split('@')[0] || 'Administrador';
-  };
-  const getUserInitials = () => getUserName().charAt(0).toUpperCase();
-
-  const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
-      try { await AuthService.logout(); navigate('/login'); } catch (error) { navigate('/login'); }
     }
   };
 
@@ -285,55 +266,37 @@ export default function CreateGroup() {
     }
   };
 
-  const gruposFiltrados = filtrarGrupos(grupos, searchTerm, profesores);
+  // Se recalcula solo cuando cambian los grupos, la búsqueda o los profesores (antes, en cada render)
+  const gruposFiltrados = useMemo(
+    () => filtrarGrupos(grupos, searchTerm, profesores),
+    [grupos, searchTerm, profesores]
+  );
   const spinnerPath = "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z";
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo Unicesar" className="w-10 h-auto" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Expo-software</h1>
-                <p className="text-xs text-gray-500">Universidad Popular del Cesar</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-700 hidden sm:block">{getUserName()}</span>
-                <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                  <span className="text-teal-600 font-bold text-lg">{getUserInitials()}</span>
-                </div>
-              </div>
-              <button onClick={handleLogout} className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors flex items-center gap-2">
-                <i className="pi pi-sign-out"></i>
-                <span className="hidden sm:inline">Cerrar Sesión</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
 
           <main className="lg:col-span-3">
-            <div className="bg-white rounded-lg border border-gray-200 p-2 mb-6">
-              <div className="flex gap-2">
-                {[
-                  { key: "crear", label: "➕ Crear Grupo" },
-                  { key: "clase", label: "🎓 Crear Clase" },
-                  { key: "editar", label: "✏️ Editar Grupos" }
-                ].map(({ key, label }) => (
-                  <button key={key} onClick={() => setActiveTab(key)}
-                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${activeTab === key ? "bg-teal-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-                  >{label}</button>
-                ))}
-              </div>
-            </div>
+            <AdminPageHeader
+              icon="pi-users"
+              title="Gestión de Grupos"
+              subtitle="Crea grupos, asigna clases a docentes y edita los existentes"
+            />
+
+            <TabNavigation
+              tabs={[
+                { id: "crear", label: "Crear Grupo", icon: "➕" },
+                { id: "clase", label: "Crear Clase", icon: "🎓" },
+                { id: "editar", label: "Editar Grupos", icon: "✏️" },
+              ]}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+            />
 
             {activeTab === "crear" && (
               <div className="bg-white rounded-lg border border-gray-200 p-8">

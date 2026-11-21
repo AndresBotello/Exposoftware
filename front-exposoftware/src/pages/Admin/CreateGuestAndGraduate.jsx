@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AdminSidebar from "../../components/Layout/AdminSidebar";
 import { useAdminAuth } from "../../hooks/useAdminAuth";
-import { AdminHeader, TabNavigation } from "../../components/Admin/AdminComponents";
+import { AdminHeader, AdminPageHeader, TabNavigation } from "../../components/Admin/AdminComponents";
 import { useGuestAndGraduateManagement } from "./useGuestAndGraduateManagement";
 import GuestForm from "./GuestForm";
 import GraduateForm from "./GraduateForm";
@@ -116,6 +116,12 @@ export default function CreateGuestAndGraduate() {
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
 
           <main className="lg:col-span-3">
+            <AdminPageHeader
+              icon="pi-user-plus"
+              title="Gestión de Invitados y Egresados"
+              subtitle="Registra y consulta invitados y egresados de la plataforma"
+            />
+
             <TabNavigation
               tabs={[
                 { id: "crear", label: "Crear Invitado/Egresado", icon: "➕" },

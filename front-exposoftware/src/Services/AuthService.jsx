@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from "../utils/constants";
 import { fetchApi } from "../utils/apiClient";
 import { safeGetItem, safeSetItem, safeRemoveItem, safeClear } from "../utils/safeStorage";
+import CacheService from "./CacheService.js";
 
 const STORAGE_KEYS = {
   TOKEN: 'auth_token',
@@ -452,9 +453,15 @@ export const logout = async () => {
   safeRemoveItem(STORAGE_KEYS.USER_ROLE);
   safeRemoveItem(STORAGE_KEYS.EXPIRES_AT);
 
+  // Vaciar el caché en memoria para que otro usuario no vea datos del anterior
+  try { CacheService.clearAll(); } catch (e) { /* ignorar */ }
+
   // También limpiar sessionStorage por si acaso
   try {
+    // Conservar la marca del anuncio del Home para que no reaparezca tras cerrar sesión
+    const anuncioVisto = sessionStorage.getItem("exposoftware_anuncio_visto");
     sessionStorage.clear();
+    if (anuncioVisto) sessionStorage.setItem("exposoftware_anuncio_visto", anuncioVisto);
   } catch (e) {
     // Ignorar si sessionStorage no está disponible
   }

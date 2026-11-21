@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import * as AuthService from "../Services/AuthService";
+import { confirmarCierreSesion } from "../utils/confirmDialog.jsx";
 
 export function useAdminAuth() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export function useAdminAuth() {
   const getUserInitials = () => getUserName().charAt(0).toUpperCase();
 
   const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
+    if (await confirmarCierreSesion()) {
       try {
         await AuthService.logout();
         navigate('/login');

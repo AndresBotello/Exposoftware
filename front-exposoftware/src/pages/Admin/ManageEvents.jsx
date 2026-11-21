@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
 import { useAdminAuth } from "../../hooks/useAdminAuth";
-import { AdminHeader } from "../../components/Admin/AdminComponents";
+import { AdminHeader, AdminPageHeader } from "../../components/Admin/AdminComponents";
 import EventosService from "../../Services/EventosService";
 import EventsTable from "./EventsTable";
 import EventModals from "./EventModals";
@@ -24,7 +24,7 @@ export default function ManageEvents() {
   const [fechaAperturaInscripciones, setFechaAperturaInscripciones] = useState("");
   const [fechaCierreInscripciones, setFechaCierreInscripciones] = useState("");
   const [cupoMaximo, setCupoMaximo] = useState("");
-  const [estado, setEstado] = useState("ACTIVO");
+  const [estado, setEstado] = useState("borrador");
   const [guardandoEvento, setGuardandoEvento] = useState(false);
   const [showCapacidadModal, setShowCapacidadModal] = useState(false);
   const [capacidadInfo, setCapacidadInfo] = useState(null);
@@ -83,7 +83,7 @@ export default function ManageEvents() {
       setFechaAperturaInscripciones(formatearFechaParaInput(eventoCompleto.fecha_apertura_inscripciones));
       setFechaCierreInscripciones(formatearFechaParaInput(eventoCompleto.fecha_cierre_inscripciones));
       setCupoMaximo(eventoCompleto.cupo_maximo?.toString() || "");
-      setEstado(eventoCompleto.estado || "ACTIVO");
+      setEstado(eventoCompleto.estado || "borrador");
       setShowEditModal(true);
     } catch (error) {
       alert("Error al cargar los datos del evento");
@@ -247,17 +247,11 @@ export default function ManageEvents() {
 
  
           <main className="lg:col-span-3 space-y-6 min-h-[600px] flex flex-col justify-start">        
-            <div className="bg-gradient-to-r from-teal-600 to-emerald-600 rounded-lg shadow-lg p-8 w-full block">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                  <i className="pi pi-calendar-plus text-3xl text-white"></i>
-                </div>
-                <div>
-                  <h2 className="text-3xl font-bold text-white">Gestión de Eventos</h2>
-                  <p className="text-teal-50 mt-1">Administra y controla todos los eventos del sistema</p>
-                </div>
-              </div>
-            </div>
+            <AdminPageHeader
+              icon="pi-calendar-plus"
+              title="Administrar Eventos"
+              subtitle="Administra y controla el estado de todos los eventos del sistema"
+            />
 
             <div className="w-full block clear-both">
               <EventsTable

@@ -9,6 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Ba
 import logo from "../../assets/Logo-unicesar.png";
 import ReportGenerator from "../../components/ReportGenerator";
 import ProjectsGrid from "../../components/ProjectsGrid";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function GuestDashboard() {
   const { logout, user, setGuestProfile } = useAuth();
@@ -72,8 +73,8 @@ export default function GuestDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+  const handleLogout = async () => {
+    if (await confirmarCierreSesion()) {
       logout();
       navigate("/login");
     }
@@ -110,7 +111,7 @@ export default function GuestDashboard() {
       chartTitles: ['Tipos de Proyectos', 'Proyectos por Línea de Investigación'],
       chartData: [tiposProyectosData, proyectosPorLineaData],
       institutionName: 'Universidad Popular del Cesar',
-      eventName: 'Expo-software 2025'
+      eventName: 'Expo-software 2026'
     });
   };
 
@@ -337,7 +338,7 @@ const coloresLineas = [
                     </span>
                   </div>
                   <p className="text-green-50 mb-2">
-                    Explora los increíbles proyectos de nuestros estudiantes en Expo-software 2025
+                    Explora los increíbles proyectos de nuestros estudiantes en Expo-software 2026
                   </p>
                   <div className="flex items-center gap-4 mt-4 text-sm">
                     <div className="flex items-center gap-2">
@@ -623,7 +624,7 @@ const coloresLineas = [
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 mb-1">
-                    XXI Jornada de Investigación
+                    XXIII Jornada de Investigación
                   </h3>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <i className="pi pi-calendar"></i>
@@ -641,7 +642,7 @@ const coloresLineas = [
                   Acerca del Evento
                 </h4>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  Exposoftware 2025 es el evento más importante de innovación y tecnología de la Universidad Popular del Cesar. 
+                  Exposoftware 2026 es el evento más importante de innovación y tecnología de la Universidad Popular del Cesar. 
                   Durante tres días, estudiantes presentarán sus proyectos innovadores de desarrollo de software, investigación y 
                   aplicaciones tecnológicas. Como invitado, podrás explorar todos los proyectos, inscribirte a presentaciones 
                   específicas y conectar con talento emergente en tecnología.

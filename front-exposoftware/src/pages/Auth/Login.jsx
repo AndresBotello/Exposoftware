@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Mail, Lock, Leaf, Users, Trophy, Eye, EyeOff, Globe } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Globe } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import * as AuthService from "../../Services/AuthService";
 import { useAuth } from "../../contexts/AuthContext";
 import { API_BASE_URL } from "../../utils/constants";
+import exposoftwareAnuncio from "../../assets/exposoftware-anuncio.jpg";
 import { safeGetItem, safeSetItem, safeRemoveItem } from "../../utils/safeStorage";
 
 export default function LoginPage() {
@@ -212,51 +213,13 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-green-50 p-4">
       <section className="flex flex-col lg:flex-row w-full max-w-5xl bg-white rounded-2xl shadow-lg overflow-hidden">
 
-        {/* Panel Izquierdo - Info */}
-        <aside className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white p-10 flex-col justify-center relative overflow-hidden">
-          <header className="mb-6 relative z-10">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl font-bold">&lt;/&gt;</span>
-              </div>
-              <h1 className="text-2xl lg:text-3xl font-bold">Expo-Software 2026</h1>
-            </div>
-            <div className="h-1 w-20 bg-white rounded-full"></div>
-          </header>
-
-          <article className="relative z-10">
-            <p className="text-lg mb-3 leading-relaxed">
-              Descubre los proyectos más innovadores desarrollados por
-              estudiantes y profesores.
-            </p>
-            <p className="text-sm mb-10 text-green-100">
-              Una vitrina digital de talento tecnológico y creatividad académica.
-            </p>
-          </article>
-
-          <footer className="flex gap-8 mt-auto relative z-10">
-            <div className="flex flex-col items-center group hover:scale-110 transition-transform">
-              <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mb-2">
-                <Leaf size={28} />
-              </div>
-              <p className="text-2xl font-bold">150+</p>
-              <p className="text-sm text-green-100">Proyectos</p>
-            </div>
-            <div className="flex flex-col items-center group hover:scale-110 transition-transform">
-              <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mb-2">
-                <Users size={28} />
-              </div>
-              <p className="text-2xl font-bold">500+</p>
-              <p className="text-sm text-green-100">Participantes</p>
-            </div>
-            <div className="flex flex-col items-center group hover:scale-110 transition-transform">
-              <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mb-2">
-                <Trophy size={28} />
-              </div>
-              <p className="text-2xl font-bold">15</p>
-              <p className="text-sm text-green-100">Premios</p>
-            </div>
-          </footer>
+        {/* Panel Izquierdo - Flyer vertical (solo escritorio; en móvil se muestra el header) */}
+        <aside className="hidden lg:flex lg:w-1/2 lg:min-h-[680px] bg-black items-center justify-center relative overflow-hidden">
+          <img
+            src={exposoftwareAnuncio}
+            alt="XXIII Feria Tecnológica Exposoftware - Jornada de Investigación"
+            className="absolute inset-0 w-full h-full object-contain"
+          />
         </aside>
 
         {/* Panel Derecho - Formulario */}

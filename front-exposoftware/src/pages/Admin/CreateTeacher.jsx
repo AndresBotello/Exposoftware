@@ -3,7 +3,7 @@ import Select from 'react-select';
 import { useState, useEffect, useMemo } from 'react';
 import AdminSidebar from "../../components/Layout/AdminSidebar";
 import { useAdminAuth } from "../../hooks/useAdminAuth";
-import { AdminHeader, TabNavigation } from "../../components/Admin/AdminComponents";
+import { AdminHeader, AdminPageHeader, TabNavigation } from "../../components/Admin/AdminComponents";
 import countryList from "react-select-country-list";
 import {   
   useTeacherManagement,
@@ -43,27 +43,29 @@ export default function CreateTeacher() {
         if (response.ok) {
           const data = await response.json();
           const facultades = Array.isArray(data) ? data : (data.data || data.facultades || []);
-          let allPrograms = [];
-          for (const faculty of facultades) {
-            if (faculty.id_facultad || faculty.codigo_facultad) {
-              const facultyId = faculty.id_facultad || faculty.codigo_facultad;
-              try {
-                const progRes = await fetch(
-                  API_ENDPOINTS.ADMIN_PROGRAMAS_BY_FACULTAD(facultyId),
-                  {
-                    credentials: 'include',
-                    headers: AuthService.getAuthHeaders(),
+          // Antes: una petición por facultad, una detrás de otra. Ahora todas a la vez (mismo orden de resultado).
+          const gruposDeProgramas = await Promise.all(
+            facultades
+              .filter((faculty) => faculty.id_facultad || faculty.codigo_facultad)
+              .map(async (faculty) => {
+                const facultyId = faculty.id_facultad || faculty.codigo_facultad;
+                try {
+                  const progRes = await fetch(
+                    API_ENDPOINTS.ADMIN_PROGRAMAS_BY_FACULTAD(facultyId),
+                    {
+                      credentials: 'include',
+                      headers: AuthService.getAuthHeaders(),
+                    }
+                  );
+                  if (progRes.ok) {
+                    const progData = await progRes.json();
+                    return Array.isArray(progData) ? progData : (progData.data || progData.programas || []);
                   }
-                );
-                if (progRes.ok) {
-                  const progData = await progRes.json();
-                  const progs = Array.isArray(progData) ? progData : (progData.data || progData.programas || []);
-                  allPrograms = [...allPrograms, ...progs];
-                }
-              } catch (err) {}
-            }
-          }
-          setProgramas(allPrograms);
+                } catch (err) {}
+                return [];
+              })
+          );
+          setProgramas(gruposDeProgramas.flat());
         }
       } catch (err) {
       } finally {
@@ -143,6 +145,12 @@ export default function CreateTeacher() {
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
 
           <main className="lg:col-span-3">
+            <AdminPageHeader
+              icon="pi-id-card"
+              title="Gestión de Profesores"
+              subtitle="Registra docentes y administra su estado"
+            />
+
             <TabNavigation
               tabs={[
                 { id: "crear", label: "Crear Profesor", icon: "➕" },

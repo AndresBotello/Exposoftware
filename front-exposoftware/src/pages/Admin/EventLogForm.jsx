@@ -32,7 +32,7 @@ export default function EventLogForm({
               Título del Evento <span className="text-red-500">*</span>
             </label>
             <input type="text" name="title" value={form.title} onChange={handleInputChange}
-              placeholder="Ej: Expo-software 2025" className={fieldClass(formErrors.title)}
+              placeholder="Ej: Expo-software 2026" className={fieldClass(formErrors.title)}
             />
             {formErrors.title && <p className="text-xs text-red-500 mt-1">{formErrors.title}</p>}
           </div>

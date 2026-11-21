@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/Logo-unicesar.png";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
+import { AdminHeader, AdminPageHeader } from "../../components/Admin/AdminComponents";
 import * as AuthService from "../../Services/AuthService";
 import EventLogService from "../../Services/EventLogService";
 import EventLogForm from "./EventLogForm";
 import EventLogList from "./EventLogList";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function EventLog() {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export default function EventLog() {
   const getUserInitials = () => getUserName().charAt(0).toUpperCase();
 
   const handleLogout = async () => {
-    if (window.confirm("¿Está seguro de que desea cerrar sesión?")) {
+    if (await confirmarCierreSesion()) {
       try { await AuthService.logout(); navigate("/login"); } catch (error) { console.error("❌ Error al cerrar sesión:", error); }
     }
   };
@@ -112,49 +113,25 @@ export default function EventLog() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo Unicesar" className="w-10 h-auto" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Expo-software</h1>
-                <p className="text-xs text-gray-500">Universidad Popular del Cesar</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-700 hidden sm:block">{getUserName()}</span>
-                <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                  <span className="text-teal-600 font-bold text-lg">{getUserInitials()}</span>
-                </div>
-              </div>
-              <button onClick={handleLogout} className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors flex items-center gap-2">
-                <i className="pi pi-sign-out"></i>
-                <span className="hidden sm:inline">Cerrar Sesión</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
 
           <main className="lg:col-span-3">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Registro de Eventos por Año</h2>
-                <p className="text-sm text-gray-500">Gestione los registros históricos con documentos PDF</p>
-              </div>
+            <AdminPageHeader
+              icon="pi-history"
+              title="Registro de Eventos por Año"
+              subtitle="Gestione los registros históricos con documentos PDF"
+            >
               <button onClick={() => setShowForm(!showForm)}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-600 px-4 py-2 font-medium text-white shadow transition-all hover:from-teal-600 hover:to-cyan-700"
               >
                 <i className={`pi ${showForm ? "pi-times" : "pi-plus"}`}></i>
                 <span className="hidden sm:inline">{showForm ? "Cancelar" : "Nuevo Registro"}</span>
               </button>
-            </div>
+            </AdminPageHeader>
 
             {showForm && (
               <EventLogForm

@@ -10,12 +10,13 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import AdminSidebar from '../../components/Layout/AdminSidebar';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
-import { AdminHeader } from '../../components/Admin/AdminComponents';
+import { AdminHeader, AdminPageHeader, TabNavigation } from '../../components/Admin/AdminComponents';
 import CertificadosService from '../../Services/CertificadosService';
 import CertificadosList from './CertificadosList';
 import CertificadosDialog from './CertificadosDialog';
 import { obtenerProyectos } from '../../Services/ProjectsService';
 import { API_ENDPOINTS } from '../../utils/constants';
+import { ordenarEventos, elegirEventoActual, esEventoVisibleParaDocente, etiquetaEstadoEvento } from '../../utils/eventoActual';
 
 const getAuthToken = () => {
   return localStorage.getItem('auth_token');
@@ -62,6 +63,22 @@ export default function GestionCertificados() {
   const [resultadosCertificados, setResultadosCertificados] = useState(null);
   const [showResultadosDialog, setShowResultadosDialog] = useState(false);
 
+  // Proyectos del evento elegido (si no hay evento elegido, todos)
+  const idEventoElegido = selectedEvento ? String(selectedEvento.id_evento || selectedEvento.id) : null;
+  const proyectosDelEvento = idEventoElegido
+    ? proyectos.filter((p) => String(p.id_evento) === idEventoElegido)
+    : proyectos;
+
+  // Lotes de certificados del evento elegido. El lote no siempre trae su evento, así que se
+  // deduce del proyecto al que pertenece. Antes se listaban todos, con los del evento viejo primero.
+  const [verTodosLotes, setVerTodosLotes] = useState(false);
+  // Sección visible: evento (masivo) | proyecto | lotes
+  const [seccion, setSeccion] = useState('evento');
+  const eventoDeProyecto = new Map(proyectos.map((p) => [String(p.id_proyecto), String(p.id_evento)]));
+  const eventoDeLote = (l) => String(l?.id_evento || eventoDeProyecto.get(String(l?.id_proyecto)) || '');
+  const lotesDelEvento =
+    !verTodosLotes && idEventoElegido ? lotes.filter((l) => eventoDeLote(l) === idEventoElegido) : lotes;
+
   const topScrollbarRef = useRef(null);
   const tableRef = useRef(null);
   const toast = useRef(null);
@@ -106,7 +123,7 @@ export default function GestionCertificados() {
 
     const timeoutId = setTimeout(setupScrollbar, 300);
     return () => clearTimeout(timeoutId);
-  }, [lotes]);
+  }, [lotes, lotesDelEvento.length, seccion]);
 
   const cargarLotes = async () => {
     setLoading(true);
@@ -184,12 +201,14 @@ export default function GestionCertificados() {
       const eventosData = await response.json();
       const eventosArray = Array.isArray(eventosData) ? eventosData : (eventosData.data || []);
 
-      // Filtrar eventos en estado finalizado o en_curso que sean elegibles para certificados
-      const eventosFiltrados = eventosArray.filter(evento =>
-        evento.estado === 'en_curso' || evento.estado === 'finalizado'
-      );
+      // Antes solo se listaban eventos en_curso o finalizado, por lo que un evento nuevo
+      // (inscripciones abiertas/cerradas) no aparecía y quedaba solo el finalizado.
+      // Ahora se listan todos salvo borradores y cancelados, con el evento actual primero y preseleccionado.
+      const eventosFiltrados = eventosArray.filter(esEventoVisibleParaDocente);
 
-      setEventos(eventosFiltrados);
+      setEventos(ordenarEventos(eventosFiltrados));
+      const actual = elegirEventoActual(eventosFiltrados);
+      if (actual) setSelectedEvento((prev) => prev || actual);
     } catch (error) {
       setEventos([]);
       console.error('Error cargando eventos:', error);
@@ -387,7 +406,7 @@ export default function GestionCertificados() {
   };
 
   const descargarTodosLosCertificados = async () => {
-    if (!lotes.length) {
+    if (!lotesDelEvento.length) {
       toast.current?.show({
         severity: 'warn',
         summary: 'Sin lotes',
@@ -406,7 +425,7 @@ export default function GestionCertificados() {
     });
 
     try {
-      const result = await CertificadosService.descargarTodosLosCertificadosEnZip(lotes);
+      const result = await CertificadosService.descargarTodosLosCertificadosEnZip(lotesDelEvento);
 
       toast.current?.show({
         severity: 'success',
@@ -605,7 +624,24 @@ export default function GestionCertificados() {
           />
 
           <main className="lg:col-span-3 space-y-6">
+            <AdminPageHeader
+              icon="pi-verified"
+              title="Gestión de Certificados"
+              subtitle="Genera, descarga y envía los certificados de los eventos"
+            />
+
+            <TabNavigation
+              tabs={[
+                { id: 'evento', label: 'Masivo por evento', icon: '⚡' },
+                { id: 'proyecto', label: 'Por proyecto', icon: '📄' },
+                { id: 'lotes', label: `Lotes generados (${lotesDelEvento.length})`, icon: '📦' },
+              ]}
+              activeTab={seccion}
+              onChange={setSeccion}
+            />
+
             {/* Sección: Generar Certificados Masivos por Evento */}
+            {seccion === 'evento' && (
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-300 shadow-lg p-6">
               <div className="mb-6 pb-4 border-b border-purple-300">
                 <div className="flex items-start justify-between">
@@ -634,7 +670,9 @@ export default function GestionCertificados() {
                     value={selectedEvento}
                     onChange={(e) => setSelectedEvento(e.value)}
                     options={eventos}
-                    optionLabel={(option) => option?.nombre_evento || option?.nombre || 'Sin nombre'}
+                    optionLabel={(option) =>
+                      `${option?.nombre_evento || option?.nombre || 'Sin nombre'}${etiquetaEstadoEvento(option) ? ` · ${etiquetaEstadoEvento(option)}` : ''}`
+                    }
                     placeholder="Selecciona un evento..."
                     filter
                     loading={loadingEventos}
@@ -696,7 +734,10 @@ export default function GestionCertificados() {
               />
             </div>
 
+            )}
+
             {/* Sección: Generar Certificados */}
+            {seccion === 'proyecto' && (
             <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg border border-blue-200 shadow-md p-6">
               <div className="mb-6 pb-4 border-b border-blue-200">
                 <div className="flex items-start justify-between">
@@ -724,7 +765,7 @@ export default function GestionCertificados() {
                   <Dropdown
                     value={selectedProyecto}
                     onChange={(e) => setSelectedProyecto(e.value)}
-                    options={proyectos}
+                    options={proyectosDelEvento}
                     optionLabel={(option) =>
                       option?.titulo_proyecto || option?.nombre_proyecto || option?.nombre || 'Sin nombre'
                     }
@@ -734,6 +775,12 @@ export default function GestionCertificados() {
                     className="w-full"
                     style={{ width: '100%' }}
                   />
+                  {selectedEvento && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Mostrando proyectos de «{selectedEvento?.nombre_evento || selectedEvento?.nombre}». Cambia el evento en
+                      «Selecciona el Evento» para ver otros.
+                    </p>
+                  )}
                   {selectedProyecto && (
                     <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded text-xs text-green-800">
                       <i className="pi pi-check-circle mr-2"></i>
@@ -793,7 +840,10 @@ export default function GestionCertificados() {
               />
             </div>
 
+            )}
+
             {/* Sección: Lotes Generados */}
+            {seccion === 'lotes' && (
             <div className="bg-white rounded-lg border border-gray-200 shadow-md p-6">
               {/* Header */}
               <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
@@ -821,12 +871,30 @@ export default function GestionCertificados() {
                   onClick={descargarTodosLosCertificados}
                   loading={generandoZipGeneral}
                   severity="help"
-                  disabled={loading || lotes.length === 0}
+                  disabled={loading || lotesDelEvento.length === 0}
                 />
               </div>
 
+              {/* Filtro por evento: por defecto el evento elegido arriba (el actual) */}
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm">
+                <p className="text-teal-900">
+                  {verTodosLotes || !selectedEvento
+                    ? `Mostrando los ${lotes.length} lote(s) de todos los eventos`
+                    : `Mostrando ${lotesDelEvento.length} lote(s) de «${selectedEvento?.nombre_evento || selectedEvento?.nombre}»`}
+                </p>
+                <label className="flex cursor-pointer items-center gap-2 font-medium text-teal-800">
+                  <input
+                    type="checkbox"
+                    checked={verTodosLotes}
+                    onChange={(e) => setVerTodosLotes(e.target.checked)}
+                    className="h-4 w-4 accent-teal-600"
+                  />
+                  Ver todos los eventos
+                </label>
+              </div>
+
               <CertificadosList
-                lotes={lotes}
+                lotes={lotesDelEvento}
                 loading={loading}
                 onDescargar={descargarLote}
                 onEnviar={abrirDialogoEmail}
@@ -834,6 +902,7 @@ export default function GestionCertificados() {
                 tableRef={tableRef}
               />
             </div>
+            )}
           </main>
         </div>
       </div>

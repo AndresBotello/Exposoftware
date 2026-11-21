@@ -4,7 +4,7 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Tag } from 'primereact/tag';
 import { ProgressSpinner } from 'primereact/progressspinner';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { generateApprovedProyectosPDF } from '../../utils/generateProyectosPDF';
 import { Toast } from 'primereact/toast';
 import { useRef } from 'react';
@@ -15,6 +15,7 @@ import { getAuthHeaders } from '../../Services/AuthService';
 import { API_BASE_URL } from '../../utils/constants';
 import QRCalificacionModal from '../Teacher/QRCalificacionModal';
 import JSZip from 'jszip';
+import { confirmar } from '../../utils/confirmDialog.jsx';
 
 const TIPOS_ACTIVIDAD = {
   1: { label: 'Exposoftware', severity: 'success' },
@@ -152,12 +153,6 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
     try {
       const endpoint = `/api/v1/proyectos/${selectedProyecto.id_proyecto}`;
 
-      console.log('Intentando cambiar estado:', {
-        endpoint,
-        proyecto: selectedProyecto.id_proyecto,
-        nuevoEstado
-      });
-
       const response = await fetchApi(endpoint, {
         method: 'PATCH',
         headers: getAuthHeaders(),
@@ -227,7 +222,7 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
     }
     return (
       <div className="flex items-center gap-2">
-        <span className="font-semibold text-blue-600">{rowData.calificacion.toFixed(1)}</span>
+        <span className="font-semibold text-blue-600">{(Number(rowData.calificacion) || 0).toFixed(1)}</span>
         <i className="pi pi-pencil text-blue-500 text-sm"></i>
       </div>
     );
@@ -289,79 +284,79 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
         severity="danger"
         tooltip="Eliminar permanentemente"
         tooltipOptions={{ position: 'top' }}
-        onClick={() => {
-          if (window.confirm(`⚠️ ADVERTENCIA: Esta acción no se puede deshacer.\n\nEliminará permanentemente:\n• El proyecto "${rowData.titulo_proyecto}"\n• Todos sus datos relacionados\n• Integrantes, clases asignadas, historial\n\n¿Está seguro de que desea continuar?`)) {
-            onEliminar(rowData.id_proyecto);
-          }
+        onClick={async () => {
+          const ok = await confirmar({
+            title: 'Eliminar proyecto',
+            message: `Esta acción no se puede deshacer.\n\nEliminará permanentemente:\n• El proyecto "${rowData.titulo_proyecto}"\n• Todos sus datos relacionados\n• Integrantes, clases asignadas, historial`,
+            confirmText: 'Sí, eliminar',
+            variant: 'danger',
+          });
+          if (ok) onEliminar(rowData.id_proyecto);
         }}
       />
     </div>
   );
 
-  const filteredProyectos = proyectos.filter(p => {
-    const estadoMatch = !estadoFilter || p.estado === estadoFilter;
-    const docenteMatch = !docenteFilter ||
-      p.docentes_materias?.[0]?.nombre_docente
-        ?.toLowerCase()
-        .includes(docenteFilter.toLowerCase());
-    return estadoMatch && docenteMatch;
-  });
+  const filteredProyectos = useMemo(
+    () =>
+      proyectos.filter(p => {
+        const estadoMatch = !estadoFilter || p.estado === estadoFilter;
+        const docenteMatch = !docenteFilter ||
+          p.docentes_materias?.[0]?.nombre_docente
+            ?.toLowerCase()
+            .includes(docenteFilter.toLowerCase());
+        return estadoMatch && docenteMatch;
+      }),
+    [proyectos, estadoFilter, docenteFilter]
+  );
 
+  // Conteos por estado en una sola pasada (antes: cinco filter() por render)
+  const conteos = useMemo(() => {
+    const c = { pendiente: 0, aprobado: 0, calificado: 0, rechazado: 0 };
+    proyectos.forEach((p) => {
+      if (p.estado in c) c[p.estado] += 1;
+    });
+    return c;
+  }, [proyectos]);
+
+  // Las tarjetas son filtros: al pulsarlas se filtra la tabla por ese estado
   const statCards = [
-    {
-      label: 'Total Proyectos',
-      value: proyectos.length,
-      bgGradient: 'from-teal-500 to-teal-600',
-      icon: 'pi-briefcase',
-      textColor: 'text-white'
-    },
-    {
-      label: 'Pendientes',
-      value: proyectos.filter(p => p.estado === 'pendiente').length,
-      bgGradient: 'from-amber-500 to-amber-600',
-      icon: 'pi-clock',
-      textColor: 'text-white'
-    },
-    {
-      label: 'Aprobados',
-      value: proyectos.filter(p => p.estado === 'aprobado').length,
-      bgGradient: 'from-green-500 to-green-600',
-      icon: 'pi-check-circle',
-      textColor: 'text-white'
-    },
-    {
-      label: 'Calificados',
-      value: proyectos.filter(p => p.estado === 'calificado').length,
-      bgGradient: 'from-blue-500 to-blue-600',
-      icon: 'pi-star-fill',
-      textColor: 'text-white'
-    },
-    {
-      label: 'Rechazados',
-      value: proyectos.filter(p => p.estado === 'rechazado').length,
-      bgGradient: 'from-red-500 to-red-600',
-      icon: 'pi-times-circle',
-      textColor: 'text-white'
-    },
+    { label: 'Total Proyectos', value: proyectos.length, bgGradient: 'from-teal-500 to-teal-600', icon: 'pi-briefcase', filtro: '' },
+    { label: 'Pendientes', value: conteos.pendiente, bgGradient: 'from-amber-500 to-amber-600', icon: 'pi-clock', filtro: 'pendiente' },
+    { label: 'Aprobados', value: conteos.aprobado, bgGradient: 'from-green-500 to-green-600', icon: 'pi-check-circle', filtro: 'aprobado' },
+    { label: 'Calificados', value: conteos.calificado, bgGradient: 'from-blue-500 to-blue-600', icon: 'pi-star-fill', filtro: 'calificado' },
+    { label: 'Rechazados', value: conteos.rechazado, bgGradient: 'from-red-500 to-red-600', icon: 'pi-times-circle', filtro: 'rechazado' },
   ];
 
   return (
     <>
       <Toast ref={toast} />
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        {statCards.map(({ label, value, bgGradient, icon, textColor }) => (
-          <div key={label} className={`bg-gradient-to-br ${bgGradient} rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white opacity-90">{label}</p>
-                <p className={`text-3xl font-bold ${textColor} mt-2`}>{value}</p>
+        {statCards.map(({ label, value, bgGradient, icon, filtro }) => {
+          const activa = estadoFilter === filtro;
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setEstadoFilter(filtro)}
+              aria-pressed={activa}
+              title={filtro ? `Filtrar por ${label.toLowerCase()}` : 'Quitar filtro de estado'}
+              className={`bg-gradient-to-br ${bgGradient} rounded-xl p-5 text-left shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${
+                activa ? 'ring-2 ring-offset-2 ring-teal-400' : 'opacity-95'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white opacity-90">{label}</p>
+                  <p className="mt-2 text-3xl font-bold text-white">{value}</p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white bg-opacity-20">
+                  <i className={`pi ${icon} text-xl text-white`}></i>
+                </div>
               </div>
-              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <i className={`pi ${icon} text-xl text-white`}></i>
-              </div>
-            </div>
-          </div>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">

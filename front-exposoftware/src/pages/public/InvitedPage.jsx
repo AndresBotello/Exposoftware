@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import ProjectCard from "../../components/ProjectCard";
 import ProjectDetailsModal from "../../components/ProjectDetailsModal";
@@ -7,6 +7,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { API_BASE_URL } from "../../utils/constants";
 import { safeGetItem, safeSetItem } from "../../utils/safeStorage";
 import logo from "../../assets/Logo-unicesar.png";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function InvitedPage() {
   const { eventoId } = useParams();
@@ -28,6 +29,10 @@ export default function InvitedPage() {
       return 150;
     }
   });
+  // getAuthToken cambia de identidad en cada render del AuthProvider; se guarda en un ref
+  // para que no dispare de nuevo la carga del ranking (causaba cargas repetidas/en carrera)
+  const getAuthTokenRef = useRef(getAuthToken);
+  getAuthTokenRef.current = getAuthToken;
   const [rankingProjects, setRankingProjects] = useState([]);
   const [loadingRanking, setLoadingRanking] = useState(false);
   const [rankingDisplayCount, setRankingDisplayCount] = useState(() => {
@@ -40,6 +45,7 @@ export default function InvitedPage() {
   });
 
   const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
     try {
       await logout();
       navigate("/");
@@ -119,6 +125,7 @@ export default function InvitedPage() {
 
   // Cargar ranking de proyectos
   useEffect(() => {
+    let cancelado = false;
     const cargarRanking = async () => {
       try {
         setLoadingRanking(true);
@@ -134,7 +141,7 @@ export default function InvitedPage() {
           return;
         }
 
-        const token = getAuthToken();
+        const token = getAuthTokenRef.current?.();
         const headers = {
           'Content-Type': 'application/json'
         };
@@ -167,23 +174,26 @@ export default function InvitedPage() {
             posicion: idx + 1
           }));
 
-          setRankingProjects(ranking);
+          if (!cancelado) setRankingProjects(ranking);
         } else {
           console.error('Error cargando ranking:', response.status);
-          setRankingProjects([]);
+          if (!cancelado) setRankingProjects([]);
         }
       } catch (err) {
         console.error('Error cargando ranking:', err);
-        setRankingProjects([]);
+        if (!cancelado) setRankingProjects([]);
       } finally {
-        setLoadingRanking(false);
+        if (!cancelado) setLoadingRanking(false);
       }
     };
 
     if (eventoId || eventoInfo?.id_evento) {
       cargarRanking();
     }
-  }, [eventoId, eventoInfo?.id_evento, getAuthToken]);
+    return () => {
+      cancelado = true;
+    };
+  }, [eventoId, eventoInfo?.id_evento]);
 
   const handleViewDetails = async (project) => {
     setShowModal(true);
@@ -260,7 +270,7 @@ export default function InvitedPage() {
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                 >
                   <i className="pi pi-sign-out"></i>
-                  <span className="hidden sm:inline">Salir</span>
+                  <span className="hidden sm:inline">Cerrar Sesión</span>
                 </button>
               ) : (
                 <Link
@@ -359,9 +369,9 @@ export default function InvitedPage() {
                           <p className="font-medium text-gray-900 line-clamp-2 text-xs">
                             {rankingProject.titulo_proyecto}
                           </p>
-                          {rankingProject.promedio && (
+                          {Number(rankingProject.promedio) > 0 && (
                             <p className="text-xs text-gray-600 mt-1">
-                              ⭐ {rankingProject.promedio.toFixed(2)}/5.0
+                              ⭐ {Number(rankingProject.promedio).toFixed(2)}/5.0
                             </p>
                           )}
                         </div>
@@ -436,7 +446,7 @@ export default function InvitedPage() {
                           ))}
                         </div>
                         <span className="text-xs text-gray-600">
-                          {(rankingProject.promedio_ponderado || 0).toFixed(1)}/5
+                          {(Number(rankingProject.promedio_ponderado) || 0).toFixed(1)}/5
                         </span>
                       </div>
 
@@ -453,7 +463,7 @@ export default function InvitedPage() {
                         </p>
                         <p className="text-xs text-gray-500">
                           <i className="pi pi-chart-bar text-blue-600 text-xs mr-1"></i>
-                          {rankingProject.promedio_ponderado?.toFixed(2) || 0}/5 rating
+                          {(Number(rankingProject.promedio_ponderado) || 0).toFixed(2)}/5 rating
                         </p>
                       </div>
                     </div>

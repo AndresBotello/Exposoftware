@@ -18,6 +18,13 @@ import {
   getAreaName,
   getEventoName,
 } from "../../utils/teacherHelpers";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
+import {
+  elegirEventoActual,
+  idEvento as idEventoDe,
+  nombreEvento as nombreEventoDe,
+  etiquetaEstadoEvento,
+} from "../../utils/eventoActual";
 
 export function useTeacherDashboard() {
   const { user, getFullName, getInitials, logout, loading } = useAuth();
@@ -34,7 +41,7 @@ export function useTeacherDashboard() {
     reprobados: 0,
     asignados: 0,
   });
-  const [cargandoProyectos, setCargandoProyectos] = useState(false);
+  const [cargandoProyectos, setCargandoProyectos] = useState(true);
   const [error, setError] = useState(null);
   const [lineasMap, setLineasMap] = useState(new Map());
   const [sublineasMap, setSublineasMap] = useState(new Map());
@@ -43,6 +50,7 @@ export function useTeacherDashboard() {
   const [mapasCargados, setMapasCargados] = useState(false);
   const [teachingLoad, setTeachingLoad] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
+  const [eventoActual, setEventoActual] = useState(null); // { id, nombre, estadoTexto }
 
   // Datos para la gráfica de estado de proyectos
   const pieChartData = useMemo(() => {
@@ -93,6 +101,7 @@ export function useTeacherDashboard() {
           myProjectsData = await getMyProjects();
           asignadosCount = Array.isArray(myProjectsData) ? myProjectsData.length : 0;
         } catch (err) {
+          console.error("Error cargando mis proyectos (dashboard docente):", err);
           asignadosCount = 0;
           myProjectsData = [];
         }
@@ -129,34 +138,32 @@ export function useTeacherDashboard() {
           allProjects = myProjectsData;
         }
 
-        // Filtrar solo proyectos que pertenecen a eventos activos
-        let eventosActivosSet = null;
+        // Evento actual: inscripciones abiertas > en curso > cerradas > finalizado.
+        // El dashboard muestra solo los proyectos de ese evento (no los de eventos anteriores).
+        let eventoSel = null;
         try {
           const eventos = await getAllEventos();
-          eventosActivosSet = new Set(
-            eventos
-              .filter(
-                (e) =>
-                  e.activo === true ||
-                  (typeof e.estado === "string" && e.estado.toLowerCase() === "activo")
-              )
-              .map((e) => e.id || e.id_evento || e.evento_id)
-              .filter(Boolean)
-          );
+          eventoSel = elegirEventoActual(eventos);
         } catch {
-          // Si falla la carga de eventos, mostrar todos los proyectos del docente
+          // Si falla la carga de eventos, se muestran todos los proyectos del docente
         }
 
-        const proyectosActivos =
-          eventosActivosSet !== null
-            ? allProjects.filter((p) => p.id_evento && eventosActivosSet.has(p.id_evento))
-            : allProjects;
+        const idActual = eventoSel ? String(idEventoDe(eventoSel)) : null;
+        setEventoActual(
+          eventoSel
+            ? { id: idActual, nombre: nombreEventoDe(eventoSel), estadoTexto: etiquetaEstadoEvento(eventoSel) }
+            : null
+        );
 
+        const delEvento = (lista) =>
+          idActual ? lista.filter((p) => String(p.id_evento) === idActual) : lista;
+
+        const proyectosActivos = delEvento(allProjects);
         setProyectos(proyectosActivos);
 
-        // Calcular métricas basadas en proyectos asignados (myProjectsData)
-        // para asegurar que se muestren correctamente incluso si el filtro de eventos no funciona
-        const metricsSource = proyectosActivos.length > 0 ? proyectosActivos : myProjectsData;
+        // Métricas del evento actual. Solo si no se pudo determinar el evento se usan todos.
+        const metricsSource = idActual ? proyectosActivos : (allProjects.length > 0 ? allProjects : myProjectsData);
+        asignadosCount = delEvento(myProjectsData).length;
 
         const total = metricsSource.length;
 
@@ -228,6 +235,7 @@ export function useTeacherDashboard() {
   }, [user]);
 
   const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
     try {
       await logout();
       navigate("/login");
@@ -260,7 +268,7 @@ export function useTeacherDashboard() {
       chartTitles: ["Estado de Proyectos", "Líneas de Investigación"],
       chartData: [pieChartData, lineasChartData],
       institutionName: "Universidad Popular del Cesar",
-      eventName: "Expo-software 2025",
+      eventName: "Expo-software 2026",
     });
   };
 
@@ -280,6 +288,7 @@ export function useTeacherDashboard() {
     cargandoProyectos,
     error,
     mapasCargados,
+    eventoActual,
     pieChartData,
     lineasChartData,
     teachingLoad,

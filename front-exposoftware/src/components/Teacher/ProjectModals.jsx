@@ -1,6 +1,77 @@
 import { useState, useEffect } from "react";
 import { getRolName } from "../../utils/constants";
 
+/* ------------------------------------------------------------------ */
+/* Helpers de presentación del modal de detalles                        */
+/* ------------------------------------------------------------------ */
+
+// Solo se aceptan enlaces http(s): evita javascript:, data: u otros esquemas en href/src/iframe
+const urlSegura = (u) => {
+  if (!u || typeof u !== "string") return null;
+  try {
+    const parsed = new URL(u, window.location.origin);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : null;
+  } catch {
+    return null;
+  }
+};
+
+const num = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+const TIPOS_ACTIVIDAD = {
+  1: { texto: "Proyecto (Exposoftware)", icono: "pi-folder" },
+  2: { texto: "Taller", icono: "pi-wrench" },
+  3: { texto: "Ponencia", icono: "pi-megaphone" },
+  4: { texto: "Conferencia", icono: "pi-microphone" },
+};
+
+function estadoDetalle(p) {
+  if (p.estado === "aprobado") return { texto: "Aprobado", clases: "bg-emerald-100 text-emerald-800 ring-emerald-200", icono: "pi-check-circle" };
+  if (p.estado === "rechazado") return { texto: "Rechazado", clases: "bg-red-100 text-red-800 ring-red-200", icono: "pi-times-circle" };
+  if (p.estado === "pendiente") return { texto: "Pendiente", clases: "bg-amber-100 text-amber-800 ring-amber-200", icono: "pi-clock" };
+  if (p.calificacion && num(p.calificacion) !== null) return { texto: `Calificado: ${num(p.calificacion).toFixed(1)}`, clases: "bg-emerald-100 text-emerald-800 ring-emerald-200", icono: "pi-star" };
+  if (p.activo) return { texto: "Pendiente", clases: "bg-yellow-100 text-yellow-800 ring-yellow-200", icono: "pi-clock" };
+  return { texto: "Inactivo", clases: "bg-gray-100 text-gray-800 ring-gray-200", icono: "pi-ban" };
+}
+
+function Seccion({ icono, color = "text-emerald-600", titulo, children }) {
+  return (
+    <section>
+      <h5 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
+        <i className={`pi ${icono} ${color}`}></i>
+        {titulo}
+      </h5>
+      {children}
+    </section>
+  );
+}
+
+function Dato({ etiqueta, valor, sub }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-500">{etiqueta}</p>
+      <p className="text-sm font-medium text-gray-900 break-words">{valor}</p>
+      {sub && <p className="text-xs text-gray-500">{sub}</p>}
+    </div>
+  );
+}
+
+function Estrellas({ valor }) {
+  return (
+    <div className="flex gap-0.5" aria-hidden="true">
+      {[...Array(5)].map((_, i) => (
+        <i
+          key={i}
+          className={`pi text-lg ${i < Math.round(valor || 0) ? "pi-star-fill text-yellow-400" : "pi-star text-gray-300"}`}
+        ></i>
+      ))}
+    </div>
+  );
+}
+
 export function ProjectDetailsModal({
   show,
   project,
@@ -38,193 +109,158 @@ export function ProjectDetailsModal({
     return 'Docente';
   };
 
+  // Cerrar con Esc y bloquear el scroll de la página mientras el modal está abierto
+  useEffect(() => {
+    if (!show) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [show, onClose]);
+
   if (!show || !project) return null;
 
+  const estado = estadoDetalle(project);
+  const tipo = TIPOS_ACTIVIDAD[project.tipo_actividad || project.id_tipo_actividad] || {
+    texto: "No especificado",
+    icono: "pi-question-circle",
+  };
+  const fecha = project.fecha_subida || project.created_at;
+  const estudiantes = project.id_estudiantes || [];
+  const urlDocumento = urlSegura(project.archivo_pdf || project.url_cloudinary);
+  const urlPreview = urlSegura(project.url_preview_png);
+  const notaDocente = project.calificacion ? num(project.calificacion) : null;
+  const promedioPopular = num(calificacionPopular?.promedio_ponderado) || 0;
+  const votos = num(calificacionPopular?.total_calificaciones ?? calificacionPopular?.total_votos) || 0;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 overflow-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detalle-proyecto-titulo"
+    >
+      <div
+        className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-          <h3 className="text-xl font-bold text-gray-900">Detalles del Proyecto</h3>
+        <div className="relative bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5 text-white">
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            aria-label="Cerrar detalles"
+            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/30"
           >
-            <i className="pi pi-times text-xl"></i>
+            <i className="pi pi-times"></i>
           </button>
-        </div>
-
-        {/* Contenido */}
-        <div className="p-6 space-y-6">
-          {/* Título y Estado */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <h4 className="text-2xl font-bold text-gray-900 mb-2">
-                {project.titulo_proyecto || "Sin título"}
-              </h4>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <span className="flex items-center gap-1">
-                  <i className="pi pi-users"></i>
-                  {project.id_estudiantes?.length || 0} estudiante(s)
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <i className="pi pi-book"></i>
-                  {project.codigo_materia || "N/A"} - Grupo {project.nombre_grupo || "N/A"}
-                </span>
-              </div>
-            </div>
-            <span
-              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${
-                project.estado === "aprobado" || project.estado === "rechazado"
-                  ? project.estado === "aprobado"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-red-100 text-red-800"
-                  : project.estado === "pendiente"
-                  ? "bg-amber-100 text-amber-800"
-                  : project.calificacion
-                  ? "bg-emerald-100 text-emerald-800"
-                  : project.activo
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {project.estado === "aprobado"
-                ? "✅ Aprobado"
-                : project.estado === "pendiente"
-                ? "⏳ Pendiente"
-                : project.estado === "rechazado"
-                ? "❌ Rechazado"
-                : project.calificacion
-                ? `Calificado: ${project.calificacion}`
-                : project.activo
-                ? "Pendiente"
-                : "Inactivo"}
+          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-emerald-100">Detalles del proyecto</p>
+          <h3 id="detalle-proyecto-titulo" className="pr-12 text-xl font-bold leading-snug sm:text-2xl">
+            {project.titulo_proyecto || "Sin título"}
+          </h3>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${estado.clases}`}>
+              <i className={`pi ${estado.icono} text-[11px]`}></i>
+              {estado.texto}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
+              <i className={`pi ${tipo.icono} text-[11px]`}></i>
+              {tipo.texto}
             </span>
           </div>
+        </div>
 
-          {/* Información del Proyecto */}
-          <div>
-            <h5 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-              <i className="pi pi-align-left text-emerald-600"></i>
-              Información del Proyecto
-            </h5>
-            <div className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg space-y-2">
-              <p>
-                <span className="font-medium">Tipo de Actividad:</span>{" "}
-                {(() => {
-                  const tipo = project.tipo_actividad || project.id_tipo_actividad;
-                  return tipo === 1
-                    ? "Proyecto (Exposoftware)"
-                    : tipo === 2
-                    ? "Taller"
-                    : tipo === 3
-                    ? "Ponencia"
-                    : tipo === 4
-                    ? "Conferencia"
-                    : "No especificado";
-                })()}
-              </p>
-              <p>
-                <span className="font-medium">Fecha de Subida:</span>{" "}
-                {project.fecha_subida || project.created_at
-                  ? new Date(project.fecha_subida || project.created_at).toLocaleDateString("es-ES")
-                  : "No disponible"}
-              </p>
-            </div>
+        {/* Contenido con scroll */}
+        <div className="flex-1 space-y-6 overflow-y-auto p-5 sm:p-6">
+          {/* Resumen rápido */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              { icono: "pi-users", etiqueta: "Estudiantes", valor: estudiantes.length },
+              { icono: "pi-book", etiqueta: "Materia", valor: project.codigo_materia || "N/A" },
+              { icono: "pi-th-large", etiqueta: "Grupo", valor: project.nombre_grupo || project.id_grupo || "N/A" },
+              {
+                icono: "pi-calendar",
+                etiqueta: "Subido el",
+                valor: fecha ? new Date(fecha).toLocaleDateString("es-ES") : "No disponible",
+              },
+            ].map((d) => (
+              <div key={d.etiqueta} className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 p-3">
+                <div className="mb-1 flex items-center gap-2 text-emerald-700">
+                  <i className={`pi ${d.icono} text-sm`}></i>
+                  <span className="text-xs font-medium">{d.etiqueta}</span>
+                </div>
+                <p className="truncate text-base font-bold text-gray-900" title={String(d.valor)}>
+                  {d.valor}
+                </p>
+              </div>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Información Adicional */}
-            <div className="space-y-4">
-              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <i className="pi pi-info-circle text-emerald-600"></i>
-                Información Adicional
-              </h5>
-              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Materia</p>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {project.nombre_materia || project.codigo_materia || "No especificada"}
-                    </p>
-                    {project.codigo_materia && project.nombre_materia && (
-                      <p className="text-xs text-gray-600">
-                        {project.codigo_materia}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Grupo</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {project.nombre_grupo ? `Grupo ${project.nombre_grupo}` : project.id_grupo ? `Grupo ${project.id_grupo}` : "No especificado"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Evento</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {getEventoName(project.id_evento)}
-                  </p>
-                </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Seccion icono="pi-info-circle" titulo="Información adicional">
+              <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <Dato
+                  etiqueta="Materia"
+                  valor={project.nombre_materia || project.codigo_materia || "No especificada"}
+                  sub={project.codigo_materia && project.nombre_materia ? project.codigo_materia : null}
+                />
+                <Dato
+                  etiqueta="Grupo"
+                  valor={
+                    project.nombre_grupo
+                      ? `Grupo ${project.nombre_grupo}`
+                      : project.id_grupo
+                      ? `Grupo ${project.id_grupo}`
+                      : "No especificado"
+                  }
+                />
+                <Dato etiqueta="Evento" valor={getEventoName(project.id_evento)} />
               </div>
-            </div>
+            </Seccion>
 
-            {/* Líneas de Investigación */}
-            <div className="space-y-4">
-              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <i className="pi pi-sitemap text-emerald-600"></i>
-                Líneas de Investigación
-              </h5>
-              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Línea de Investigación</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {getLineaName(project.codigo_linea)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Sublínea</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {getSublineaName(project.codigo_sublinea)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Área</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {getAreaName(project.codigo_area)}
-                  </p>
-                </div>
+            <Seccion icono="pi-sitemap" titulo="Líneas de investigación">
+              <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <Dato etiqueta="Línea de investigación" valor={getLineaName(project.codigo_linea)} />
+                <Dato etiqueta="Sublínea" valor={getSublineaName(project.codigo_sublinea)} />
+                <Dato etiqueta="Área" valor={getAreaName(project.codigo_area)} />
               </div>
-            </div>
+            </Seccion>
           </div>
 
-          {/* Estudiantes Participantes */}
-          <div>
-            <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <i className="pi pi-users text-emerald-600"></i>
-              Estudiantes Participantes ({project.id_estudiantes?.length || 0})
-            </h5>
-            {project.id_estudiantes && project.id_estudiantes.length > 0 ? (
-              <div className="space-y-2">
-                {project.id_estudiantes.map((estudiante, idx) => {
+          {/* Estudiantes */}
+          <Seccion icono="pi-users" titulo={`Estudiantes participantes (${estudiantes.length})`}>
+            {estudiantes.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {estudiantes.map((estudiante, idx) => {
                   const esLider = typeof estudiante === "object" && estudiante.es_lider;
-                  const nombreEstudiante = obtenerNombreEstudiante(estudiante);
+                  const nombre = obtenerNombreEstudiante(estudiante);
                   return (
                     <div
                       key={idx}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      className={`flex items-center gap-3 rounded-xl border p-3 ${
+                        esLider ? "border-amber-200 bg-amber-50" : "border-gray-200 bg-gray-50"
+                      }`}
                     >
-                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i className={`pi text-emerald-600 text-sm ${esLider ? "pi-crown" : "pi-user"}`}></i>
+                      <div
+                        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                          esLider ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        {nombre.charAt(0).toUpperCase()}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
-                          {nombreEstudiante}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900" title={nombre}>
+                          {nombre}
                         </p>
                         {esLider && (
-                          <p className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded inline-block">
-                            👑 Líder del proyecto
+                          <p className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+                            <i className="pi pi-star-fill text-[10px]"></i> Líder del proyecto
                           </p>
                         )}
                       </div>
@@ -233,226 +269,183 @@ export function ProjectDetailsModal({
                 })}
               </div>
             ) : (
-              <span className="text-sm text-gray-500">
+              <p className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-gray-500">
                 No hay estudiantes asignados
-              </span>
+              </p>
             )}
-          </div>
+          </Seccion>
 
-          {/* Docentes Responsables */}
+          {/* Docentes */}
           {(project.docentes_materias?.length > 0 || project.id_docente) && (
-            <div>
-              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <i className="pi pi-users text-blue-600"></i>
-                Docentes Responsables ({project.docentes_materias?.length || 1})
-              </h5>
-              <div className="space-y-2">
+            <Seccion icono="pi-id-card" color="text-blue-600" titulo={`Docentes responsables (${project.docentes_materias?.length || 1})`}>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {project.docentes_materias && project.docentes_materias.length > 0 ? (
                   project.docentes_materias.map((docente, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
-                    >
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i className="pi pi-user text-blue-600 text-sm"></i>
+                    <div key={idx} className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3">
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+                        <i className="pi pi-user text-sm text-blue-600"></i>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
-                          {docente.nombre_docente}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900">{docente.nombre_docente}</p>
                         {docente.nombre_materia && (
-                          <p className="text-xs text-blue-700 mt-1">
-                            <i className="pi pi-book text-xs mr-1"></i>
+                          <p className="mt-0.5 text-xs text-blue-700">
+                            <i className="pi pi-book mr-1 text-xs"></i>
                             {docente.nombre_materia} (Grupo {docente.nombre_grupo})
                           </p>
                         )}
                       </div>
                     </div>
                   ))
-                ) : project.id_docente ? (
-                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <i className="pi pi-user text-blue-600 text-sm"></i>
+                ) : (
+                  <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+                      <i className="pi pi-user text-sm text-blue-600"></i>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {obtenerNombreDocente(project.id_docente)}
+                    <p className="text-sm font-medium text-gray-900">{obtenerNombreDocente(project.id_docente)}</p>
+                  </div>
+                )}
+              </div>
+            </Seccion>
+          )}
+
+          {/* Calificaciones lado a lado */}
+          {(notaDocente !== null || loadingCalificacionPopular || calificacionPopular) && (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {notaDocente !== null && (
+                <Seccion icono="pi-pencil" color="text-amber-600" titulo="Calificación del docente">
+                  <div className="flex items-center gap-5 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
+                    <div className="text-center">
+                      <p className="text-4xl font-bold text-amber-700">{notaDocente.toFixed(2)}</p>
+                      <p className="text-xs font-medium text-amber-600">/ 5.0</p>
+                    </div>
+                    <div className="flex-1">
+                      <div className="h-2 overflow-hidden rounded-full bg-amber-200/70">
+                        <div
+                          className="h-full rounded-full bg-amber-500"
+                          style={{ width: `${Math.min(100, Math.max(0, (notaDocente / 5) * 100))}%` }}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs text-amber-700">
+                        {notaDocente >= 3 ? "Nota aprobatoria" : "Por debajo de la nota aprobatoria (3.0)"}
                       </p>
                     </div>
                   </div>
-                ) : null}
-              </div>
+                </Seccion>
+              )}
+
+              {loadingCalificacionPopular ? (
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600"></div>
+                  <p className="text-sm text-gray-600">Cargando calificación del público...</p>
+                </div>
+              ) : calificacionPopular ? (
+                <Seccion icono="pi-star-fill" color="text-yellow-500" titulo="Calificación popular del público">
+                  <div className="space-y-4 rounded-xl border border-indigo-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+                    <div className="flex items-center gap-5">
+                      <div className="text-center">
+                        <p className="text-4xl font-bold text-indigo-700">{promedioPopular.toFixed(2)}</p>
+                        <p className="text-xs font-medium text-indigo-600">/ 5.0</p>
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <Estrellas valor={promedioPopular} />
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold text-gray-900">{votos}</span> {votos === 1 ? "voto" : "votos"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {votos === 0 && (
+                      <p className="text-center text-sm text-gray-600">
+                        <i className="pi pi-info-circle mr-2"></i>
+                        Este proyecto aún no tiene calificaciones del público
+                      </p>
+                    )}
+
+                    {calificacionPopular.desglose_por_rol &&
+                      Object.keys(calificacionPopular.desglose_por_rol).length > 0 && (
+                        <div className="border-t border-indigo-100 pt-3">
+                          <p className="mb-2 text-xs font-semibold text-gray-600">Desglose por rol</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(calificacionPopular.desglose_por_rol).map(([rol, datos]) => (
+                              <div key={rol} className="rounded-lg border border-indigo-100 bg-white p-2">
+                                <p className="text-xs font-medium capitalize text-gray-700">{getRolName(rol)}</p>
+                                <p className="text-sm font-bold text-indigo-600">
+                                  {(num(datos.promedio) || 0).toFixed(2)}
+                                </p>
+                                {datos.cantidad ? (
+                                  <p className="text-xs text-gray-500">
+                                    ({datos.cantidad} {datos.cantidad === 1 ? "voto" : "votos"})
+                                  </p>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                </Seccion>
+              ) : null}
             </div>
           )}
 
-          {/* Documento del Proyecto */}
-          {project.url_preview_png || project.archivo_pdf || project.url_cloudinary ? (
-            <div>
-              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <i className="pi pi-file-pdf text-emerald-600"></i>
-                Documento del Proyecto
-              </h5>
-              <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                {project.url_preview_png ? (
+          {/* Documento */}
+          {urlPreview || urlDocumento ? (
+            <Seccion icono="pi-file-pdf" titulo="Documento del proyecto">
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                {urlPreview ? (
                   <img
-                    src={project.url_preview_png}
-                    alt="Vista previa PDF"
-                    className="w-full h-auto object-contain max-h-96"
+                    src={urlPreview}
+                    alt="Vista previa del documento"
+                    referrerPolicy="no-referrer"
+                    className="h-auto max-h-96 w-full object-contain"
                   />
                 ) : (
                   <iframe
-                    src={project.archivo_pdf || project.url_cloudinary}
-                    title="Vista previa PDF"
+                    src={urlDocumento}
+                    title="Vista previa del documento"
+                    referrerPolicy="no-referrer"
                     width="100%"
                     height="500"
-                    style={{ border: 'none' }}
+                    style={{ border: "none" }}
                   />
                 )}
               </div>
-              <div className="mt-4 flex items-center gap-3">
-                <a
-                  href={project.archivo_pdf || project.url_cloudinary}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors font-medium text-sm"
-                >
-                  <i className="pi pi-external-link"></i>
-                  Abrir en nueva ventana
-                </a>
-                <a
-                  href={project.archivo_pdf || project.url_cloudinary}
-                  download
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm"
-                >
-                  <i className="pi pi-download"></i>
-                  Descargar PDF
-                </a>
-              </div>
-            </div>
+              {urlDocumento && (
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <a
+                    href={urlDocumento}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+                  >
+                    <i className="pi pi-external-link"></i>
+                    Abrir en nueva ventana
+                  </a>
+                  <a
+                    href={urlDocumento}
+                    download
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                  >
+                    <i className="pi pi-download"></i>
+                    Descargar PDF
+                  </a>
+                </div>
+              )}
+            </Seccion>
           ) : (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-              <i className="pi pi-info-circle text-yellow-600 text-2xl mb-2"></i>
-              <p className="text-sm text-yellow-800 font-medium">
-                No hay documento adjunto para este proyecto
-              </p>
+            <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-center">
+              <i className="pi pi-info-circle mb-2 text-2xl text-yellow-600"></i>
+              <p className="text-sm font-medium text-yellow-800">No hay documento adjunto para este proyecto</p>
             </div>
           )}
-
-          {/* Calificación del Docente */}
-          {project.calificacion && (
-            <div>
-              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <i className="pi pi-user text-amber-600"></i>
-                Calificación del Docente
-              </h5>
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-amber-700">
-                      {project.calificacion.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-amber-600 font-medium">/ 5.0</p>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">Calificación:</span>
-                      <span className="text-sm text-gray-900 font-semibold">
-                        {project.calificacion.toFixed(2)} de 5.0
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Calificación Popular y Ranking */}
-          {loadingCalificacionPopular ? (
-            <div className="flex items-center justify-center p-4">
-              <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-              <p className="ml-2 text-sm text-gray-600">Cargando calificación del público...</p>
-            </div>
-          ) : calificacionPopular ? (
-            <div>
-              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <i className="pi pi-star-fill text-yellow-500"></i>
-                Calificación Popular del Público
-              </h5>
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-4">
-                {/* Nota Principal */}
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-indigo-700">
-                      {calificacionPopular.promedio_ponderado ? calificacionPopular.promedio_ponderado.toFixed(2) : "0.00"}
-                    </p>
-                    <p className="text-xs text-indigo-600 font-medium">/ 5.0</p>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">Promedio Ponderado:</span>
-                      <span className="text-sm text-gray-900 font-semibold">
-                        {calificacionPopular.promedio_ponderado ? calificacionPopular.promedio_ponderado.toFixed(2) : "0.00"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">Total de Votos:</span>
-                      <span className="text-sm text-gray-900 font-semibold">
-                        {calificacionPopular.total_calificaciones || calificacionPopular.total_votos || 0} votos
-                      </span>
-                    </div>
-                    <div className="flex gap-1 pt-1">
-                      {[...Array(5)].map((_, i) => (
-                        <i
-                          key={i}
-                          className={`pi text-lg ${
-                            i < Math.round(calificacionPopular.promedio_ponderado || 0)
-                              ? 'pi-star-fill text-yellow-400'
-                              : 'pi-star text-gray-300'
-                          }`}
-                        ></i>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Desglose por Rol */}
-                {calificacionPopular.desglose_por_rol && Object.keys(calificacionPopular.desglose_por_rol).length > 0 && (
-                  <div className="border-t border-indigo-100 pt-3">
-                    <p className="text-xs font-semibold text-gray-600 mb-2">Desglose por Rol:</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(calificacionPopular.desglose_por_rol).map(([rol, datos]) => (
-                        <div key={rol} className="bg-white rounded p-2 border border-indigo-100">
-                          <p className="text-xs font-medium text-gray-700 capitalize">{getRolName(rol)}</p>
-                          <p className="text-sm font-bold text-indigo-600">
-                            {datos.promedio ? datos.promedio.toFixed(2) : "0.00"}
-                          </p>
-                          {datos.cantidad && (
-                            <p className="text-xs text-gray-500">({datos.cantidad} {datos.cantidad === 1 ? 'voto' : 'votos'})</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {calificacionPopular.total_calificaciones || calificacionPopular.total_votos === 0 && (
-                  <div className="text-center py-2">
-                    <p className="text-sm text-gray-600">
-                      <i className="pi pi-info-circle mr-2"></i>
-                      Este proyecto aún no tiene calificaciones del público
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : null}
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            className="rounded-lg border border-gray-300 px-5 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-100"
           >
             Cerrar
           </button>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import AdminSidebar from "../../components/Layout/AdminSidebar";
 import { useAdminAuth } from "../../hooks/useAdminAuth";
-import { AdminHeader } from "../../components/Admin/AdminComponents";
+import { AdminHeader, AdminPageHeader, TabNavigation } from "../../components/Admin/AdminComponents";
 import { useResearchLinesManagement } from "./useResearchLinesManagement";
 import { EditLineaModal, EditSublineaModal, EditAreaModal } from "./EditResearchLinesModals";
 import ResearchLinesTabs from "./ResearchLinesTabs";
@@ -51,15 +51,17 @@ export default function CreateLines() {
           <AdminSidebar userName={getUserName()} userRole="Administrador" />
 
           <main className="lg:col-span-3">
-            <div className="bg-white rounded-lg border border-gray-200 p-2 mb-6">
-              <div className="flex gap-2">
-                {tabs.map(({ key, label }) => (
-                  <button key={key} onClick={() => setActiveTab(key)}
-                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${activeTab === key ? "bg-teal-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-                  >{label}</button>
-                ))}
-              </div>
-            </div>
+            <AdminPageHeader
+              icon="pi-sitemap"
+              title="Líneas de Investigación"
+              subtitle="Administra líneas, sublíneas y áreas temáticas"
+            />
+
+            <TabNavigation
+              tabs={tabs.map(({ key, label }) => ({ id: key, label }))}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+            />
 
             <ResearchLinesTabs
               activeTab={activeTab}

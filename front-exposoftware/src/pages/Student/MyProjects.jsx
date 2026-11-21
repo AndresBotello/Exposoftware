@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import * as ProjectsService from "../../Services/ProjectsService";
@@ -15,10 +15,46 @@ import ProjectDetailsModal from "../../components/ProjectDetailsModal";
 import AddMemberModal from "../../components/Student/AddMemberModal";
 import * as MisCertificadosService from "../../Services/MisCertificadosService";
 import * as CertificadoService from "../../Services/CertificadoService";
+import {
+  EVENTO_AUTO,
+  EVENTO_TODOS,
+  elegirEventoActual,
+  construirEventosDisponibles,
+  idEvento as idEventoDe,
+} from "../../utils/eventoActual";
+
+/* ------------------------------------------------------------------ */
+/* Helpers de presentación (misma lógica de estado que tenía la tabla)  */
+/* ------------------------------------------------------------------ */
+
+function estadoProyecto(p) {
+  if (p.estado === "rechazado") return { clave: "reprobado", texto: "Rechazado", clases: "bg-red-100 text-red-800", icono: "pi-times-circle" };
+  if (p.estado === "aprobado" || p.calificacion >= 3.0)
+    return { clave: "aprobado", texto: "Aprobado", clases: "bg-green-100 text-green-800", icono: "pi-check-circle" };
+  if (p.calificacion < 3.0 && p.calificacion !== null)
+    return { clave: "reprobado", texto: "Reprobado", clases: "bg-red-100 text-red-800", icono: "pi-times-circle" };
+  return { clave: "pendiente", texto: "Pendiente", clases: "bg-yellow-100 text-yellow-800", icono: "pi-clock" };
+}
+
+function tipoActividad(p) {
+  const tipo = p.tipo_actividad || p.id_tipo_actividad;
+  switch (tipo) {
+    case 1: return { texto: "Proyecto", clases: "bg-blue-100 text-blue-800", icono: "pi-folder" };
+    case 2: return { texto: "Taller", clases: "bg-orange-100 text-orange-800", icono: "pi-wrench" };
+    case 3: return { texto: "Ponencia", clases: "bg-purple-100 text-purple-800", icono: "pi-megaphone" };
+    case 4: return { texto: "Conferencia", clases: "bg-indigo-100 text-indigo-800", icono: "pi-microphone" };
+    default: return { texto: "No especificado", clases: "bg-gray-100 text-gray-800", icono: "pi-question-circle" };
+  }
+}
+
+function fechaProyecto(p) {
+  const f = p.fecha_subida || p.created_at;
+  return f ? new Date(f).toLocaleDateString("es-ES") : "Fecha no disponible";
+}
 
 export default function MyProjects() {
   const [projects, setProjects] = useState([]);
-  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingProjectsBase, setLoadingProjects] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -29,6 +65,53 @@ export default function MyProjects() {
   const [loadingCalificacionPopular, setLoadingCalificacionPopular] = useState(false);
   const { user, getFullName, getInitials, logout, loading } = useAuth();
   const navigate = useNavigate();
+
+  // ---- Evento: por defecto el actual (inscripciones abiertas > en curso > ...) ----
+  const [eventosRaw, setEventosRaw] = useState([]);
+  const [eventoElegido, setEventoElegido] = useState(EVENTO_AUTO);
+  // Hasta conocer los eventos no se sabe cuál es el actual: se mantiene la carga para no mostrar datos viejos
+  const [eventosCargados, setEventosCargados] = useState(false);
+  const loadingProjects = loadingProjectsBase || !eventosCargados;
+
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const lista = await EventosService.obtenerEventos();
+        if (!cancelado) setEventosRaw(Array.isArray(lista) ? lista : []);
+      } catch {
+        if (!cancelado) setEventosRaw([]);
+      } finally {
+        if (!cancelado) setEventosCargados(true);
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const eventosDisponibles = useMemo(
+    () => construirEventosDisponibles(eventosRaw, projects),
+    [eventosRaw, projects]
+  );
+
+  const eventoActualId = useMemo(() => {
+    const actual = elegirEventoActual(eventosRaw);
+    if (actual) return String(idEventoDe(actual));
+    return eventosDisponibles.length > 0 ? eventosDisponibles[0].id : null;
+  }, [eventosRaw, eventosDisponibles]);
+
+  const eventoEfectivo = eventoElegido === EVENTO_AUTO ? eventoActualId || EVENTO_TODOS : eventoElegido;
+
+  const projectsEvento = useMemo(
+    () =>
+      eventoEfectivo === EVENTO_TODOS
+        ? projects
+        : projects.filter((p) => String(p.id_evento) === String(eventoEfectivo)),
+    [projects, eventoEfectivo]
+  );
+
+  const eventoSeleccionadoInfo = eventosDisponibles.find((e) => e.id === String(eventoEfectivo));
 
   const {
     searchTerm,
@@ -42,7 +125,7 @@ export default function MyProjects() {
     filteredProjects,
     clearFilters,
     hasFilters
-  } = useProjectFilters(projects);
+  } = useProjectFilters(projectsEvento);
 
   useEffect(() => {
     const cargarMisProyectos = async () => {
@@ -255,6 +338,14 @@ export default function MyProjects() {
     );
   }
 
+  const resumen = projectsEvento.reduce(
+    (acc, p) => {
+      acc[estadoProyecto(p).clave] += 1;
+      return acc;
+    },
+    { aprobado: 0, pendiente: 0, reprobado: 0 }
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
       <StudentHeader user={user} getFullName={getFullName} getInitials={getInitials} logout={logout} />
@@ -262,29 +353,37 @@ export default function MyProjects() {
       <StudentLayout>
         <StudentSidebar user={user} getInitials={getInitials} getFullName={getFullName} />
 
-        <main className="lg:col-span-3">
+        <main className="lg:col-span-3 space-y-6">
           {/* Información del estudiante */}
-          <div className="border rounded-lg p-4 sm:p-6 mb-6" style={{ background: 'linear-gradient(to right, rgba(12, 183, 106, 0.05), rgba(12, 183, 106, 0.1))', borderColor: 'rgba(12, 183, 106, 0.3)' }}>
-            <div className="flex items-start gap-3 sm:gap-4">
-              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(12, 183, 106, 1)' }}>
+          <div
+            className="relative overflow-hidden border rounded-2xl p-4 sm:p-6"
+            style={{ background: 'linear-gradient(to right, rgba(12, 183, 106, 0.05), rgba(12, 183, 106, 0.1))', borderColor: 'rgba(12, 183, 106, 0.3)' }}
+          >
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-200/30"></div>
+            <div className="relative flex items-center gap-3 sm:gap-4">
+              <div className="w-12 sm:w-14 h-12 sm:h-14 rounded-full flex items-center justify-center flex-shrink-0 shadow-md" style={{ backgroundColor: 'rgba(12, 183, 106, 1)' }}>
                 <span className="text-white font-bold text-lg sm:text-xl">{getInitials()}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-gray-900 truncate">{getFullName()}</h3>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mt-1">
-                  <span className="flex items-center gap-1">
-                    <i className="pi pi-id-card"></i>
-                    <span className="truncate">{user?.identificacion}</span>
-                  </span>
-                  <span className="hidden sm:inline text-gray-300">•</span>
-                  <span className="flex items-center gap-1">
-                    <i className="pi pi-book"></i>
-                    <span>Semestre {user?.semestre}</span>
-                  </span>
+                  {user?.identificacion && (
+                    <span className="flex items-center gap-1">
+                      <i className="pi pi-id-card"></i>
+                      <span className="truncate">{user.identificacion}</span>
+                    </span>
+                  )}
+                  {user?.identificacion && user?.semestre && <span className="hidden sm:inline text-gray-300">•</span>}
+                  {user?.semestre && (
+                    <span className="flex items-center gap-1">
+                      <i className="pi pi-book"></i>
+                      <span>Semestre {user.semestre}</span>
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="hidden sm:block flex-shrink-0">
-                <span className="inline-flex items-center gap-2 text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium" style={{ backgroundColor: 'rgba(12, 183, 106, 1)' }}>
+                <span className="inline-flex items-center gap-2 text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium shadow" style={{ backgroundColor: 'rgba(12, 183, 106, 1)' }}>
                   <i className="pi pi-check-circle"></i>
                   Estudiante Activo
                 </span>
@@ -292,209 +391,220 @@ export default function MyProjects() {
             </div>
           </div>
 
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Mis Proyectos</h2>
-          <p className="text-gray-600 mb-6">Aquí puedes gestionar todos los proyectos académicos que has postulado o en los que participas.</p>
-
-          {/* Búsqueda y Filtros mejorados */}
-          <div className="bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
-                <i className="pi pi-search text-white text-lg"></i>
+          {/* Título + acción principal */}
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <i className="pi pi-folder-open text-white text-xl"></i>
+                </div>
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Mis Proyectos</h2>
+                  <p className="text-gray-600 text-sm sm:text-base">Gestiona los proyectos que has postulado o en los que participas.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Buscar y Filtrar</h3>
-                <p className="text-sm text-gray-500">Encuentra rápidamente tus proyectos</p>
-              </div>
+              <Link
+                to="/student/register-project"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-2.5 font-semibold text-white shadow-lg shadow-emerald-200/40 transition-all hover:from-emerald-700 hover:to-teal-700"
+              >
+                <i className="pi pi-plus"></i>
+                Postular proyecto
+              </Link>
             </div>
-
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              <div className="relative flex-1 w-full lg:w-auto max-w-md">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i className="pi pi-search text-gray-400"></i>
-                </div>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar por nombre..."
-                  className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <i className="pi pi-times"></i>
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <i className="pi pi-filter text-gray-500 text-sm"></i>
-                <span className="text-sm font-medium text-gray-700">Filtros:</span>
-              </div>
-
-              <div className="relative w-full lg:w-auto max-w-xs">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i className="pi pi-book text-gray-400"></i>
-                </div>
-                <select
-                  value={filterMateria}
-                  onChange={(e) => {
-                    setFilterMateria(e.target.value);
-                    setFilterGrupo('Todos'); // Reset grupo cuando cambia materia
-                  }}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 appearance-none bg-white"
-                >
-                  <option value="Todas">Todas las materias</option>
-                  {materias.map((materia) => (
-                    <option key={materia} value={materia}>
-                      {materia}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="relative w-full lg:w-auto max-w-xs">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i className="pi pi-users text-gray-400"></i>
-                </div>
-                <select
-                  value={filterGrupo}
-                  onChange={(e) => setFilterGrupo(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 appearance-none bg-white"
-                  disabled={grupos.length === 0}
-                >
-                  <option value="Todos">Todos los grupos</option>
-                  {grupos.map((grupo) => (
-                    <option key={grupo} value={grupo}>
-                      {grupo}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Mensajes informativos */}
-            <div className="flex flex-col gap-3 mt-4">
-              {searchTerm && (
-                <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
-                  <i className="pi pi-search text-emerald-600"></i>
-                  <span>
-                    <strong>Búsqueda:</strong> "{searchTerm}" - {filteredProjects.length} resultado(s)
-                  </span>
-                </div>
-              )}
-              {hasFilters && (
-                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-                  <i className="pi pi-info-circle text-blue-600"></i>
-                  <span>
-                    <strong>Filtros activos:</strong> Mostrando {filteredProjects.length} de {projects.length} proyectos
-                  </span>
-                </div>
-              )}
-            </div>
+            <div className="h-1 w-24 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full"></div>
           </div>
 
-          {/* Controles de vista y estadísticas */}
-          <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl border border-emerald-200 p-4 mb-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700">
-                    {filteredProjects.length} de {projects.length} proyectos
-                  </span>
+          {/* Resumen de estados */}
+          {!loadingProjects && !error && projects.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {[
+                { label: "Total", valor: projectsEvento.length, icono: "pi-folder", caja: "from-blue-50 to-blue-100 border-blue-200 text-blue-900", chip: "from-blue-500 to-blue-600" },
+                { label: "Aprobados", valor: resumen.aprobado, icono: "pi-check-circle", caja: "from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-900", chip: "from-emerald-500 to-emerald-600" },
+                { label: "Pendientes", valor: resumen.pendiente, icono: "pi-clock", caja: "from-amber-50 to-amber-100 border-amber-200 text-amber-900", chip: "from-amber-500 to-amber-600" },
+                { label: "Reprobados", valor: resumen.reprobado, icono: "pi-times-circle", caja: "from-red-50 to-red-100 border-red-200 text-red-900", chip: "from-red-500 to-red-600" },
+              ].map((t) => (
+                <div key={t.label} className={`flex items-center justify-between rounded-xl border bg-gradient-to-br ${t.caja} p-4 shadow-sm`}>
+                  <div>
+                    <p className="text-xs font-medium opacity-80">{t.label}</p>
+                    <p className="text-2xl font-bold">{t.valor}</p>
+                  </div>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${t.chip} shadow`}>
+                    <i className={`pi ${t.icono} text-white`}></i>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Búsqueda, filtros y vista (solo si hay proyectos) */}
+          {!loadingProjects && !error && projects.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+              {eventosDisponibles.length > 0 && (
+                <div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow">
+                      <i className="pi pi-calendar text-white"></i>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {eventoEfectivo === EVENTO_TODOS
+                          ? "Histórico de todos los eventos"
+                          : eventoSeleccionadoInfo?.nombre || "Evento"}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {eventoEfectivo === EVENTO_TODOS
+                          ? "Estás viendo también los proyectos de eventos anteriores"
+                          : eventoSeleccionadoInfo?.id === eventoActualId
+                          ? `Evento actual${eventoSeleccionadoInfo?.estadoTexto ? ` · ${eventoSeleccionadoInfo.estadoTexto}` : ""}`
+                          : `Evento anterior${eventoSeleccionadoInfo?.estadoTexto ? ` · ${eventoSeleccionadoInfo.estadoTexto}` : ""}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="filtro-evento-estudiante" className="text-sm font-medium text-gray-700">
+                      Evento:
+                    </label>
+                    <select
+                      id="filtro-evento-estudiante"
+                      value={eventoEfectivo}
+                      onChange={(e) => setEventoElegido(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-auto sm:min-w-[220px]"
+                    >
+                      {eventosDisponibles.map((ev) => (
+                        <option key={ev.id} value={ev.id}>
+                          {ev.nombre}
+                          {ev.estadoTexto ? ` · ${ev.estadoTexto}` : ""}
+                          {ev.id === eventoActualId ? " (actual)" : ""}
+                        </option>
+                      ))}
+                      <option value={EVENTO_TODOS}>Todos los eventos (histórico)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i className="pi pi-search text-gray-400"></i>
+                  </div>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por nombre del proyecto..."
+                    maxLength={120}
+                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      aria-label="Borrar búsqueda"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <i className="pi pi-times"></i>
+                    </button>
+                  )}
                 </div>
 
+                <div className="relative w-full lg:w-52">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i className="pi pi-book text-gray-400"></i>
+                  </div>
+                  <select
+                    value={filterMateria}
+                    onChange={(e) => {
+                      setFilterMateria(e.target.value);
+                      setFilterGrupo('Todos');
+                    }}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 appearance-none bg-white"
+                  >
+                    <option value="Todas">Todas las materias</option>
+                    {materias.map((materia) => (
+                      <option key={materia} value={materia}>{materia}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="relative w-full lg:w-48">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i className="pi pi-users text-gray-400"></i>
+                  </div>
+                  <select
+                    value={filterGrupo}
+                    onChange={(e) => setFilterGrupo(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 appearance-none bg-white disabled:bg-gray-50 disabled:text-gray-400"
+                    disabled={grupos.length === 0}
+                  >
+                    <option value="Todos">Todos los grupos</option>
+                    {grupos.map((grupo) => (
+                      <option key={grupo} value={grupo}>{grupo}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 border border-gray-200 self-start lg:self-auto">
+                  {[
+                    { id: "grid", label: "Tarjetas", icono: "pi-th-large" },
+                    { id: "table", label: "Tabla", icono: "pi-list" },
+                  ].map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setViewMode(v.id)}
+                      aria-pressed={viewMode === v.id}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                        viewMode === v.id
+                          ? "bg-emerald-500 text-white shadow-sm"
+                          : "text-gray-600 hover:text-gray-800 hover:bg-white"
+                      }`}
+                    >
+                      <i className={`pi ${v.icono}`}></i>
+                      <span className="hidden sm:inline">{v.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="inline-flex items-center gap-2 text-gray-600">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                  Mostrando <strong className="text-gray-900">{filteredProjects.length}</strong> de {projectsEvento.length} proyectos
+                </span>
                 {hasFilters && (
                   <button
                     onClick={clearFilters}
-                    className="text-xs text-emerald-600 hover:text-emerald-700 font-medium underline transition-colors"
+                    className="ml-1 font-medium text-emerald-600 underline hover:text-emerald-700 transition-colors"
                   >
                     Limpiar filtros
                   </button>
                 )}
-
-                <div className="flex gap-2">
-                  {projects.filter((p) => p.estado === "aprobado" || p.calificacion >= 3.0).length > 0 && (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>
-                        {projects.filter((p) => p.estado === "aprobado" || p.calificacion >= 3.0).length} Aprobados
-                      </span>
-                    </div>
-                  )}
-                  {projects.filter(
-                    (p) => p.estado === "rechazado" || (p.calificacion < 3.0 && p.calificacion !== null)
-                  ).length > 0 && (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <span>
-                        {
-                          projects.filter(
-                            (p) => p.estado === "rechazado" || (p.calificacion < 3.0 && p.calificacion !== null)
-                          ).length
-                        }{" "}
-                        Reprobados
-                      </span>
-                    </div>
-                  )}
-                  {projects.filter((p) => p.estado !== "aprobado" && p.estado !== "rechazado" && (!p.calificacion || (p.calificacion === null || p.calificacion === undefined))).length >
-                    0 && (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      <span>
-                        {
-                          projects.filter((p) => p.estado !== "aprobado" && p.estado !== "rechazado" && (!p.calificacion || (p.calificacion === null || p.calificacion === undefined)))
-                            .length
-                        }{" "}
-                        Pendientes
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Controles de vista */}
-              <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                    viewMode === "grid"
-                      ? "bg-emerald-500 text-white shadow-sm"
-                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                  }`}
-                >
-                  <i className="pi pi-th-large"></i>
-                  <span className="hidden sm:inline">Tarjetas</span>
-                </button>
-                <button
-                  onClick={() => setViewMode("table")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                    viewMode === "table"
-                      ? "bg-emerald-500 text-white shadow-sm"
-                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                  }`}
-                >
-                  <i className="pi pi-list"></i>
-                  <span className="hidden sm:inline">Tabla</span>
-                </button>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Contenido principal */}
           {loadingProjects ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-              <div className="w-16 h-16 border-4 rounded-full animate-spin mx-auto mb-4" style={{ borderColor: 'rgba(12, 183, 106, 1)', borderTopColor: 'transparent' }}></div>
-              <p className="text-gray-600">Cargando proyectos...</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm animate-pulse">
+                  <div className="h-4 w-3/4 rounded bg-gray-200 mb-3" />
+                  <div className="h-3 w-1/2 rounded bg-gray-200 mb-6" />
+                  <div className="h-3 w-full rounded bg-gray-100 mb-2" />
+                  <div className="h-3 w-5/6 rounded bg-gray-100 mb-6" />
+                  <div className="flex gap-2">
+                    <div className="h-6 w-16 rounded-full bg-gray-200" />
+                    <div className="h-6 w-20 rounded-full bg-gray-200" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-              <i className="pi pi-exclamation-triangle text-3xl text-red-500 mb-3"></i>
-              <h3 className="text-lg font-semibold text-red-900 mb-2">Error al cargar proyectos</h3>
-              <p className="text-red-700 mb-4">{error}</p>
+            <div role="alert" className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+              <div className="w-14 h-14 bg-red-100 rounded-full mx-auto mb-3 flex items-center justify-center">
+                <i className="pi pi-exclamation-triangle text-2xl text-red-500"></i>
+              </div>
+              <h3 className="text-lg font-semibold text-red-900 mb-1">No pudimos cargar tus proyectos</h3>
+              <p className="text-red-700 mb-4 text-sm">{error}</p>
               <button
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
@@ -503,59 +613,85 @@ export default function MyProjects() {
               </button>
             </div>
           ) : projects.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
               <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgba(12, 183, 106, 0.1)' }}>
                 <i className="pi pi-folder-open text-4xl" style={{ color: 'rgba(12, 183, 106, 1)' }}></i>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No tienes proyectos registrados</h3>
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Comienza postulando tu primer proyecto para la convocatoria Exposoftware 2025.
+                Comienza postulando tu primer proyecto para la convocatoria Exposoftware 2026.
               </p>
               <Link
                 to="/student/register-project"
-                className="inline-flex items-center gap-2 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity shadow-lg"
                 style={{ backgroundColor: 'rgba(12, 183, 106, 1)' }}
               >
                 <i className="pi pi-plus-circle"></i>
                 Postular Nuevo Proyecto
               </Link>
             </div>
+          ) : projectsEvento.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
+              <div className="w-16 h-16 bg-emerald-50 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <i className="pi pi-calendar text-3xl text-emerald-500"></i>
+              </div>
+              <p className="text-gray-800 font-medium mb-1">
+                Aún no tienes proyectos en {eventoSeleccionadoInfo?.nombre || "este evento"}
+              </p>
+              <p className="text-sm text-gray-500 mb-5">
+                Puedes postular uno nuevo o revisar tus proyectos de eventos anteriores.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  to="/student/register-project"
+                  className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:from-emerald-700 hover:to-teal-700"
+                >
+                  <i className="pi pi-plus"></i>
+                  Postular proyecto
+                </Link>
+                <button
+                  onClick={() => setEventoElegido(EVENTO_TODOS)}
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  Ver histórico
+                </button>
+              </div>
+            </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <i className="pi pi-search text-3xl text-gray-400"></i>
+              </div>
+              <p className="text-gray-700 font-medium mb-1">No se encontraron proyectos</p>
+              <p className="text-sm text-gray-500 mb-4">Prueba con otro nombre o quita algún filtro.</p>
+              <button
+                onClick={clearFilters}
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+              >
+                Limpiar filtros
+              </button>
+            </div>
           ) : viewMode === "grid" ? (
-            <div>
-              {filteredProjects.length === 0 ? (
-                <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <i className="pi pi-search text-4xl text-gray-400"></i>
-                  </div>
-                  <p className="text-gray-600 mb-2">No se encontraron proyectos</p>
-                  <p className="text-sm text-gray-500">Intenta con otros términos de búsqueda</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  {filteredProjects.map((proyecto) => (
-                    <ProjectCard
-                      key={proyecto.id_proyecto}
-                      proyecto={proyecto}
-                      onViewDetails={handleViewDetails}
-                    />
-                  ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {filteredProjects.map((proyecto) => (
+                <ProjectCard
+                  key={proyecto.id_proyecto}
+                  proyecto={proyecto}
+                  onViewDetails={handleViewDetails}
+                />
+              ))}
 
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center hover:border-teal-400 hover:bg-teal-50 transition-all duration-300 group cursor-pointer">
-                    <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center mb-4 group-hover:from-teal-200 group-hover:to-teal-300 transition-all duration-300">
-                      <i className="pi pi-plus text-2xl text-teal-600"></i>
-                    </div>
-                    <h4 className="font-bold text-gray-900 mb-2 text-center">Postular Nuevo Proyecto</h4>
-                    <p className="text-gray-500 text-sm mb-4 text-center max-w-xs">Haga clic para iniciar una nueva postulación.</p>
-                    <Link
-                      to="/student/register-project"
-                      className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:from-teal-600 hover:to-teal-700 transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
-                    >
-                      <i className="pi pi-plus-circle"></i>
-                      Postular
-                    </Link>
-                  </div>
+              {/* Tarjeta para postular otro proyecto (toda la tarjeta es un enlace) */}
+              <Link
+                to="/student/register-project"
+                className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center hover:border-teal-400 hover:bg-teal-50 transition-all duration-300 group"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center mb-4 group-hover:from-teal-200 group-hover:to-teal-300 transition-all duration-300">
+                  <i className="pi pi-plus text-2xl text-teal-600"></i>
                 </div>
-              )}
+                <h4 className="font-bold text-gray-900 mb-2 text-center">Postular Nuevo Proyecto</h4>
+                <p className="text-gray-500 text-sm text-center max-w-xs">Haz clic para iniciar una nueva postulación.</p>
+              </Link>
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
@@ -563,35 +699,18 @@ export default function MyProjects() {
                 <table className="w-full">
                   <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                        Proyecto
-                      </th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                        Materia
-                      </th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                        Tipo
-                      </th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                        Estado
-                      </th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                        Acciones
-                      </th>
+                      {["Proyecto", "Materia", "Tipo", "Estado", "Acciones"].map((h) => (
+                        <th key={h} className="text-left py-4 px-6 text-sm font-semibold text-gray-700 whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredProjects.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" className="py-12 px-6 text-center">
-                          <div className="flex flex-col items-center">
-                            <i className="pi pi-search text-4xl text-gray-400 mb-4"></i>
-                            <p className="text-gray-600">No se encontraron proyectos</p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredProjects.map((project, index) => (
+                    {filteredProjects.map((project, index) => {
+                      const estado = estadoProyecto(project);
+                      const tipo = tipoActividad(project);
+                      return (
                         <tr
                           key={project.id_proyecto}
                           className={`border-b border-gray-100 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 transition-all duration-200 ${
@@ -603,87 +722,30 @@ export default function MyProjects() {
                               <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i className="pi pi-folder-open text-emerald-600 text-sm"></i>
                               </div>
-                              <div className="min-w-0 flex-1">
-                                <p
-                                  className="text-sm font-semibold text-gray-900 truncate"
-                                  title={project.titulo_proyecto}
-                                >
+                              <div className="min-w-0 max-w-[280px]">
+                                <p className="text-sm font-semibold text-gray-900 truncate" title={project.titulo_proyecto}>
                                   {project.titulo_proyecto || "Sin título"}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {project.fecha_subida
-                                    ? new Date(project.fecha_subida).toLocaleDateString("es-ES")
-                                    : project.created_at
-                                    ? new Date(project.created_at).toLocaleDateString("es-ES")
-                                    : "Fecha no disponible"}
-                                </p>
+                                <p className="text-xs text-gray-500 mt-1">{fechaProyecto(project)}</p>
                               </div>
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            <div className="text-sm text-gray-900">
-                              <p className="font-medium">
-                                {project.nombre_materia || project.codigo_materia || "N/A"}
-                              </p>
-                            </div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {project.nombre_materia || project.codigo_materia || "N/A"}
+                            </p>
                           </td>
                           <td className="py-4 px-6">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                (() => {
-                                  const tipo = project.tipo_actividad || project.id_tipo_actividad;
-                                  return tipo === 1
-                                    ? "bg-blue-100 text-blue-800"
-                                    : tipo === 2
-                                    ? "bg-orange-100 text-orange-800"
-                                    : tipo === 3
-                                    ? "bg-purple-100 text-purple-800"
-                                    : tipo === 4
-                                    ? "bg-indigo-100 text-indigo-800"
-                                    : "bg-gray-100 text-gray-800";
-                                })()
-                              }`}
-                            >
-                              {(() => {
-                                const tipo = project.tipo_actividad || project.id_tipo_actividad;
-                                return tipo === 1
-                                  ? "📚 Proyecto"
-                                  : tipo === 2
-                                  ? "🛠️ Taller"
-                                  : tipo === 3
-                                  ? "🎤 Ponencia"
-                                  : tipo === 4
-                                  ? "🎭 Conferencia"
-                                  : "❓ No especificado";
-                              })()}
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${tipo.clases}`}>
+                              <i className={`pi ${tipo.icono} text-[11px]`}></i>
+                              {tipo.texto}
                             </span>
                           </td>
                           <td className="py-4 px-6">
                             <div className="flex flex-col gap-1">
-                              <span
-                                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold w-fit ${
-                                  project.estado === "rechazado"
-                                    ? "bg-red-100 text-red-800"
-                                    : project.estado === "aprobado" || project.calificacion >= 3.0
-                                    ? "bg-green-100 text-green-800"
-                                    : project.calificacion < 3.0 &&
-                                      project.calificacion !== null
-                                    ? "bg-red-100 text-red-800"
-                                    : !project.calificacion || project.calificacion === null || project.calificacion === undefined
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-gray-100 text-gray-800"
-                                }`}
-                              >
-                                {project.estado === "rechazado"
-                                  ? "❌ Rechazado"
-                                  : project.estado === "aprobado" || project.calificacion >= 3.0
-                                  ? "✅ Aprobado"
-                                  : project.calificacion < 3.0 &&
-                                    project.calificacion !== null
-                                  ? "❌ Reprobado"
-                                  : !project.calificacion || project.calificacion === null || project.calificacion === undefined
-                                  ? "⏳ Pendiente"
-                                  : "🚫 Sin estado"}
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold w-fit ${estado.clases}`}>
+                                <i className={`pi ${estado.icono} text-[11px]`}></i>
+                                {estado.texto}
                               </span>
                               {project.calificacion && (
                                 <span className="text-xs text-gray-500 font-medium">
@@ -703,8 +765,8 @@ export default function MyProjects() {
                             </button>
                           </td>
                         </tr>
-                      ))
-                    )}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

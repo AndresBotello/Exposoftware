@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import logo from '../../assets/Logo-unicesar.png';
 import AdminSidebar from '../../components/Layout/AdminSidebar';
+import { AdminHeader, AdminPageHeader } from "../../components/Admin/AdminComponents";
 import * as AuthService from '../../Services/AuthService';
 import {
   obtenerEstudiantePorId,
@@ -10,6 +10,7 @@ import {
   desactivarEstudiante
 } from '../../Services/StudentAdminService';
 import { obtenerTodosProgramas } from '../../Services/AcademicService';
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 /**
  * Componente para editar la información académica de un estudiante
@@ -62,7 +63,7 @@ const EditStudent = () => {
 
   // Función para cerrar sesión
   const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
+    if (await confirmarCierreSesion()) {
       try {
         await AuthService.logout();
         navigate('/login');
@@ -224,19 +225,7 @@ const EditStudent = () => {
   if (cargando) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-3">
-                <img src={logo} alt="Logo Unicesar" className="w-10 h-auto" />
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">Expo-software </h1>
-                  <p className="text-xs text-gray-500">Universidad Popular del Cesar</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+        <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
         <div className="container mx-auto px-4 py-8">
           <div className="bg-white rounded-lg border border-gray-200 p-8">
             <div className="text-center py-12">
@@ -252,19 +241,7 @@ const EditStudent = () => {
   if (error && !estudiante) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-3">
-                <img src={logo} alt="Logo Unicesar" className="w-10 h-auto" />
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">Expo-software 2025</h1>
-                  <p className="text-xs text-gray-500">Universidad Popular del Cesar</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+        <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
         <div className="container mx-auto px-4 py-8">
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             <strong className="font-bold">Error: </strong>
@@ -290,6 +267,8 @@ const EditStudent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AdminHeader userName={getUserName()} userInitials={getUserInitials()} onLogout={handleLogout} />
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}

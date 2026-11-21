@@ -24,6 +24,19 @@ import {
 } from "../../utils/teacherHelpers";
 import { fetchApi } from "../../utils/apiClient";
 import { getAuthHeaders } from "../../Services/AuthService";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
+
+import {
+  elegirEventoActual,
+  compararEventos,
+  esEventoVisibleParaDocente,
+  etiquetaEstadoEvento,
+  normalizarEstadoEvento,
+  idEvento as idEventoDe,
+} from "../../utils/eventoActual";
+
+export const EVENTO_AUTO = "__auto__";
+export const EVENTO_TODOS = "__todos__";
 
 export function useStudentProjects() {
   const { user, getFullName, getInitials, logout } = useAuth();
@@ -63,6 +76,9 @@ export function useStudentProjects() {
   const [areasMap, setAreasMap] = useState(new Map());
   const [eventosMap, setEventosMap] = useState(new Map());
   const [materiaGruposMap, setMateriaGruposMap] = useState(new Map());
+  const [eventosRaw, setEventosRaw] = useState([]);
+  // "__auto__" = evento actual (el más reciente / en curso); EVENTO_TODOS = histórico completo
+  const [eventoElegido, setEventoElegido] = useState(EVENTO_AUTO);
 
   // Wrappers de un solo argumento para los consumidores (componentes)
   const getLineaName = (code) => getLineaNameUtil(lineasMap, code);
@@ -81,6 +97,12 @@ export function useStudentProjects() {
         setAreasMap(am);
         const em = await getEventosMap();
         setEventosMap(em);
+        try {
+          const lista = await getAllEventos();
+          setEventosRaw(Array.isArray(lista) ? lista : []);
+        } catch (e) {
+          setEventosRaw([]);
+        }
       } catch (err) {
       }
     };
@@ -223,6 +245,7 @@ export function useStudentProjects() {
           transformedProjects.forEach(p => {
           });
         } catch (err) {
+          console.error("Error cargando mis proyectos (docente):", err);
           setMyProjects([]);
           setMyProjectsCount(0);
           setProjectsForApproval([]);
@@ -236,9 +259,9 @@ export function useStudentProjects() {
           eventosActivosSet = new Set(
             eventos
               .filter(
-                (e) =>
-                  e.activo === true ||
-                  (typeof e.estado === "string" && e.estado.toLowerCase() === "activo")
+                // Estados reales: inscripciones_abiertas / inscripciones_cerradas / en_curso
+                // (el valor "activo" nunca existió, por eso esta lista siempre quedaba vacía)
+                (e) => esEventoVisibleParaDocente(e) && normalizarEstadoEvento(e) !== "finalizado"
               )
               .map((e) => e.id || e.id_evento || e.evento_id)
               .filter(Boolean)
@@ -389,6 +412,7 @@ export function useStudentProjects() {
   }, [selectedMateria, materiaGruposMap, myProjects]);
 
   const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
     try {
       await logout();
       navigate("/login");
@@ -397,9 +421,52 @@ export function useStudentProjects() {
     }
   };
 
+  // ---- Clasificación por evento (solo presentación; no toca el backend) ----
+  // Eventos listados: los visibles para el docente (aunque aún no tenga proyectos en ellos,
+  // p. ej. un evento nuevo con inscripciones abiertas) más cualquiera donde ya tenga proyectos.
+  const eventosDisponibles = (() => {
+    const mapa = new Map();
+    eventosRaw.forEach((e) => {
+      const id = idEventoDe(e);
+      if (id && esEventoVisibleParaDocente(e)) mapa.set(String(id), e);
+    });
+    [...myProjects, ...projects].forEach((p) => {
+      if (p.id_evento && !mapa.has(String(p.id_evento))) {
+        const raw = eventosRaw.find((e) => String(idEventoDe(e)) === String(p.id_evento));
+        mapa.set(String(p.id_evento), raw || { id: p.id_evento });
+      }
+    });
+    return Array.from(mapa.entries())
+      .map(([id, raw]) => ({
+        id,
+        raw,
+        nombre:
+          (raw && (raw.nombre || raw.nombre_evento)) ||
+          getEventoNameUtil(eventosMap, id) ||
+          "Evento sin nombre",
+        estadoTexto: etiquetaEstadoEvento(raw),
+      }))
+      .sort((x, y) => compararEventos(x.raw, y.raw));
+  })();
+
+  // Evento actual: inscripciones abiertas > en curso > cerradas > finalizado
+  const eventoActualId = (() => {
+    const actual = elegirEventoActual(eventosRaw);
+    if (actual) return String(idEventoDe(actual));
+    return eventosDisponibles.length > 0 ? eventosDisponibles[0].id : null;
+  })();
+
+  const eventoEfectivo =
+    eventoElegido === EVENTO_AUTO ? eventoActualId || EVENTO_TODOS : eventoElegido;
+
+  const filtrarPorEvento = (lista) =>
+    eventoEfectivo === EVENTO_TODOS
+      ? lista
+      : lista.filter((p) => String(p.id_evento) === String(eventoEfectivo));
+
   // Función para filtrar proyectos
   const filterProjects = (projectsToFilter) => {
-    return projectsToFilter.filter((project) => {
+    return filtrarPorEvento(projectsToFilter).filter((project) => {
       const titulo = project.titulo_proyecto?.toLowerCase() || "";
       const materia = (project.codigo_materia || "").toString().toLowerCase();
       const grupo = (project.id_grupo || "").toString();
@@ -833,6 +900,11 @@ export function useStudentProjects() {
   };
 
   return {
+    eventosDisponibles,
+    eventoActualId,
+    selectedEvento: eventoEfectivo,
+    setSelectedEvento: setEventoElegido,
+    filtrarPorEvento,
     user,
     getFullName,
     getInitials,

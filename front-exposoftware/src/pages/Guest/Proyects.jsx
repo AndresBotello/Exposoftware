@@ -6,6 +6,7 @@ import ProjectCard from "../../components/ProjectCard";
 import ProjectDetailsModal from "../../components/ProjectDetailsModal";
 import { SECTORES } from "../../data/sectores";
 import logo from "../../assets/Logo-unicesar.png";
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function GuestProjects() {
   const { logout, user, getGuestProfile } = useAuth();
@@ -65,8 +66,8 @@ export default function GuestProjects() {
     return tipos[tipoId] || 'Tipo desconocido';
   };
 
-  const handleLogout = () => {
-    if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+  const handleLogout = async () => {
+    if (await confirmarCierreSesion()) {
       logout();
       navigate("/login");
     }

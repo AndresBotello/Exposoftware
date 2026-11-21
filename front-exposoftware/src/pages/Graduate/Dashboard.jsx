@@ -6,6 +6,7 @@ import * as AuthService from "../../Services/AuthService";
 import * as GraduateService from "../../Services/GraduateService";
 import * as ProjectsService from "../../Services/ProjectsService";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
 export default function GraduateDashboard() {
   const navigate = useNavigate();
@@ -127,7 +128,7 @@ export default function GraduateDashboard() {
 
   // Función para cerrar sesión
   const handleLogout = async () => {
-    if (window.confirm('¿Está seguro de que desea cerrar sesión?')) {
+    if (await confirmarCierreSesion()) {
       try {
         await AuthService.logout();
         navigate('/login');
@@ -331,7 +332,7 @@ export default function GraduateDashboard() {
                       </h3>
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <i className="pi pi-calendar"></i>
-                        Expo-software 2025
+                        Expo-software 2026
                       </div>
                     </div>
                     <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">

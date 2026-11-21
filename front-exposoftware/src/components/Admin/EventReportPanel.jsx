@@ -7,6 +7,7 @@ import { ProgressSpinner } from 'primereact/progressspinner';
 import { fetchApi } from '../../utils/apiClient';
 import { getAuthHeaders } from '../../Services/AuthService';
 import { API_ENDPOINTS } from '../../utils/constants';
+import { ordenarEventos, elegirEventoActual, etiquetaEstadoEvento } from '../../utils/eventoActual';
 
 export default function EventReportPanel() {
   const toast = useRef(null);
@@ -47,7 +48,16 @@ export default function EventReportPanel() {
         eventosData = res.eventos;
       }
 
-      setEventos(eventosData);
+      // Evento actual primero (inscripciones abiertas > en curso > cerradas > finalizado)
+      const ordenados = ordenarEventos(eventosData);
+      setEventos(ordenados);
+
+      // Se abre directamente con el evento actual (antes quedaba sin seleccionar y se elegía a mano)
+      const actual = elegirEventoActual(eventosData);
+      if (actual) {
+        setEventoSeleccionado(actual);
+        loadPreviewData(actual.id_evento || actual.id);
+      }
 
       if (eventosData.length === 0) {
         toast.current?.show({
@@ -80,7 +90,7 @@ export default function EventReportPanel() {
     setReportStats(null);
 
     if (evento) {
-      await loadPreviewData(evento.id_evento);
+      await loadPreviewData(evento.id_evento || evento.id);
     }
   };
 
@@ -173,7 +183,9 @@ export default function EventReportPanel() {
           value={eventoSeleccionado}
           onChange={handleEventoChange}
           options={eventos}
-          optionLabel="nombre_evento"
+          optionLabel={(option) =>
+            `${option?.nombre_evento || option?.nombre || 'Sin nombre'}${etiquetaEstadoEvento(option) ? ` · ${etiquetaEstadoEvento(option)}` : ''}`
+          }
           placeholder="-- Selecciona un evento --"
           className="w-full"
           disabled={loading || generatingPDF}

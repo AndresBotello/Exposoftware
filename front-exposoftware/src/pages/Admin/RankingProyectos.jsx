@@ -7,6 +7,7 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Tag } from 'primereact/tag';
 import { API_ENDPOINTS } from '../../utils/constants';
 import * as AuthService from '../../Services/AuthService';
+import { elegirEventoActual, ordenarEventos, etiquetaEstadoEvento } from '../../utils/eventoActual';
 
 const MEDALLAS = ['🥇', '🥈', '🥉'];
 
@@ -20,7 +21,8 @@ export default function RankingProyectos({ eventos = [] }) {
 
   useEffect(() => {
     if (eventos.length > 0) {
-      setEventoSeleccionado(eventos[0]);
+      // Antes se tomaba eventos[0] (el primero que devuelve el backend, normalmente el más antiguo)
+      setEventoSeleccionado((prev) => prev || elegirEventoActual(eventos) || ordenarEventos(eventos)[0]);
     }
   }, [eventos]);
 
@@ -175,8 +177,10 @@ export default function RankingProyectos({ eventos = [] }) {
           <Dropdown
             value={eventoSeleccionado}
             onChange={(e) => setEventoSeleccionado(e.value)}
-            options={eventos}
-            optionLabel={(option) => option?.nombre_evento || option?.nombre || 'Sin nombre'}
+            options={ordenarEventos(eventos)}
+            optionLabel={(option) =>
+              `${option?.nombre_evento || option?.nombre || 'Sin nombre'}${etiquetaEstadoEvento(option) ? ` · ${etiquetaEstadoEvento(option)}` : ''}`
+            }
             placeholder="Selecciona un evento..."
             filter
             className="w-full"
