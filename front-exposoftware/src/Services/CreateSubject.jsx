@@ -133,13 +133,34 @@ export const obtenerGrupos = async () => {
  */
 export const obtenerDocentes = async () => {
   try {
-    const response = await fetch(API_ENDPOINTS.ADMIN_DOCENTES, {
-      credentials: 'include',
-      method: 'GET',
-      headers: AuthService.getAuthHeaders()
-    });
-    const resultado = await procesarRespuesta(response);
-    return resultado.data;
+    // La API pagina los docentes: se recorren todas las páginas para tener la lista completa
+    const LIMITE = 100;
+    const MAX_PAGINAS = 50;
+    const todos = [];
+    const idsVistos = new Set();
+
+    for (let pagina = 1; pagina <= MAX_PAGINAS; pagina++) {
+      const response = await fetch(`${API_ENDPOINTS.ADMIN_DOCENTES}?page=${pagina}&limit=${LIMITE}`, {
+        credentials: 'include',
+        method: 'GET',
+        headers: AuthService.getAuthHeaders()
+      });
+      const resultado = await procesarRespuesta(response);
+      const lote = Array.isArray(resultado.data) ? resultado.data : [];
+
+      // Evitar bucle si el backend ignora "page" y repite los mismos registros
+      const nuevos = lote.filter(item => {
+        const id = item?.docente?.id_docente || item?.id_docente || item?.id;
+        if (id && idsVistos.has(id)) return false;
+        if (id) idsVistos.add(id);
+        return true;
+      });
+      todos.push(...nuevos);
+
+      if (lote.length < LIMITE || nuevos.length === 0) break;
+    }
+
+    return todos;
   } catch (error) {
     throw error;
   }

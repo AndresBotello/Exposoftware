@@ -125,7 +125,7 @@ export default function MateriaAsignacionesModal({
   if (!isOpen) return null;
 
   // Obtener nombre del docente por su ID
-  const getDocenteNombre = (docenteId) => {
+  const getDocenteNombre = (docenteId, nombreRespaldo) => {
     if (!docenteId) return 'Sin asignar';
     const profesor = profesores.find(p => {
       const docente = p?.docente || p;
@@ -135,8 +135,13 @@ export default function MateriaAsignacionesModal({
 
     if (profesor) {
       const usuario = profesor?.usuario || {};
-      return usuario?.nombre_completo || usuario?.correo?.split('@')[0] || 'Docente asignado';
+      const nombreArmado = [usuario?.p_nombre, usuario?.s_nombre, usuario?.p_apellido, usuario?.s_apellido]
+        .filter(Boolean)
+        .join(' ');
+      return usuario?.nombre_completo || nombreArmado || usuario?.correo?.split('@')[0] || 'Docente asignado';
     }
+    // Si el docente no está en la lista, usar el nombre que viene en la asignación (si existe)
+    if (nombreRespaldo && nombreRespaldo !== 'Sin asignar') return nombreRespaldo;
     return `Docente ${docenteId?.substring?.(0, 8) || docenteId}`;
   };
 
@@ -213,7 +218,7 @@ export default function MateriaAsignacionesModal({
                             </td>
                             <td className="px-6 py-4">
                               <span className="text-sm text-gray-900">
-                                {getDocenteNombre(grupo.id_docente)}
+                                {getDocenteNombre(grupo.id_docente, grupo.docente_nombre)}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -232,7 +237,7 @@ export default function MateriaAsignacionesModal({
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               {grupo.id_docente && grupo.id_docente_materia ? (
                                 <button
-                                  onClick={() => handleEliminarAsignacion(grupo.id_docente_materia, grupo.codigo_grupo, getDocenteNombre(grupo.id_docente))}
+                                  onClick={() => handleEliminarAsignacion(grupo.id_docente_materia, grupo.codigo_grupo, getDocenteNombre(grupo.id_docente, grupo.docente_nombre))}
                                   disabled={eliminando === grupo.id_docente_materia}
                                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                     eliminando === grupo.id_docente_materia

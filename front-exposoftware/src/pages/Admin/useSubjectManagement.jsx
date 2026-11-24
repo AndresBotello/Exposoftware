@@ -68,7 +68,8 @@ export const useSubjectManagement = () => {
     if (profesorInfo) {
       // Extraer nombre del usuario anidado
       const usuario = profesorInfo?.usuario || {};
-      const nombreCompleto = usuario?.nombre_completo || '';
+      const nombreCompleto = usuario?.nombre_completo ||
+        [usuario?.p_nombre, usuario?.s_nombre, usuario?.p_apellido, usuario?.s_apellido].filter(Boolean).join(' ');
       const correo = usuario?.correo || '';
       const nombre = nombreCompleto || correo?.split('@')[0] || 'Docente asignado';
       
