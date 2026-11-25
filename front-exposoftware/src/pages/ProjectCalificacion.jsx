@@ -44,6 +44,9 @@ export default function ProjectCalificacion() {
   const [aviso, setAviso] = useState(null);
   const [exito, setExito] = useState(false);
   const [notaFinal, setNotaFinal] = useState(null);
+  // El servidor rechazó la sesión (401). Se muestra un botón en vez de redirigir
+  // solo, para no entrar en ciclos login → QR → login.
+  const [sesionInvalida, setSesionInvalida] = useState(false);
   const escaneoRegistrado = useRef(false);
 
   // Enviar al login y volver a esta página después de iniciar sesión.
@@ -56,8 +59,9 @@ export default function ProjectCalificacion() {
   };
 
   useEffect(() => {
-    // Verificar si el usuario está autenticado (token y datos de usuario)
-    const tieneSesion = AuthService.getToken() && AuthService.getUserData();
+    // El login del backend usa cookie HttpOnly: no hay token en el navegador.
+    // La sesión se reconoce por los datos del usuario guardados al iniciar sesión.
+    const tieneSesion = AuthService.getUserData();
     if (!tieneSesion) {
       irALoginConRetorno();
       return;
@@ -88,7 +92,7 @@ export default function ProjectCalificacion() {
       await registrarEscaneoQR(id_proyecto);
     } catch (err) {
       if (err.status === 401) {
-        await irALoginConRetorno();
+        setSesionInvalida(true);
         return;
       }
       setAviso(err.message || "No se pudo registrar tu asistencia al evento.");
@@ -122,7 +126,7 @@ export default function ProjectCalificacion() {
       }, 3000);
     } catch (err) {
       if (err.status === 401) {
-        await irALoginConRetorno();
+        setSesionInvalida(true);
         return;
       }
       setError(err.message || "Error al guardar la calificación");
@@ -248,6 +252,22 @@ export default function ProjectCalificacion() {
                   <i className="pi pi-info-circle"></i>
                   {aviso}
                 </p>
+              </div>
+            )}
+
+            {/* Sesión rechazada por el servidor */}
+            {sesionInvalida && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex flex-col gap-3">
+                <p className="text-amber-800 text-sm">
+                  Tu sesión expiró o no es válida. Inicia sesión de nuevo para calificar.
+                </p>
+                <button
+                  type="button"
+                  onClick={irALoginConRetorno}
+                  className="self-start px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition"
+                >
+                  Iniciar sesión
+                </button>
               </div>
             )}
 
