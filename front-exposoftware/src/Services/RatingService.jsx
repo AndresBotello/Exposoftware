@@ -1,4 +1,5 @@
 import { API_ENDPOINTS, API_BASE_URL } from '../utils/constants';
+import { payloadCriterios, criteriosDesdeNotaUnica } from '../utils/calificacionCriterios';
 
 class RatingService {
   /**
@@ -19,7 +20,8 @@ class RatingService {
             'Content-Type': 'application/json'
           },
           credentials: 'include',
-          body: JSON.stringify({ calificacion })
+          // Una nota única se envía como los 5 criterios con el mismo valor.
+          body: JSON.stringify(payloadCriterios(criteriosDesdeNotaUnica(calificacion)))
         }
       );
 
