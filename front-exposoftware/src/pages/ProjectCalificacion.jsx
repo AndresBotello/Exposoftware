@@ -46,12 +46,20 @@ export default function ProjectCalificacion() {
   const [notaFinal, setNotaFinal] = useState(null);
   const escaneoRegistrado = useRef(false);
 
+  // Enviar al login y volver a esta página después de iniciar sesión.
+  // logout() vacía sessionStorage, así que se cierra la sesión ANTES de guardar
+  // la ruta de retorno.
+  const irALoginConRetorno = async () => {
+    await AuthService.logout();
+    sessionStorage.setItem("redirectAfterLogin", `/proyectos/${id_proyecto}/calificar`);
+    navigate("/login");
+  };
+
   useEffect(() => {
-    // Verificar si el usuario está autenticado
-    const user = AuthService.getUserData();
-    if (!user) {
-      sessionStorage.setItem("redirectAfterLogin", `/proyectos/${id_proyecto}/calificar`);
-      navigate("/login");
+    // Verificar si el usuario está autenticado (token y datos de usuario)
+    const tieneSesion = AuthService.getToken() && AuthService.getUserData();
+    if (!tieneSesion) {
+      irALoginConRetorno();
       return;
     }
     cargarProyecto();
@@ -79,6 +87,10 @@ export default function ProjectCalificacion() {
     try {
       await registrarEscaneoQR(id_proyecto);
     } catch (err) {
+      if (err.status === 401) {
+        await irALoginConRetorno();
+        return;
+      }
       setAviso(err.message || "No se pudo registrar tu asistencia al evento.");
     }
   };
@@ -109,6 +121,10 @@ export default function ProjectCalificacion() {
         navigate(rutaSegunRol((AuthService.getUserRole() || "").toLowerCase()));
       }, 3000);
     } catch (err) {
+      if (err.status === 401) {
+        await irALoginConRetorno();
+        return;
+      }
       setError(err.message || "Error al guardar la calificación");
     } finally {
       setEnviando(false);

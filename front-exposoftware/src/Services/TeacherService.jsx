@@ -982,7 +982,9 @@ export const registrarEscaneoQR = async (proyectId) => {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || errorData.message || 'No se pudo registrar el escaneo');
+    const error = new Error(errorData.detail || errorData.message || 'No se pudo registrar el escaneo');
+    error.status = response.status;
+    throw error;
   }
   const result = await response.json();
   return result.data || result;
@@ -1025,7 +1027,9 @@ export const calificarProyectoAsistente = async (proyectId, calificacion, coment
       return data;
     } else {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || 'Error al calificar proyecto');
+      const error = new Error(errorData.detail || errorData.message || 'Error al calificar proyecto');
+      error.status = response.status;
+      throw error;
     }
   } catch (error) {
     console.error(`❌ Error calificando proyecto:`, error);

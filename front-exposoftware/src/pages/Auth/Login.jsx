@@ -25,6 +25,14 @@ export default function LoginPage() {
   useEffect(() => {
     const token = AuthService.getToken();
     if (token) {
+      // Si llegó desde el QR de calificación, volver ahí y no al dashboard.
+      // Se revisa antes que el rol para no perder la ruta guardada.
+      const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+      if (redirectUrl) {
+        sessionStorage.removeItem('redirectAfterLogin');
+        navigate(redirectUrl);
+        return;
+      }
       const userData = AuthService.getUserData();
       if (userData && userData.rol) {
         // Redirigir según el rol
