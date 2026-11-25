@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "../utils/constants";
+import { payloadCriterios, criteriosDesdeNotaUnica } from "../utils/calificacionCriterios";
 import * as AuthService from "./AuthService";
 import CacheService from "./CacheService";
 
@@ -636,6 +637,10 @@ export const calificarProyecto = async (proyectId, calificacion, comentario = ''
 
     const url = API_ENDPOINTS.PROYECTO_CALIFICACION(proyectId);
 
+    const criterios = typeof calificacion === 'object'
+      ? payloadCriterios(calificacion)
+      : payloadCriterios(criteriosDesdeNotaUnica(calificacion));
+
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
@@ -643,7 +648,7 @@ export const calificarProyecto = async (proyectId, calificacion, comentario = ''
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        calificacion: parseFloat(calificacion),
+        ...criterios,
         comentario: comentario || ''
       }),
       credentials: 'include'
@@ -961,6 +966,29 @@ export const obtenerCalificacionPopular = async (projectId) => {
 };
 
 /**
+ * Registrar el escaneo del QR de calificación: crea la asistencia general al
+ * evento si el usuario aún no la tiene. No emite voto.
+ * POST /api/v1/proyectos/{id_proyecto}/escaneo-qr
+ * @param {string} proyectId - ID del proyecto escaneado
+ * @returns {Promise<Object>} { asistencia_registrada, id_evento, id_proyecto }
+ */
+export const registrarEscaneoQR = async (proyectId) => {
+  const headers = AuthService.getAuthHeaders();
+  const response = await fetch(`${API_ENDPOINTS.PROYECTOS}/${proyectId}/escaneo-qr`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    credentials: 'include'
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || errorData.message || 'No se pudo registrar el escaneo');
+  }
+  const result = await response.json();
+  return result.data || result;
+};
+
+/**
  * Calificar un proyecto como asistente (voto popular)
  * POST /api/v1/proyectos/{id_proyecto}/calificar-asistente
  * @param {string} proyectId - ID del proyecto
@@ -974,6 +1002,10 @@ export const calificarProyectoAsistente = async (proyectId, calificacion, coment
 
     const url = `${API_ENDPOINTS.PROYECTOS}/${proyectId}/calificar-asistente`;
 
+    const criterios = typeof calificacion === 'object'
+      ? payloadCriterios(calificacion)
+      : payloadCriterios(criteriosDesdeNotaUnica(calificacion));
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -981,7 +1013,7 @@ export const calificarProyectoAsistente = async (proyectId, calificacion, coment
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        calificacion: parseFloat(calificacion),
+        ...criterios,
         comentario: comentario || ''
       }),
       credentials: 'include'
