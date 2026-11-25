@@ -5,7 +5,7 @@ import { InputText } from 'primereact/inputtext';
 import { Tag } from 'primereact/tag';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { useState, useMemo } from 'react';
-import { generateApprovedProyectosPDF } from '../../utils/generateProyectosPDF';
+import { generateApprovedProyectosPDF, generateNotApprovedProyectosPDF } from '../../utils/generateProyectosPDF';
 import { Toast } from 'primereact/toast';
 import { useRef } from 'react';
 import { Dialog } from 'primereact/dialog';
@@ -43,11 +43,13 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedProjectForQR, setSelectedProjectForQR] = useState(null);
 
-  const handleGeneratePDF = async () => {
+  const handleGeneratePDF = async (generarInforme) => {
     setGeneratingPDF(true);
     try {
-      await generateApprovedProyectosPDF(proyectos);
-      toast.current?.show({ severity: 'success', summary: 'Éxito', detail: 'PDF generado correctamente', life: 3000 });
+      const generado = await generarInforme(proyectos);
+      if (generado) {
+        toast.current?.show({ severity: 'success', summary: 'Éxito', detail: 'PDF generado correctamente', life: 3000 });
+      }
     } catch (error) {
       console.error('Error generando PDF:', error);
       toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Error al generar el PDF', life: 5000 });
@@ -380,10 +382,22 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
                 icon={generatingPDF ? 'pi pi-spin pi-spinner' : 'pi pi-file-pdf'}
                 rounded
                 outlined
-                severity="warning"
-                tooltip="Descargar informe PDF"
+                severity="success"
+                label="Aprobados"
+                tooltip="Descargar informe de proyectos aprobados"
                 tooltipOptions={{ position: 'top' }}
-                onClick={handleGeneratePDF}
+                onClick={() => handleGeneratePDF(generateApprovedProyectosPDF)}
+                disabled={generatingPDF}
+              />
+              <Button
+                icon={generatingPDF ? 'pi pi-spin pi-spinner' : 'pi pi-file-pdf'}
+                rounded
+                outlined
+                severity="danger"
+                label="No aprobados"
+                tooltip="Descargar informe de pendientes y rechazados"
+                tooltipOptions={{ position: 'top' }}
+                onClick={() => handleGeneratePDF(generateNotApprovedProyectosPDF)}
                 disabled={generatingPDF}
               />
               <Button

@@ -128,7 +128,61 @@ const obtenerEstudiantes = (proyecto) => {
   return nombres.length > 0 ? nombres : ['No hay estudiantes registrados'];
 };
 
-const dibujarPortada = (doc, fecha, total) => {
+const INFORMES = {
+  aprobados: {
+    estados: ['aprobado'],
+    tituloPortada: 'PROYECTOS APROBADOS',
+    encabezado: 'Informe de Proyectos Aprobados',
+    archivo: 'Informe_Proyectos_Aprobados',
+    mensajeVacio: 'No hay proyectos aprobados para generar el informe',
+    mostrarEstado: false
+  },
+  noAprobados: {
+    estados: ['pendiente', 'rechazado'],
+    tituloPortada: 'PROYECTOS NO APROBADOS',
+    encabezado: 'Informe de Proyectos No Aprobados',
+    archivo: 'Informe_Proyectos_No_Aprobados',
+    mensajeVacio: 'No hay proyectos pendientes ni rechazados para generar el informe',
+    separarPorEstado: true
+  }
+};
+
+const PALETA_APROBADO = {
+  principal: COLOR.verde,
+  claro: COLOR.verdeClaro,
+  oscuro: COLOR.verdeOscuro
+};
+
+// Secciones del informe de no aprobados, cada una con su color
+const SECCIONES = {
+  pendiente: {
+    principal: [180, 105, 14],
+    claro: [253, 244, 227],
+    oscuro: [110, 65, 8],
+    titulo: 'PROYECTOS PENDIENTES',
+    etiqueta: 'PENDIENTE',
+    resumen: 'PENDIENTES'
+  },
+  rechazado: {
+    principal: [166, 40, 40],
+    claro: [251, 236, 236],
+    oscuro: [112, 24, 24],
+    titulo: 'PROYECTOS RECHAZADOS',
+    etiqueta: 'RECHAZADO',
+    resumen: 'RECHAZADOS'
+  }
+};
+const ALTO_BANDA_SECCION = 40;
+
+const dibujarBandaSeccion = (doc, seccion, total, y) => {
+  rectangulo(doc, MARGEN.izq, y, MARGEN.der - MARGEN.izq, ALTO_BANDA_SECCION, seccion.principal);
+  fuente(doc, 'times', 'bold', 19, COLOR.blanco);
+  texto(doc, seccion.titulo, MARGEN.izq + 16, y + 26);
+  fuente(doc, 'helvetica', 'bold', 13, COLOR.blanco);
+  texto(doc, `Total: ${total}`, MARGEN.der - 16, y + 25, { align: 'right' });
+};
+
+const dibujarPortada = (doc, informe, fecha, total) => {
   const centro = PAGINA.ancho / 2;
   const centrado = { align: 'center' };
 
@@ -141,7 +195,7 @@ const dibujarPortada = (doc, fecha, total) => {
 
   fuente(doc, 'times', 'bold', 51, COLOR.blanco);
   texto(doc, 'INFORME DE', centro, 291, centrado);
-  texto(doc, 'PROYECTOS APROBADOS', centro, 358, centrado);
+  texto(doc, informe.tituloPortada, centro, 358, centrado);
 
   fuente(doc, 'helvetica', 'bold', 15, COLOR.verde);
   texto(doc, 'FECHA DE GENERACIÓN', centro, 605, centrado);
@@ -155,11 +209,11 @@ const dibujarPortada = (doc, fecha, total) => {
   linea(doc, MARGEN.izq, 1137, MARGEN.der, 1137, COLOR.dorado);
 };
 
-const dibujarEncabezadoYPie = (doc, fecha, pagina, totalPaginas) => {
+const dibujarEncabezadoYPie = (doc, informe, fecha, pagina, totalPaginas) => {
   fuente(doc, 'times', 'bold', 14, COLOR.verde);
   texto(doc, 'UNIVERSIDAD POPULAR DEL CESAR', MARGEN.izq, 58);
   fuente(doc, 'helvetica', 'normal', 12, COLOR.gris);
-  texto(doc, 'Informe de Proyectos Aprobados', MARGEN.der, 58, { align: 'right' });
+  texto(doc, informe.encabezado, MARGEN.der, 58, { align: 'right' });
   linea(doc, MARGEN.izq, 69.5, MARGEN.der, 69.5, COLOR.verde, 2);
   linea(doc, MARGEN.izq, 72.5, MARGEN.der, 72.5, COLOR.dorado);
 
@@ -188,8 +242,8 @@ const prepararTarjeta = (doc, proyecto) => {
   return { titulo, docentes, estudiantes, altoTitulo, alto: altoTitulo + altoCuerpo };
 };
 
-const dibujarLista = (doc, etiqueta, nombres, x, y) => {
-  fuente(doc, 'helvetica', 'bold', 11, COLOR.verde);
+const dibujarLista = (doc, etiqueta, nombres, x, y, color) => {
+  fuente(doc, 'helvetica', 'bold', 11, color);
   texto(doc, etiqueta, x, y + 23);
 
   fuente(doc, 'helvetica', 'normal', 13, COLOR.texto);
@@ -203,13 +257,14 @@ const dibujarLista = (doc, etiqueta, nombres, x, y) => {
   });
 };
 
-const dibujarTarjeta = (doc, tarjeta, numero, y) => {
+const dibujarTarjeta = (doc, tarjeta, numero, y, seccion) => {
+  const paleta = seccion || PALETA_APROBADO;
   const { izq, der } = MARGEN;
   const xCuerpo = izq + ANCHO_NUMERO;
   const yCuerpo = y + tarjeta.altoTitulo;
 
-  rectangulo(doc, xCuerpo, y, der - xCuerpo, tarjeta.altoTitulo, COLOR.verdeClaro);
-  rectangulo(doc, izq, y, ANCHO_NUMERO, tarjeta.alto, COLOR.verde);
+  rectangulo(doc, xCuerpo, y, der - xCuerpo, tarjeta.altoTitulo, paleta.claro);
+  rectangulo(doc, izq, y, ANCHO_NUMERO, tarjeta.alto, paleta.principal);
 
   doc.setDrawColor(...COLOR.borde);
   doc.setLineWidth(px(1));
@@ -220,16 +275,21 @@ const dibujarTarjeta = (doc, tarjeta, numero, y) => {
   fuente(doc, 'times', 'bold', 22, COLOR.blanco);
   texto(doc, String(numero), izq + ANCHO_NUMERO / 2, y + 37, { align: 'center' });
 
-  fuente(doc, 'times', 'bold', 17, COLOR.verdeOscuro);
+  if (seccion) {
+    fuente(doc, 'helvetica', 'bold', 9, COLOR.blanco);
+    texto(doc, seccion.etiqueta, izq + ANCHO_NUMERO / 2, y + 56, { align: 'center' });
+  }
+
+  fuente(doc, 'times', 'bold', 17, paleta.oscuro);
   tarjeta.titulo.forEach((contenido, i) => {
     texto(doc, contenido, 183, y + 28 + i * ALTO_LINEA_TITULO);
   });
 
-  dibujarLista(doc, 'DOCENTES RESPONSABLES', tarjeta.docentes, 184, yCuerpo);
-  dibujarLista(doc, 'ESTUDIANTES', tarjeta.estudiantes, 488, yCuerpo);
+  dibujarLista(doc, 'DOCENTES RESPONSABLES', tarjeta.docentes, 184, yCuerpo, paleta.principal);
+  dibujarLista(doc, 'ESTUDIANTES', tarjeta.estudiantes, 488, yCuerpo, paleta.principal);
 };
 
-export const construirInformePDF = (proyectos, fechaGeneracion = new Date()) => {
+export const construirInformePDF = (proyectos, informe = INFORMES.aprobados, fechaGeneracion = new Date()) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
   const fecha = fechaGeneracion.toLocaleDateString('es-CO', {
     day: '2-digit',
@@ -237,43 +297,76 @@ export const construirInformePDF = (proyectos, fechaGeneracion = new Date()) => 
     year: 'numeric'
   });
 
-  dibujarPortada(doc, fecha, proyectos.length);
+  dibujarPortada(doc, informe, fecha, proyectos.length);
 
-  doc.addPage();
+  // Con separación, primero van los pendientes y después los rechazados
+  const grupos = informe.separarPorEstado
+    ? informe.estados
+        .map(estado => ({
+          seccion: SECCIONES[estado],
+          lista: proyectos.filter(p => p.estado === estado)
+        }))
+        .filter(grupo => grupo.lista.length > 0)
+    : [{ seccion: null, lista: proyectos }];
+
+  if (informe.separarPorEstado) {
+    grupos.forEach(({ seccion, lista }, i) => {
+      fuente(doc, 'helvetica', 'bold', 15, seccion.principal);
+      texto(doc, `${seccion.resumen}: ${lista.length}`, PAGINA.ancho / 2, 860 + i * 34, { align: 'center' });
+    });
+  }
+
+  let numero = 0;
   let y = CONTENIDO.inicio;
 
-  proyectos.forEach((proyecto, index) => {
-    const tarjeta = prepararTarjeta(doc, proyecto);
+  grupos.forEach(({ seccion, lista }) => {
+    // Cada grupo empieza en una página nueva
+    doc.addPage();
+    y = CONTENIDO.inicio;
 
-    // La tarjeta no se parte entre dos páginas
-    if (y + tarjeta.alto > CONTENIDO.fin && y > CONTENIDO.inicio) {
-      doc.addPage();
-      y = CONTENIDO.inicio;
+    if (seccion) {
+      dibujarBandaSeccion(doc, seccion, lista.length, y);
+      y += ALTO_BANDA_SECCION + SEPARACION;
     }
 
-    dibujarTarjeta(doc, tarjeta, index + 1, y);
-    y += tarjeta.alto + SEPARACION;
+    let tarjetasEnPagina = 0;
+    lista.forEach(proyecto => {
+      const tarjeta = prepararTarjeta(doc, proyecto);
+
+      // La tarjeta no se parte entre dos páginas
+      if (y + tarjeta.alto > CONTENIDO.fin && tarjetasEnPagina > 0) {
+        doc.addPage();
+        y = CONTENIDO.inicio;
+        tarjetasEnPagina = 0;
+      }
+
+      numero += 1;
+      dibujarTarjeta(doc, tarjeta, numero, y, seccion);
+      y += tarjeta.alto + SEPARACION;
+      tarjetasEnPagina += 1;
+    });
   });
 
   const totalPaginas = doc.getNumberOfPages();
   for (let pagina = 2; pagina <= totalPaginas; pagina++) {
     doc.setPage(pagina);
-    dibujarEncabezadoYPie(doc, fecha, pagina, totalPaginas);
+    dibujarEncabezadoYPie(doc, informe, fecha, pagina, totalPaginas);
   }
 
   return doc;
 };
 
-export const generateApprovedProyectosPDF = async (proyectos) => {
-  const proyectosAprobados = proyectos.filter(p => p.estado === 'aprobado');
+// Devuelve false si no había proyectos para incluir
+const generarInforme = async (proyectos, informe) => {
+  const seleccionados = proyectos.filter(p => informe.estados.includes(p.estado));
 
-  if (proyectosAprobados.length === 0) {
-    alert('No hay proyectos aprobados para generar el informe');
-    return;
+  if (seleccionados.length === 0) {
+    alert(informe.mensajeVacio);
+    return false;
   }
 
   // Cargar detalles de todos los proyectos en paralelo
-  const detallesPromesas = proyectosAprobados.map(async (proyecto) => {
+  const detallesPromesas = seleccionados.map(async (proyecto) => {
     const detalles = await obtenerDetallesProyecto(proyecto.id_proyecto);
     // Los integrantes pueden venir en detalles o necesitar una llamada separada
     let integrantes = [];
@@ -282,12 +375,20 @@ export const generateApprovedProyectosPDF = async (proyectos) => {
     } else {
       integrantes = await obtenerIntegrantesProyecto(proyecto.id_proyecto);
     }
-    return { ...proyecto, ...detalles, integrantes };
+    // El estado de la tabla manda: es el mismo con el que se filtró
+    return { ...proyecto, ...detalles, estado: proyecto.estado, integrantes };
   });
 
   const proyectosConDetalles = await Promise.all(detallesPromesas);
 
   // Generar descarga
-  const doc = construirInformePDF(proyectosConDetalles);
-  doc.save(`Informe_Proyectos_Aprobados_${new Date().toISOString().split('T')[0]}.pdf`);
+  const doc = construirInformePDF(proyectosConDetalles, informe);
+  doc.save(`${informe.archivo}_${new Date().toISOString().split('T')[0]}.pdf`);
+  return true;
 };
+
+export const generateApprovedProyectosPDF = (proyectos) =>
+  generarInforme(proyectos, INFORMES.aprobados);
+
+export const generateNotApprovedProyectosPDF = (proyectos) =>
+  generarInforme(proyectos, INFORMES.noAprobados);
