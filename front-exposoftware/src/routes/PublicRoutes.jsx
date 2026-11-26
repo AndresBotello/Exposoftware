@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
+import { GUEST_ACCESS_ENABLED } from "../utils/constants";
 
 const Home = lazy(() => import("../pages/Home/Home"));
 const About = lazy(() => import("../pages/Home/About"));
@@ -54,8 +55,12 @@ export default function PublicRoutes() {
       <Route path="projects" element={<Suspense fallback={<LoadingFallback />}><Projects /></Suspense>} />
 
       {/* 👁️ Vista pública de proyectos para invitados */}
-      <Route path="invited" element={<Suspense fallback={<LoadingFallback />}><InvitedPage /></Suspense>} />
-      <Route path="invited/:eventoId" element={<Suspense fallback={<LoadingFallback />}><InvitedPage /></Suspense>} />
+      {GUEST_ACCESS_ENABLED && (
+        <>
+          <Route path="invited" element={<Suspense fallback={<LoadingFallback />}><InvitedPage /></Suspense>} />
+          <Route path="invited/:eventoId" element={<Suspense fallback={<LoadingFallback />}><InvitedPage /></Suspense>} />
+        </>
+      )}
 
       {/* ✅ Registro de asistencia (accesible públicamente) */}
       <Route path="asistencia/registrar/:id_evento" element={<Suspense fallback={<LoadingFallback />}><AsistenciaForm /></Suspense>} />

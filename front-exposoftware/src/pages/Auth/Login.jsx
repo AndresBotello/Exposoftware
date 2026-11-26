@@ -3,7 +3,7 @@ import { Mail, Lock, Eye, EyeOff, Globe } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import * as AuthService from "../../Services/AuthService";
 import { useAuth } from "../../contexts/AuthContext";
-import { API_BASE_URL } from "../../utils/constants";
+import { API_BASE_URL, GUEST_ACCESS_ENABLED } from "../../utils/constants";
 import exposoftwareAnuncio from "../../assets/exposoftware-anuncio.jpg";
 import { safeGetItem, safeSetItem, safeRemoveItem } from "../../utils/safeStorage";
 
@@ -358,32 +358,36 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-gray-300"></div>
-            <span className="text-xs text-gray-500 font-medium">O</span>
-            <div className="flex-1 h-px bg-gray-300"></div>
-          </div>
+          {GUEST_ACCESS_ENABLED && (
+            <>
+              {/* Divider */}
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-gray-300"></div>
+                <span className="text-xs text-gray-500 font-medium">O</span>
+                <div className="flex-1 h-px bg-gray-300"></div>
+              </div>
 
-          {/* Botón Continuar como Invitado */}
-          <button
-            type="button"
-            onClick={handleGuestLogin}
-            disabled={loadingLogin || loadingGuest}
-            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 sm:py-3 rounded-lg transition flex items-center justify-center gap-2"
-          >
-            {loadingGuest ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Entrando como invitado...
-              </>
-            ) : (
-              <>
-                <Globe size={20} />
-                Continuar como Invitado
-              </>
-            )}
-          </button>
+              {/* Botón Continuar como Invitado */}
+              <button
+                type="button"
+                onClick={handleGuestLogin}
+                disabled={loadingLogin || loadingGuest}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 sm:py-3 rounded-lg transition flex items-center justify-center gap-2"
+              >
+                {loadingGuest ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Entrando como invitado...
+                  </>
+                ) : (
+                  <>
+                    <Globe size={20} />
+                    Continuar como Invitado
+                  </>
+                )}
+              </button>
+            </>
+          )}
 
           <p className="text-sm text-gray-600 text-center mt-6">
             ¿No tienes una cuenta?{" "}

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import * as AuthService from "../Services/AuthService";
+import { GUEST_ACCESS_ENABLED } from "../utils/constants";
 
 // Lazy load los agrupadores de rutas (evita cargar rutas privadas innecesariamente)
 const PublicRoutes = lazy(() => import("./PublicRoutes"));
@@ -100,7 +101,7 @@ export default function AppRouter() {
       )}
 
       {/* 👤 Guest Routes */}
-      {isAuthenticated() && role === "invitado" && (
+      {GUEST_ACCESS_ENABLED && isAuthenticated() && role === "invitado" && (
         <Route
           path="/guest/*"
           element={
