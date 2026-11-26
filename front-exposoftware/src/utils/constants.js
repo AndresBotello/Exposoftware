@@ -154,6 +154,7 @@ export const API_ENDPOINTS = {
   PROYECTO_CALIFICACION: (proyectoId) => `${API_BASE_URL}/api/v1/proyectos/${proyectoId}/calificacion`,
   PROYECTO_INTEGRANTES: (proyectoId) => `${API_BASE_URL}/api/v1/proyectos/${proyectoId}/integrantes`,
   PUBLIC_RANKING_EVENTO: (eventoId) => `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${eventoId}`,
+  PUBLIC_TABLEROS_EVENTO: (eventoId) => `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${eventoId}/podios`,
   ADMIN_QRS_LOTE_EVENTO: (idEvento) => `${API_BASE_URL}/api/v1/proyectos/eventos/${idEvento}/generar-qrs-lote`,
 
   // ═══════════════════════════════════════════════════════════
@@ -187,6 +188,7 @@ export const API_ENDPOINTS = {
   ADMIN_EVENTO_ESTADO: (eventoId) => `${API_BASE_URL}/api/v1/admin/eventos/${eventoId}/estado`,
   ADMIN_EVENTO_ARCHIVAR: (eventoId) => `${API_BASE_URL}/api/v1/admin/eventos/${eventoId}/archivar`,
   ADMIN_EVENTO_CAPACIDAD: (eventoId) => `${API_BASE_URL}/api/v1/admin/eventos/${eventoId}/capacidad`,
+  ADMIN_EVENTO_VOTACION_GRUPOS: (eventoId) => `${API_BASE_URL}/api/v1/admin/eventos/${eventoId}/votacion-grupos`,
   ADMIN_EVENTOS_PROXIMOS: `${API_BASE_URL}/api/v1/admin/eventos/proximos`,
   ADMIN_EVENTOS_EN_CURSO: `${API_BASE_URL}/api/v1/admin/eventos/en-curso`,
   ADMIN_EVENTOS_ESTADISTICAS: `${API_BASE_URL}/api/v1/admin/eventos/estadisticas`,

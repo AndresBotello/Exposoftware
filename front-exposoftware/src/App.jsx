@@ -46,6 +46,7 @@ function NavbarWrapper() {
     "/admin/certificados",
     "/admin/proyectos",
     "/admin/ranking",
+    "/admin/votacion-grupos",
     "/admin/reportes",
     "/admin/evento",
     "/admin/eventos-asistencias",

@@ -33,6 +33,7 @@ const EventLog = lazy(() => import("../pages/Admin/EventLog"));
 const GestionCertificados = lazy(() => import("../pages/Admin/GestionCertificados"));
 const GestionProyectos = lazy(() => import("../pages/Admin/GestionProyectos"));
 const AdminRanking = lazy(() => import("../pages/Admin/AdminRanking"));
+const AdminVotacionGrupos = lazy(() => import("../pages/Admin/AdminVotacionGrupos"));
 
 // Reportes de Eventos
 const EventReports = lazy(() => import("../pages/Admin/EventReports"));
@@ -294,6 +295,17 @@ export default function AdminRoutes() {
           <AdminRoute>
             <Suspense fallback={<LoadingFallback />}>
               <AdminRanking />
+            </Suspense>
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="votacion-grupos"
+        element={
+          <AdminRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <AdminVotacionGrupos />
             </Suspense>
           </AdminRoute>
         }

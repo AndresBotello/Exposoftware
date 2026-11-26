@@ -103,6 +103,11 @@ const AdminSidebar = memo(({ userName = "Carlos Mendoza", userRole = "Administra
       label: "Ranking de Proyectos"
     },
     {
+      to: "/admin/votacion-grupos",
+      icon: "pi-users",
+      label: "Jurado y voto popular"
+    },
+    {
       to: "/admin/reportes",
       icon: "pi-file-pdf",
       label: "Reportes de Eventos"

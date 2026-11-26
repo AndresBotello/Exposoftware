@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import TableroTop5 from "../../components/Ranking/TableroTop5";
+import { useTablerosEvento } from "../../hooks/useTablerosEvento";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import ProjectCard from "../../components/ProjectCard";
 import ProjectDetailsModal from "../../components/ProjectDetailsModal";
@@ -12,7 +14,7 @@ import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 export default function InvitedPage() {
   const { eventoId } = useParams();
   const navigate = useNavigate();
-  const { logout, user, getAuthToken } = useAuth();
+  const { logout, user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [error, setError] = useState(null);
@@ -29,20 +31,13 @@ export default function InvitedPage() {
       return 150;
     }
   });
-  // getAuthToken cambia de identidad en cada render del AuthProvider; se guarda en un ref
-  // para que no dispare de nuevo la carga del ranking (causaba cargas repetidas/en carrera)
-  const getAuthTokenRef = useRef(getAuthToken);
-  getAuthTokenRef.current = getAuthToken;
-  const [rankingProjects, setRankingProjects] = useState([]);
-  const [loadingRanking, setLoadingRanking] = useState(false);
-  const [rankingDisplayCount, setRankingDisplayCount] = useState(() => {
-    try {
-      const saved = safeGetItem('invitedPageRankingCount');
-      return saved ? Math.max(5, parseInt(saved)) : 20;
-    } catch (e) {
-      return 20;
-    }
-  });
+  // Dos tableros (solo jurado, y jurado + voto popular), top 5, actualizados en vivo.
+  const { tableros, cargando: loadingRanking } = useTablerosEvento(eventoId || eventoInfo?.id_evento);
+
+  const seleccionarProyecto = (proyectoRanking) => {
+    const proyectoCompleto = projects.find(p => p.id_proyecto === proyectoRanking.id_proyecto) || proyectoRanking;
+    handleViewDetails(proyectoCompleto);
+  };
 
   const handleLogout = async () => {
     if (!(await confirmarCierreSesion())) return;
@@ -123,78 +118,6 @@ export default function InvitedPage() {
     cargarProyectosPublicos();
   }, [eventoId]);
 
-  // Cargar ranking de proyectos
-  useEffect(() => {
-    let cancelado = false;
-    const cargarRanking = async () => {
-      try {
-        setLoadingRanking(true);
-
-        // Obtener id_evento
-        let idEvento = eventoId;
-        if (!idEvento && eventoInfo?.id_evento) {
-          idEvento = eventoInfo.id_evento;
-        }
-
-        if (!idEvento) {
-          setLoadingRanking(false);
-          return;
-        }
-
-        const token = getAuthTokenRef.current?.();
-        const headers = {
-          'Content-Type': 'application/json'
-        };
-
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(
-          `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${idEvento}?limit=500`,
-          {
-            method: 'GET',
-            headers,
-            credentials: 'include'
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          let ranking = data.data || [];
-
-          // Re-ordenar considerando promedio y cantidad de votos
-          ranking = ranking.map(proyecto => ({
-            ...proyecto,
-            scoreRanking: (proyecto.promedio_ponderado || 0) * 0.7 + (Math.log(Math.max(1, proyecto.total_calificaciones || 1)) / 3) * 0.3
-          }))
-          .sort((a, b) => b.scoreRanking - a.scoreRanking)
-          .map((proyecto, idx) => ({
-            ...proyecto,
-            posicion: idx + 1
-          }));
-
-          if (!cancelado) setRankingProjects(ranking);
-        } else {
-          console.error('Error cargando ranking:', response.status);
-          if (!cancelado) setRankingProjects([]);
-        }
-      } catch (err) {
-        console.error('Error cargando ranking:', err);
-        if (!cancelado) setRankingProjects([]);
-      } finally {
-        if (!cancelado) setLoadingRanking(false);
-      }
-    };
-
-    if (eventoId || eventoInfo?.id_evento) {
-      cargarRanking();
-    }
-    return () => {
-      cancelado = true;
-    };
-  }, [eventoId, eventoInfo?.id_evento]);
-
   const handleViewDetails = async (project) => {
     setShowModal(true);
     let projectEnriched = { ...project };
@@ -231,16 +154,6 @@ export default function InvitedPage() {
   };
 
   // Manejar cambio de cantidad de proyectos en el ranking
-  const handleRankingDisplayCountChange = (value) => {
-    const newValue = Math.max(5, parseInt(value));
-    setRankingDisplayCount(newValue);
-    try {
-      safeSetItem('invitedPageRankingCount', newValue.toString());
-    } catch (e) {
-      // Ignorar si no se puede guardar
-    }
-  };
-
   // Calcular proyectos paginados
   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -318,69 +231,6 @@ export default function InvitedPage() {
               <h3 className="font-semibold text-center text-gray-900 mb-1">Invitado</h3>
               <p className="text-sm text-center text-gray-500">Acceso público a proyectos</p>
             </div>
-
-            {/* Ranking Completo */}
-            {rankingProjects.length > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <i className="pi pi-list text-yellow-500"></i>
-                  Ranking Completo
-                </h3>
-
-                {/* Selector de cantidad */}
-                <div className="mb-4">
-                  <label className="text-xs text-gray-600 block mb-2">Mostrar:</label>
-                  <select
-                    value={rankingDisplayCount}
-                    onChange={(e) => handleRankingDisplayCountChange(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  >
-                    {(() => {
-                      const options = [5, 10, 15, 20, 25, 30, 50, 75, 100, 150, 200];
-                      // Si hay más proyectos que 200, agregar opción para "todos"
-                      if (rankingProjects.length > 200) {
-                        options.push(rankingProjects.length);
-                      }
-                      return options.map(num => (
-                        <option key={num} value={num}>
-                          {num === rankingProjects.length ? `Todos (${num})` : `${num} proyectos`}
-                        </option>
-                      ));
-                    })()}
-                  </select>
-                </div>
-
-                {/* Lista de proyectos */}
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {rankingProjects.slice(0, rankingDisplayCount).map((rankingProject, idx) => (
-                    <div
-                      key={rankingProject.id_proyecto}
-                      className="p-2 bg-yellow-50 rounded-lg border border-yellow-100 hover:bg-yellow-100 transition-colors cursor-pointer text-sm"
-                      onClick={() => {
-                        const fullProject = projects.find(p => p.id_proyecto === rankingProject.id_proyecto) || rankingProject;
-                        handleViewDetails(fullProject);
-                      }}
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="font-bold text-yellow-600 text-xs w-6 flex-shrink-0">
-                          {rankingProject.posicion === 1 ? '🥇' : rankingProject.posicion === 2 ? '🥈' : rankingProject.posicion === 3 ? '🥉' : `${rankingProject.posicion}.`}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 line-clamp-2 text-xs">
-                            {rankingProject.titulo_proyecto}
-                          </p>
-                          {Number(rankingProject.promedio) > 0 && (
-                            <p className="text-xs text-gray-600 mt-1">
-                              ⭐ {Number(rankingProject.promedio).toFixed(2)}/5.0
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </aside>
 
           {/* Main Content */}
@@ -395,92 +245,36 @@ export default function InvitedPage() {
               </p>
             </div>
 
-            {/* Sección de Ranking */}
+            {/* Tableros del evento: top 5 por cada tablero */}
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <i className="pi pi-star-fill text-yellow-500 text-2xl"></i>
-                <h3 className="text-xl font-bold text-gray-900">🏆 Top Proyectos</h3>
-                <span className="text-sm text-gray-500">(Más votados)</span>
+                <h3 className="text-xl font-bold text-gray-900">🏆 Top 5 del evento</h3>
+                <span className="text-sm text-gray-500">(se actualiza automáticamente)</span>
               </div>
 
-              {loadingRanking ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-yellow-200 border-t-yellow-500 rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600 text-sm">Cargando ranking...</p>
-                  </div>
-                </div>
-              ) : rankingProjects.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-                  {rankingProjects.slice(0, 5).map((rankingProject) => {
-                    // Buscar el proyecto completo para mostrar toda la información
-                    const fullProject = projects.find(p => p.id_proyecto === rankingProject.id_proyecto) || rankingProject;
-                    return (
-                    <div
-                      key={rankingProject.id_proyecto}
-                      className="relative bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border-2 border-yellow-200 p-4 hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => handleViewDetails(fullProject)}
-                    >
-                      {/* Medal Badge */}
-                      <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                        {rankingProject.posicion === 1 ? '🥇' : rankingProject.posicion === 2 ? '🥈' : rankingProject.posicion === 3 ? '🥉' : rankingProject.posicion}
-                      </div>
-
-                      {/* Título */}
-                      <h4 className="font-semibold text-gray-900 text-sm mb-2 pr-6 line-clamp-2">
-                        {rankingProject.titulo_proyecto}
-                      </h4>
-
-                      {/* Rating/Votos */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <i
-                              key={i}
-                              className={`pi text-xs ${
-                                i < Math.round(rankingProject.promedio_ponderado || 0)
-                                  ? 'pi-star-fill text-yellow-400'
-                                  : 'pi-star text-gray-300'
-                              }`}
-                            ></i>
-                          ))}
-                        </div>
-                        <span className="text-xs text-gray-600">
-                          {(Number(rankingProject.promedio_ponderado) || 0).toFixed(1)}/5
-                        </span>
-                      </div>
-
-                      {/* Calificaciones */}
-                      <div className="text-xs text-gray-500">
-                        <span className="font-medium">{rankingProject.total_calificaciones || 0}</span> calificaciones
-                      </div>
-
-                      {/* Detalles */}
-                      <div className="mt-3 pt-3 border-t border-yellow-200">
-                        <p className="text-xs text-gray-600 mb-1">
-                          <i className="pi pi-star text-yellow-500 text-xs mr-1"></i>
-                          <span className="font-medium">Top #{rankingProject.posicion}</span>
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          <i className="pi pi-chart-bar text-blue-600 text-xs mr-1"></i>
-                          {(Number(rankingProject.promedio_ponderado) || 0).toFixed(2)}/5 rating
-                        </p>
-                      </div>
-                    </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border-2 border-yellow-200 p-12 text-center">
-                  <div className="w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <i className="pi pi-star text-3xl text-yellow-400"></i>
-                  </div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Aún sin votos</h4>
-                  <p className="text-gray-600 text-sm">
-                    Los proyectos aparecerán aquí una vez que reciban votos populares
-                  </p>
-                </div>
-              )}
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <TableroTop5
+                  titulo="Solo jurado"
+                  descripcion="Promedio únicamente de los docentes jurado. Mínimo 2 votos de jurado."
+                  items={tableros.solo_jurado}
+                  campoPuntaje="puntaje_solo_jurado"
+                  campoVotos="votos_jurado_docente"
+                  etiquetaVotos="votos de jurado"
+                  cargando={loadingRanking}
+                  onSeleccionar={seleccionarProyecto}
+                />
+                <TableroTop5
+                  titulo="Jurado + voto popular"
+                  descripcion="80 % jurado y 20 % voto popular. Mínimo 6 calificaciones."
+                  items={tableros.jurado_y_publico}
+                  campoPuntaje="puntaje_jurado_publico"
+                  campoVotos="total_calificaciones"
+                  etiquetaVotos="calificaciones"
+                  cargando={loadingRanking}
+                  onSeleccionar={seleccionarProyecto}
+                />
+              </div>
             </div>
 
             {/* Barra de búsqueda y filtros */}
