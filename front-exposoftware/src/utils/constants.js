@@ -155,6 +155,7 @@ export const API_ENDPOINTS = {
   PROYECTO_INTEGRANTES: (proyectoId) => `${API_BASE_URL}/api/v1/proyectos/${proyectoId}/integrantes`,
   PUBLIC_RANKING_EVENTO: (eventoId) => `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${eventoId}`,
   PUBLIC_TABLEROS_EVENTO: (eventoId) => `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${eventoId}/podios`,
+  PUBLIC_VERSION_RANKING_EVENTO: (eventoId) => `${API_BASE_URL}/api/v1/proyectos/ranking/evento/${eventoId}/version`,
   ADMIN_QRS_LOTE_EVENTO: (idEvento) => `${API_BASE_URL}/api/v1/proyectos/eventos/${idEvento}/generar-qrs-lote`,
 
   // ═══════════════════════════════════════════════════════════

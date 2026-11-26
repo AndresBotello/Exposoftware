@@ -7,7 +7,7 @@ import AdminSidebar from '../../components/Layout/AdminSidebar';
 import { AdminHeader, AdminPageHeader } from '../../components/Admin/AdminComponents';
 import TableroTop5 from '../../components/Ranking/TableroTop5';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
-import { useTablerosEvento, INTERVALO_TABLEROS_MS } from '../../hooks/useTablerosEvento';
+import { useTablerosEvento } from '../../hooks/useTablerosEvento';
 import EventosService from '../../Services/EventosService';
 import { elegirEventoActual, ordenarEventos, etiquetaEstadoEvento } from '../../utils/eventoActual';
 
@@ -79,7 +79,7 @@ export default function AdminRanking() {
             <AdminPageHeader
               icon="pi-star-fill"
               title="Tableros del evento"
-              subtitle={`Top 5 de cada tablero, actualizado cada ${INTERVALO_TABLEROS_MS / 1000} segundos`}
+              subtitle="Top 5 de cada tablero. Se actualiza al registrarse una calificación"
             />
 
             {/* Controles */}
