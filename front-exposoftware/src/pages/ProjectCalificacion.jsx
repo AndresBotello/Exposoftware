@@ -110,7 +110,10 @@ export default function ProjectCalificacion() {
     e.preventDefault();
 
     if (!criteriosCompletos(valores)) {
-      setError(`Califica todos los criterios entre ${NOTA_MIN} y ${NOTA_MAX}`);
+      const faltan = CRITERIOS.filter((c) => aNumeroCriterio(valores[c.clave]) === null).map((c) => c.nombre);
+      setError(
+        `Falta calificar: ${faltan.join(", ")}. Usa un valor entre ${NOTA_MIN} y ${NOTA_MAX} en cada criterio.`
+      );
       return;
     }
 
@@ -282,7 +285,7 @@ export default function ProjectCalificacion() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} noValidate className="space-y-6">
               {CRITERIOS.map((criterio) => {
                 const valor = valores[criterio.clave];
                 const numero = aNumeroCriterio(valor);
@@ -363,9 +366,9 @@ export default function ProjectCalificacion() {
                 </button>
                 <button
                   type="submit"
-                  disabled={enviando || !criteriosCompletos(valores)}
+                  disabled={enviando}
                   className={`px-6 py-3 rounded-lg font-medium text-white transition flex items-center justify-center gap-2 ${
-                    enviando || !criteriosCompletos(valores)
+                    enviando
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-emerald-600 hover:bg-emerald-700"
                   }`}
