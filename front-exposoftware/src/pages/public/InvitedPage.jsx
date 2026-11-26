@@ -1,435 +1,450 @@
-import { useState, useEffect } from "react";
-import TableroTop5 from "../../components/Ranking/TableroTop5";
-import { useTablerosEvento } from "../../hooks/useTablerosEvento";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import {
+  LogOut,
+  LogIn,
+  CalendarDays,
+  Eye,
+  Search,
+  X,
+  Info,
+  Inbox,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Gavel,
+  Users,
+  BarChart3,
+} from "lucide-react";
+import TableroTop5 from "../../components/Ranking/TableroTop5";
+import { useRankingEventos } from "../../hooks/useRankingEventos";
+import { INTERVALO_TABLEROS_MS } from "../../hooks/useTablerosEvento";
 import ProjectCard from "../../components/ProjectCard";
 import ProjectDetailsModal from "../../components/ProjectDetailsModal";
-import EventosService from "../../Services/EventosService";
 import { useAuth } from "../../contexts/AuthContext";
 import { API_BASE_URL } from "../../utils/constants";
 import { safeGetItem, safeSetItem } from "../../utils/safeStorage";
 import logo from "../../assets/Logo-unicesar.png";
 import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
 
+const OPCIONES_POR_PAGINA = [21, 24, 30, 36, 48, 60, 120, 150];
+
+const formatoNota = (valor) => (Number(valor) || 0).toFixed(2);
+
 export default function InvitedPage() {
   const { eventoId } = useParams();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+
+  const [eventos, setEventos] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [eventoInfo, setEventoInfo] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(() => {
-    try {
-      const saved = safeGetItem('invitedPageItemsPerPage');
-      return saved ? parseInt(saved) : 150;
-    } catch (e) {
-      return 150;
-    }
+    const saved = parseInt(safeGetItem("invitedPageItemsPerPage"), 10);
+    return OPCIONES_POR_PAGINA.includes(saved) ? saved : 150;
   });
-  // Dos tableros (solo jurado, y jurado + voto popular), top 5, actualizados en vivo.
-  const { tableros, cargando: loadingRanking } = useTablerosEvento(eventoId || eventoInfo?.id_evento);
 
-  const seleccionarProyecto = (proyectoRanking) => {
-    const proyectoCompleto = projects.find(p => p.id_proyecto === proyectoRanking.id_proyecto) || proyectoRanking;
-    handleViewDetails(proyectoCompleto);
-  };
+  // Ranking en vivo de todos los eventos activos (tableros y puntaje por proyecto).
+  const idsEventos = useMemo(() => eventos.map((e) => e.id_evento), [eventos]);
+  const { datos: rankingPorEvento, cargando: cargandoRanking, error: errorRanking } =
+    useRankingEventos(idsEventos);
 
-  const handleLogout = async () => {
-    if (!(await confirmarCierreSesion())) return;
-    try {
-      await logout();
-      navigate("/");
-    } catch (err) {
-      navigate("/");
-    }
-  };
+  // Puntaje de cada proyecto, indexado por id_proyecto.
+  const puntajePorProyecto = useMemo(() => {
+    const mapa = {};
+    Object.values(rankingPorEvento).forEach((evento) => {
+      Object.assign(mapa, evento.proyectos);
+    });
+    return mapa;
+  }, [rankingPorEvento]);
 
   // Redirigir a home si el usuario se desautentica
   useEffect(() => {
-    if (!user) {
-      navigate("/");
-    }
+    if (!user) navigate("/");
   }, [user, navigate]);
 
-  // Cargar proyectos públicos del evento
+  // Cargar los proyectos visibles de todos los eventos en curso.
   useEffect(() => {
-    const cargarProyectosPublicos = async () => {
+    const cargarEventosActivos = async () => {
+      setLoadingProjects(true);
+      setError(null);
       try {
-        setLoadingProjects(true);
-        setError(null);
+        const response = await fetch(`${API_BASE_URL}/api/v1/eventos/en-curso/proyectos`, {
+          method: "GET",
+          credentials: "include",
+        });
+        if (!response.ok) throw new Error("No se pudieron cargar los proyectos.");
 
-        // Obtener evento en curso
-        let idEvento = eventoId;
-        if (!idEvento) {
-          const todosEventos = await EventosService.obtenerEventos();
-          // Filtrar por eventos que están en curso
-          const eventosEnCurso = todosEventos?.filter(e => e.estado === 'en-curso' || e.estado === 'en_curso') || [];
-          if (eventosEnCurso && eventosEnCurso.length > 0) {
-            idEvento = eventosEnCurso[0].id_evento;
-            setEventoInfo(eventosEnCurso[0]);
-          } else {
-            throw new Error('No hay eventos en curso disponibles');
-          }
+        const body = await response.json();
+        let activos = body.data?.eventos_en_curso || [];
+        let proyectos = body.data?.proyectos || [];
+
+        if (eventoId) {
+          activos = activos.filter((e) => e.id_evento === eventoId);
+          proyectos = proyectos.filter((p) => p.id_evento === eventoId);
         }
 
-
-        const response = await fetch(
-          `${API_BASE_URL}/api/v1/eventos/${idEvento}/proyectos`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include'
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          const proyectos = data.data || [];
-          setProjects(proyectos);
-
-          // Si no tenemos evento info, usar la del primer proyecto
-          if (!eventoInfo && proyectos.length > 0) {
-            setEventoInfo({
-              id_evento: proyectos[0].id_evento,
-              nombre_evento: proyectos[0].nombre_evento
-            });
-          }
-        } else {
-          throw new Error('Error al obtener proyectos públicos');
+        if (activos.length === 0) {
+          setError("Por el momento no hay eventos en curso. Vuelve más tarde para ver los proyectos de la próxima jornada.");
         }
+        setEventos(activos);
+        setProjects(proyectos);
       } catch (err) {
-        if (err.message.includes('No hay eventos en curso')) {
-          setError('Por el momento no hay eventos en curso. Vuelve más tarde para ver los proyectos de la próxima jornada.');
-        } else {
-          setError(err.message || 'Error al cargar los proyectos');
-        }
+        setError(err.message || "Error al cargar los proyectos");
       } finally {
         setLoadingProjects(false);
       }
     };
 
-    cargarProyectosPublicos();
+    cargarEventosActivos();
   }, [eventoId]);
 
-  const handleViewDetails = async (project) => {
-    setShowModal(true);
-    let projectEnriched = { ...project };
-    setSelectedProject(projectEnriched);
+  const handleViewDetails = (project) => {
+    setSelectedProject({ ...project });
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedProject(null);
+  const seleccionarProyecto = (proyectoRanking) => {
+    const proyectoCompleto = projects.find((p) => p.id_proyecto === proyectoRanking.id_proyecto) || proyectoRanking;
+    handleViewDetails(proyectoCompleto);
   };
 
-  // Filtrar proyectos por búsqueda
-  const filteredProjects = projects.filter(project =>
-    project.titulo_proyecto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.nombre_materia?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.nombre_grupo?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const closeModal = () => setSelectedProject(null);
 
-  // Resetear a página 1 cuando cambia la búsqueda
+  const handleLogout = async () => {
+    if (!(await confirmarCierreSesion())) return;
+    try {
+      await logout();
+    } finally {
+      navigate("/");
+    }
+  };
+
+  const handleItemsPerPageChange = (value) => {
+    const numero = parseInt(value, 10);
+    setItemsPerPage(numero);
+    setCurrentPage(1);
+    safeSetItem("invitedPageItemsPerPage", String(numero));
+  };
+
+  const filteredProjects = projects.filter((project) => {
+    const termino = searchTerm.toLowerCase();
+    return (
+      project.titulo_proyecto?.toLowerCase().includes(termino) ||
+      project.nombre_materia?.toLowerCase().includes(termino) ||
+      project.nombre_grupo?.toLowerCase().includes(termino)
+    );
+  });
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Guardar preferencia de items por página
-  const handleItemsPerPageChange = (value) => {
-    const newValue = parseInt(value);
-    setItemsPerPage(newValue);
-    try {
-      safeSetItem('invitedPageItemsPerPage', newValue.toString());
-    } catch (e) {
-      // Ignorar si no se puede guardar
-    }
-    setCurrentPage(1);
-  };
-
-  // Manejar cambio de cantidad de proyectos en el ranking
-  // Calcular proyectos paginados
-  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedProjects = filteredProjects.slice(startIndex, endIndex);
 
   return (
     <div className="min-h-screen bg-gray-50" translate="no">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex flex-shrink-0 items-center gap-3">
               <img src={logo} alt="Logo" className="w-8 sm:w-10" />
               <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-gray-900">Expo-software</h1>
-                <p className="text-xs text-gray-500">UPC - Invitado</p>
+                <h1 className="text-lg font-semibold text-gray-900">Expo-software</h1>
+                <p className="text-xs text-gray-500">UPC · Invitado</p>
               </div>
-              <div className="sm:hidden">
-                <h1 className="text-sm font-bold">Expo-software</h1>
-              </div>
+              <h1 className="text-sm font-semibold sm:hidden">Expo-software</h1>
             </div>
-            <div className="flex items-center gap-3">
-              {user ? (
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                >
-                  <i className="pi pi-sign-out"></i>
-                  <span className="hidden sm:inline">Cerrar Sesión</span>
-                </button>
-              ) : (
-                <Link
-                  to="/login"
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
-                >
-                  <i className="pi pi-sign-in"></i>
-                  <span className="hidden sm:inline">Ingresar</span>
-                </Link>
-              )}
-            </div>
+            {user ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700"
+              >
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Cerrar sesión</span>
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-800"
+              >
+                <LogIn className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Ingresar</span>
+              </Link>
+            )}
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar */}
-          <aside className="lg:col-span-1">
-            {/* Card de Evento */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <i className="pi pi-calendar text-emerald-600"></i>
-                Evento
+      <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          <aside className="space-y-4 lg:col-span-1">
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
+                <CalendarDays className="h-4 w-4 text-emerald-700" aria-hidden="true" />
+                Eventos en curso
               </h3>
-              {eventoInfo ? (
-                <div>
-                  <p className="text-sm font-medium text-gray-900 mb-2">
-                    {eventoInfo.nombre_evento}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {projects.length} proyecto{projects.length !== 1 ? 's' : ''} publicado{projects.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
+              {eventos.length > 0 ? (
+                <ul className="space-y-3">
+                  {eventos.map((evento) => (
+                    <li key={evento.id_evento}>
+                      <p className="text-sm font-medium text-gray-900">{evento.nombre_evento}</p>
+                      <p className="text-xs text-gray-500">
+                        {projects.filter((p) => p.id_evento === evento.id_evento).length} proyectos publicados
+                      </p>
+                    </li>
+                  ))}
+                </ul>
               ) : (
-                <p className="text-sm text-gray-500">{loadingProjects ? 'Cargando evento...' : 'No hay eventos disponibles'}</p>
+                <p className="text-sm text-gray-500">
+                  {loadingProjects ? "Cargando eventos..." : "No hay eventos disponibles"}
+                </p>
               )}
             </div>
 
-            {/* Card de Información */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 bg-emerald-100">
-                <i className="pi pi-eye text-emerald-600 text-2xl"></i>
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-emerald-50">
+                <Eye className="h-5 w-5 text-emerald-700" aria-hidden="true" />
               </div>
-              <h3 className="font-semibold text-center text-gray-900 mb-1">Invitado</h3>
-              <p className="text-sm text-center text-gray-500">Acceso público a proyectos</p>
+              <h3 className="text-sm font-semibold text-gray-900">Acceso de invitado</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Puedes ver los proyectos y las calificaciones en vivo de los eventos en curso.
+              </p>
             </div>
           </aside>
 
-          {/* Main Content */}
           <main className="lg:col-span-3">
-            {/* Título y Descripción */}
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Proyectos Públicos
-              </h2>
-              <p className="text-gray-600">
-                Explora los proyectos presentados en este evento
-              </p>
+              <h2 className="text-2xl font-semibold text-gray-900">Proyectos públicos</h2>
+              <p className="mt-1 text-gray-600">Explora los proyectos de los eventos en curso.</p>
             </div>
 
-            {/* Tableros del evento: top 5 por cada tablero */}
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <i className="pi pi-star-fill text-yellow-500 text-2xl"></i>
-                <h3 className="text-xl font-bold text-gray-900">🏆 Top 5 del evento</h3>
-                <span className="text-sm text-gray-500">(se actualiza automáticamente)</span>
-              </div>
+            {/* Ranking en vivo */}
+            {eventos.length > 0 && (
+              <section className="mb-8">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900">Ranking del evento</h3>
+                  <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <RefreshCw
+                      className={`h-3.5 w-3.5 ${cargandoRanking ? "animate-spin" : ""}`}
+                      aria-hidden="true"
+                    />
+                    Se actualiza cada {INTERVALO_TABLEROS_MS / 1000} segundos
+                  </span>
+                </div>
 
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <TableroTop5
-                  titulo="Solo jurado"
-                  descripcion="Promedio únicamente de los docentes jurado. Mínimo 2 votos de jurado."
-                  items={tableros.solo_jurado}
-                  campoPuntaje="puntaje_solo_jurado"
-                  campoVotos="votos_jurado_docente"
-                  etiquetaVotos="votos de jurado"
-                  cargando={loadingRanking}
-                  onSeleccionar={seleccionarProyecto}
-                />
-                <TableroTop5
-                  titulo="Jurado + voto popular"
-                  descripcion="80 % jurado y 20 % voto popular. Mínimo 6 calificaciones."
-                  items={tableros.jurado_y_publico}
-                  campoPuntaje="puntaje_jurado_publico"
-                  campoVotos="total_calificaciones"
-                  etiquetaVotos="calificaciones"
-                  cargando={loadingRanking}
-                  onSeleccionar={seleccionarProyecto}
-                />
-              </div>
-            </div>
+                {errorRanking && (
+                  <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    No se pudo actualizar el ranking. Se mostrará el último resultado disponible.
+                  </p>
+                )}
 
-            {/* Barra de búsqueda y filtros */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <i className="pi pi-search text-gray-400"></i>
+                <div className="space-y-6">
+                  {eventos.map((evento) => {
+                    const tableros = rankingPorEvento[evento.id_evento]?.tableros;
+                    return (
+                      <div key={evento.id_evento}>
+                        <p className="mb-3 text-sm font-medium text-gray-700">{evento.nombre_evento}</p>
+                        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                          <TableroTop5
+                            titulo="Solo jurado"
+                            descripcion="Promedio de los docentes jurado. Mínimo 2 votos de jurado."
+                            items={tableros?.solo_jurado || []}
+                            campoPuntaje="puntaje_solo_jurado"
+                            campoVotos="votos_jurado_docente"
+                            etiquetaVotos="votos de jurado"
+                            cargando={cargandoRanking && !tableros}
+                            onSeleccionar={seleccionarProyecto}
+                          />
+                          <TableroTop5
+                            titulo="Jurado y voto popular"
+                            descripcion="80 % jurado y 20 % voto popular. Mínimo 6 calificaciones."
+                            items={tableros?.jurado_y_publico || []}
+                            campoPuntaje="puntaje_jurado_publico"
+                            campoVotos="total_calificaciones"
+                            etiquetaVotos="calificaciones"
+                            cargando={cargandoRanking && !tableros}
+                            onSeleccionar={seleccionarProyecto}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Búsqueda y tamaño de página */}
+            <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+              <div className="mb-4 flex items-center gap-3">
+                <Search className="h-4 w-4 flex-shrink-0 text-gray-400" aria-hidden="true" />
                 <input
                   type="text"
-                  placeholder="Buscar por título, materia o grupo..."
+                  placeholder="Buscar por título, materia o grupo"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 outline-none text-sm bg-transparent"
+                  className="flex-1 bg-transparent text-sm outline-none"
                 />
                 {searchTerm && (
                   <button
+                    type="button"
                     onClick={() => setSearchTerm("")}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-gray-400 transition-colors hover:text-gray-600"
+                    aria-label="Limpiar búsqueda"
                   >
-                    <i className="pi pi-times"></i>
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 )}
               </div>
-
-              {/* Selector de items por página */}
               <div className="flex items-center gap-2 text-sm">
-                <label htmlFor="itemsPerPage" className="text-gray-700 font-medium">
-                  Proyectos por página:
+                <label htmlFor="itemsPerPage" className="font-medium text-gray-700">
+                  Proyectos por página
                 </label>
                 <select
                   id="itemsPerPage"
                   value={itemsPerPage}
                   onChange={(e) => handleItemsPerPageChange(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent"
+                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 >
-                  <option value="21">21</option>
-                  <option value="24">24</option>
-                  <option value="30">30</option>
-                  <option value="36">36</option>
-                  <option value="48">48</option>
-                  <option value="60">60</option>
-                  <option value="120">120</option>
-                  <option value="150">150</option>
+                  {OPCIONES_POR_PAGINA.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
                 </select>
               </div>
             </div>
 
-            {/* Mensaje de carga */}
             {loadingProjects && (
-              <div className="flex justify-center items-center py-12">
+              <div className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600"></div>
                   <p className="text-gray-600">Cargando proyectos...</p>
                 </div>
               </div>
             )}
 
-            {/* Mensaje de aviso */}
             {error && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <p className="text-blue-800 flex items-center gap-2">
-                  <i className="pi pi-info-circle"></i>
-                  {error}
-                </p>
+              <div className="mb-6 flex items-start gap-3 rounded-md border border-blue-200 bg-blue-50 p-4">
+                <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-700" aria-hidden="true" />
+                <p className="text-sm text-blue-800">{error}</p>
               </div>
             )}
 
-            {/* Proyectos */}
             {!loadingProjects && filteredProjects.length > 0 && (
               <>
-                <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-lg border border-emerald-200 p-4 mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-gray-700">
-                      Mostrando <span className="font-semibold">{startIndex + 1}-{Math.min(endIndex, filteredProjects.length)}</span> de{" "}
-                      <span className="font-semibold">{filteredProjects.length}</span> proyectos
-                    </span>
-                  </div>
+                <p className="mb-4 text-sm text-gray-600">
+                  Mostrando <span className="font-medium text-gray-900">{startIndex + 1}–{Math.min(endIndex, filteredProjects.length)}</span> de{" "}
+                  <span className="font-medium text-gray-900">{filteredProjects.length}</span> proyectos
+                </p>
+
+                <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {paginatedProjects.map((project) => {
+                    const puntaje = puntajePorProyecto[project.id_proyecto];
+                    return (
+                      <div key={project.id_proyecto} className="flex flex-col">
+                        <ProjectCard proyecto={project} onViewDetails={handleViewDetails} />
+                        <div className="-mt-1 rounded-b-lg border border-t-0 border-gray-200 bg-white px-4 py-3">
+                          {puntaje ? (
+                            <dl className="grid grid-cols-3 gap-2 text-xs">
+                              <div>
+                                <dt className="flex items-center gap-1 text-gray-500">
+                                  <Gavel className="h-3 w-3" aria-hidden="true" />
+                                  Jurado
+                                </dt>
+                                <dd className="mt-0.5 font-semibold tabular-nums text-gray-900">
+                                  {puntaje.promedio_jurado_docente != null ? formatoNota(puntaje.promedio_jurado_docente) : "—"}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="flex items-center gap-1 text-gray-500">
+                                  <Users className="h-3 w-3" aria-hidden="true" />
+                                  Popular
+                                </dt>
+                                <dd className="mt-0.5 font-semibold tabular-nums text-gray-900">
+                                  {puntaje.promedio_publico_general != null ? formatoNota(puntaje.promedio_publico_general) : "—"}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt className="flex items-center gap-1 text-gray-500">
+                                  <BarChart3 className="h-3 w-3" aria-hidden="true" />
+                                  Puntaje
+                                </dt>
+                                <dd className="mt-0.5 font-semibold tabular-nums text-emerald-700">
+                                  {formatoNota(puntaje.puntaje_jurado_publico)}
+                                </dd>
+                              </div>
+                            </dl>
+                          ) : (
+                            <p className="text-xs text-gray-500">Sin calificaciones todavía</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-                  {paginatedProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id_proyecto}
-                      proyecto={project}
-                      onViewDetails={handleViewDetails}
-                    />
-                  ))}
-                </div>
-
-                {/* Controles de Paginación */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-8">
+                  <div className="mt-8 flex items-center justify-center gap-2">
                     <button
+                      type="button"
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center gap-1 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <i className="pi pi-chevron-left"></i> Anterior
+                      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                      Anterior
                     </button>
 
                     <div className="flex gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => {
-                        const pageNum = i + 1;
-                        // Mostrar páginas cercanas a la actual
-                        if (
-                          pageNum === 1 ||
-                          pageNum === totalPages ||
-                          (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                        ) {
-                          return (
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter((n) => n === 1 || n === totalPages || Math.abs(n - currentPage) <= 1)
+                        .map((n, idx, lista) => (
+                          <span key={n} className="flex items-center">
+                            {idx > 0 && n - lista[idx - 1] > 1 && <span className="px-2 text-gray-500">…</span>}
                             <button
-                              key={pageNum}
-                              onClick={() => setCurrentPage(pageNum)}
-                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                currentPage === pageNum
-                                  ? "bg-emerald-600 text-white"
+                              type="button"
+                              onClick={() => setCurrentPage(n)}
+                              className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                currentPage === n
+                                  ? "bg-emerald-700 text-white"
                                   : "border border-gray-300 text-gray-700 hover:bg-gray-100"
                               }`}
                             >
-                              {pageNum}
+                              {n}
                             </button>
-                          );
-                        } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                          return (
-                            <span key={pageNum} className="px-2 py-2 text-gray-500">
-                              ...
-                            </span>
-                          );
-                        }
-                        return null;
-                      })}
+                          </span>
+                        ))}
                     </div>
 
                     <button
+                      type="button"
                       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
-                      className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center gap-1 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Siguiente <i className="pi pi-chevron-right"></i>
+                      Siguiente
+                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </div>
                 )}
               </>
             )}
 
-            {/* Sin proyectos */}
             {!loadingProjects && filteredProjects.length === 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                <i className="pi pi-inbox text-5xl text-gray-300 mb-4 block"></i>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
+                <Inbox className="mx-auto mb-4 h-12 w-12 text-gray-300" aria-hidden="true" />
+                <h3 className="mb-2 text-lg font-semibold text-gray-900">
                   {projects.length === 0 ? "No hay proyectos disponibles" : "No se encontraron proyectos"}
                 </h3>
                 <p className="text-gray-600">
                   {projects.length === 0
-                    ? "Aún no hay proyectos publicados en este evento."
+                    ? "Aún no hay proyectos publicados en los eventos en curso."
                     : "Intenta con otros términos de búsqueda."}
                 </p>
               </div>
@@ -438,10 +453,9 @@ export default function InvitedPage() {
         </div>
       </div>
 
-      {/* Modal de detalles */}
       <ProjectDetailsModal
         selectedProject={selectedProject}
-        eventoInfo={eventoInfo}
+        eventoInfo={eventos.find((e) => e.id_evento === selectedProject?.id_evento) || null}
         user={null}
         onClose={closeModal}
         onDownloadCertificado={null}

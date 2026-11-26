@@ -10,6 +10,19 @@ import logo from "../../assets/Logo-unicesar.png";
 import ReportGenerator from "../../components/ReportGenerator";
 import ProjectsGrid from "../../components/ProjectsGrid";
 import { confirmarCierreSesion } from "../../utils/confirmDialog.jsx";
+import { API_BASE_URL } from "../../utils/constants";
+import { CalendarDays, MapPin } from "lucide-react";
+
+const ESTADOS_EVENTO = {
+  en_curso: "En curso",
+  inscripciones_abiertas: "Inscripciones abiertas",
+  inscripciones_cerradas: "Inscripciones cerradas",
+};
+
+const formatearFecha = (fecha) =>
+  fecha
+    ? new Date(fecha).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })
+    : "";
 
 export default function GuestDashboard() {
   const { logout, user, setGuestProfile } = useAuth();
@@ -23,8 +36,33 @@ export default function GuestDashboard() {
   const [lineasInvestigacion, setLineasInvestigacion] = useState([]);
   const [cargandoGraficas, setCargandoGraficas] = useState(true);
 
+  // Eventos activos para la sección de evento.
+  const [eventosActivos, setEventosActivos] = useState([]);
+  const [eventoSeleccionadoId, setEventoSeleccionadoId] = useState(null);
+  const [cargandoEventos, setCargandoEventos] = useState(true);
+  const eventoActivo =
+    eventosActivos.find((e) => e.id_evento === eventoSeleccionadoId) || eventosActivos[0] || null;
+
   useEffect(() => {
     cargarPerfil();
+  }, []);
+
+  // Cargar eventos activos (si hay uno, se muestra por defecto)
+  useEffect(() => {
+    const cargarEventosActivos = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/eventos/en-curso`, { credentials: "include" });
+        if (!response.ok) throw new Error("No se pudieron cargar los eventos");
+        const body = await response.json();
+        setEventosActivos(body.data || []);
+      } catch (err) {
+        console.error("Error cargando eventos activos:", err);
+        setEventosActivos([]);
+      } finally {
+        setCargandoEventos(false);
+      }
+    };
+    cargarEventosActivos();
   }, []);
 
   // Cargar datos para gráficas al montar el componente
@@ -619,76 +657,53 @@ const coloresLineas = [
               />
             </div>
 
-            {/* Información del Evento */}
+            {/* Evento activo */}
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Evento activo</h3>
+                {eventosActivos.length > 1 && (
+                  <select
+                    value={eventoActivo?.id_evento || ""}
+                    onChange={(e) => setEventoSeleccionadoId(e.target.value)}
+                    className="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
+                    aria-label="Seleccionar evento activo"
+                  >
+                    {eventosActivos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.nombre_evento}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {cargandoEventos ? (
+                <p className="text-sm text-gray-500">Cargando evento...</p>
+              ) : !eventoActivo ? (
+                <p className="text-sm text-gray-500">No hay eventos activos en este momento.</p>
+              ) : (
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">
-                    XXIII Jornada de Investigación
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <i className="pi pi-calendar"></i>
-                    Evento: 25-27 de Noviembre de 2025
+                  <h4 className="text-xl font-semibold text-gray-900 mb-3">{eventoActivo.nombre_evento}</h4>
+                  <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600 mb-4">
+                    <span className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-green-700" aria-hidden="true" />
+                      {formatearFecha(eventoActivo.fecha_inicio)} – {formatearFecha(eventoActivo.fecha_fin)}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-green-700" aria-hidden="true" />
+                      {eventoActivo.lugar}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-green-50 px-3 py-0.5 text-xs font-semibold text-green-700">
+                      {ESTADOS_EVENTO[eventoActivo.estado] || eventoActivo.estado}
+                    </span>
                   </div>
+                  {eventoActivo.descripcion && (
+                    <p className="text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-4">
+                      {eventoActivo.descripcion}
+                    </p>
+                  )}
                 </div>
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
-                  Activo
-                </span>
-              </div>
-
-              <div className="border-t border-gray-100 pt-4 mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <i className="pi pi-info-circle text-green-600"></i>
-                  Acerca del Evento
-                </h4>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Exposoftware 2026 es el evento más importante de innovación y tecnología de la Universidad Popular del Cesar. 
-                  Durante tres días, estudiantes presentarán sus proyectos innovadores de desarrollo de software, investigación y 
-                  aplicaciones tecnológicas. Como invitado, podrás explorar todos los proyectos, inscribirte a presentaciones 
-                  específicas y conectar con talento emergente en tecnología.
-                </p>
-              </div>
-
-              <div className="border-t border-gray-100 pt-4 mb-4">
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <i className="pi pi-calendar-plus text-green-600"></i>
-                  Fechas Clave
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex flex-col items-center justify-center flex-shrink-0">
-                      <span className="text-xs text-green-600 font-semibold">NOV</span>
-                      <span className="text-lg font-bold text-green-700">25</span>
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-gray-900 text-sm">Inauguración</h5>
-                      <p className="text-xs text-gray-600">9:00 AM - Auditorio Principal</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex flex-col items-center justify-center flex-shrink-0">
-                      <span className="text-xs text-blue-600 font-semibold">NOV</span>
-                      <span className="text-lg font-bold text-blue-700">26</span>
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-gray-900 text-sm">Presentaciones Principales</h5>
-                      <p className="text-xs text-gray-600">8:00 AM - 6:00 PM - Diversos auditorios</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex flex-col items-center justify-center flex-shrink-0">
-                      <span className="text-xs text-purple-600 font-semibold">NOV</span>
-                      <span className="text-lg font-bold text-purple-700">27</span>
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-gray-900 text-sm">Premiación y Clausura</h5>
-                      <p className="text-xs text-gray-600">4:00 PM - Auditorio Principal</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
           </main>

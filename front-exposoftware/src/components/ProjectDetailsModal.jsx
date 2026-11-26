@@ -389,7 +389,7 @@ export default function ProjectDetailsModal({
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">PDF del proyecto (opcional)</label>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">PDF del proyecto</label>
                 {urlDocumento && (
                   <div className="mb-3 flex items-center gap-3 rounded-lg border border-gray-300 bg-white p-3">
                     <i className="pi pi-file-pdf text-xl text-red-600"></i>
@@ -460,7 +460,7 @@ export default function ProjectDetailsModal({
                   selectedProject.nombre_docente ||
                   selectedProject.id_docente) && (
                   <div>
-                    <p className="mb-2 text-xs text-gray-500">Docente(s) responsable(s)</p>
+                    <p className="mb-2 text-xs text-gray-500">Docentes responsables</p>
                     <div className="space-y-2">
                       {selectedProject.docentes_materias && selectedProject.docentes_materias.length > 0 ? (
                         selectedProject.docentes_materias.map((docente, idx) => (
