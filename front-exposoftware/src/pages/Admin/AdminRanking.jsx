@@ -8,6 +8,10 @@ import { AdminHeader, AdminPageHeader } from '../../components/Admin/AdminCompon
 import TableroTop5 from '../../components/Ranking/TableroTop5';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
 import { useTablerosEvento } from '../../hooks/useTablerosEvento';
+import * as AuthService from '../../Services/AuthService';
+import { API_BASE_URL } from '../../utils/constants';
+import { construirLibroCalificaciones, nombreArchivoReporte } from '../../utils/reporteCalificaciones';
+import * as XLSX from 'xlsx';
 import EventosService from '../../Services/EventosService';
 import { elegirEventoActual, ordenarEventos, etiquetaEstadoEvento } from '../../utils/eventoActual';
 
@@ -21,6 +25,26 @@ export default function AdminRanking() {
 
   const idEvento = eventoSeleccionado?.id_evento || eventoSeleccionado?.id;
   const { tableros, cargando, error } = useTablerosEvento(idEvento);
+  const [descargando, setDescargando] = useState(false);
+
+  const descargarReporte = async () => {
+    if (!idEvento) return;
+    setDescargando(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/reportes/calificaciones/${idEvento}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: AuthService.getAuthHeaders(),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.message || 'No se pudo generar el reporte');
+      XLSX.writeFile(construirLibroCalificaciones(body.data), nombreArchivoReporte(eventoSeleccionado?.nombre_evento));
+    } catch (err) {
+      toast.current?.show({ severity: 'error', summary: 'Reporte', detail: err.message, life: 5000 });
+    } finally {
+      setDescargando(false);
+    }
+  };
 
   useEffect(() => {
     cargarEventos();
@@ -108,6 +132,16 @@ export default function AdminRanking() {
                     icon="pi pi-users"
                     className="w-full"
                     onClick={() => navigate('/admin/votacion-grupos')}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    label="Descargar reporte de calificaciones"
+                    icon="pi pi-download"
+                    className="w-full"
+                    loading={descargando}
+                    disabled={!idEvento}
+                    onClick={descargarReporte}
                   />
                 </div>
               </div>
