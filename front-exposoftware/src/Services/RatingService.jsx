@@ -1,5 +1,6 @@
 import { API_ENDPOINTS, API_BASE_URL } from '../utils/constants';
 import { payloadCriterios, criteriosDesdeNotaUnica } from '../utils/calificacionCriterios';
+import { traducirRespuesta } from "../utils/mensajesError";
 
 class RatingService {
   /**
@@ -27,7 +28,7 @@ class RatingService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.detail || errorData.mensaje || `Error ${response.status}: ${response.statusText}`;
+        const errorMsg = errorData.detail || errorData.mensaje || traducirRespuesta(response.status);
         throw new Error(errorMsg);
       }
 
@@ -59,7 +60,7 @@ class RatingService {
       );
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();

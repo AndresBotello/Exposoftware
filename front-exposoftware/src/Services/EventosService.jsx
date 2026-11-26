@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from '../utils/constants';
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * Obtener el token de autenticación
@@ -37,7 +38,7 @@ class EventosService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -72,7 +73,7 @@ class EventosService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -152,7 +153,7 @@ class EventosService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.message || traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -181,7 +182,7 @@ class EventosService {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
 
-        let mensajeError = errorData.message || errorData.detail || `Error ${response.status}: ${response.statusText}`;
+        let mensajeError = errorData.message || errorData.detail || traducirRespuesta(response.status);
 
         if (errorData.errors) {
           if (Array.isArray(errorData.errors)) {
@@ -222,7 +223,7 @@ class EventosService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.message || traducirRespuesta(response.status));
       }
 
       return true;
@@ -246,7 +247,7 @@ class EventosService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -271,7 +272,7 @@ class EventosService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -297,7 +298,7 @@ class EventosService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -329,7 +330,7 @@ class EventosService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.message || traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -355,7 +356,7 @@ class EventosService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -381,7 +382,7 @@ class EventosService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -407,7 +408,7 @@ class EventosService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -434,7 +435,7 @@ class EventosService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.message || traducirRespuesta(response.status));
       }
 
       const data = await response.json();

@@ -59,7 +59,7 @@ const traducirConocido = (texto) => {
 };
 
 // Textos que delatan detalles técnicos: no se muestran tal cual al usuario.
-const TECNICO = /HTTP|Traceback|Exception|Error interno|None|null|undefined|detail|stack|sqlalchemy|asyncpg|pydantic|field required|\bNaN\b/i;
+const TECNICO = /HTTP|Traceback|Exception|Error interno|Not Found|Error \d{3}|\bNone\b|null|undefined|detail|stack|sqlalchemy|asyncpg|pydantic|field required|\bNaN\b|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
 // Solo se usa el texto del backend si parece redactado para una persona.
 const esTextoAmigable = (texto) =>

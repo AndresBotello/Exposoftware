@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * Servicio para la gestión de grupos y clases (asignaciones)
@@ -32,7 +33,7 @@ export const obtenerGrupos = async () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Error al cargar grupos: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const result = await response.json();
@@ -104,7 +105,7 @@ export const obtenerProfesores = async () => {
       
       return Array.isArray(profesoresConUsuario) ? profesoresConUsuario : [];
     } else {
-      throw new Error(`Error al cargar profesores: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;
@@ -318,7 +319,7 @@ export const obtenerMaterias = async () => {
       const materias = result.data || result;
       return Array.isArray(materias) ? materias : [];
     } else {
-      throw new Error(`Error al cargar materias: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;
@@ -343,7 +344,7 @@ export const obtenerMateriaPorCodigo = async (codigoMateria) => {
       const result = await response.json();
       return result.data || result;
     } else {
-      throw new Error(`Error al cargar materia: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;
@@ -491,7 +492,7 @@ export const obtenerClasesMateria = async (codigoMateria, profesores = [], grupo
         };
       });
     } else {
-      throw new Error(`Error al cargar clases: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;
@@ -515,7 +516,7 @@ export const obtenerClasesDocente = async (idDocente) => {
       const clases = result.data || result;
       return Array.isArray(clases) ? clases : [];
     } else {
-      throw new Error(`Error al cargar clases: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;

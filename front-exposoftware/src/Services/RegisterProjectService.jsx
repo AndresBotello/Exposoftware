@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from '../utils/constants';
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * Obtener el token de autenticación
@@ -149,7 +150,7 @@ class RegisterProjectService {
         return await this.obtenerArbolInvestigacionAlternativo();
       }
 
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
       
     } catch (error) {
       

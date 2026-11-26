@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * Obtener todas las facultades desde el backend
@@ -25,7 +26,7 @@ export const obtenerFacultades = async () => {
       return Array.isArray(facultades) ? facultades : [];
     } else {
       const errorText = await response.text();
-      throw new Error(`Error al cargar facultades: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;

@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * Servicio para la gestión administrativa de estudiantes
@@ -39,7 +40,7 @@ const procesarRespuesta = async (response) => {
     // Manejo de errores
     const errorMessage = responseData.detail || 
                         responseData.message || 
-                        `Error ${response.status}: ${response.statusText}`;
+                        traducirRespuesta(response.status);
     console.error('❌ Error del servidor:', {
       status: response.status,
       statusText: response.statusText,

@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from '../utils/constants';
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * Obtener el token de autenticación
@@ -43,7 +44,7 @@ class AssistanceService {
       );
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -115,7 +116,7 @@ class AssistanceService {
         );
 
         if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
+          throw new Error(traducirRespuesta(response.status));
         }
 
         const data = await response.json();

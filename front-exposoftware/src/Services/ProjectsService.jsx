@@ -1,5 +1,6 @@
 import { API_ENDPOINTS, API_BASE_URL } from '../utils/constants';
 import { fetchApi } from '../utils/apiClient';
+import { traducirRespuesta } from "../utils/mensajesError";
 
 const getAuthToken = () => {
   return localStorage.getItem('auth_token');
@@ -24,7 +25,7 @@ export const obtenerProyectos = async () => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -68,7 +69,7 @@ export const obtenerMisProyectos = async (idEstudiante) => {
       throw new Error('No autorizado. Por favor, inicie sesión nuevamente');
     } else {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.detail || errorData.message || traducirRespuesta(response.status));
     }
   } catch (error) {
     console.error('❌ Error crítico obteniendo proyectos:', error);
@@ -87,7 +88,7 @@ export const obtenerProyectoPorId = async (projectId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -136,7 +137,7 @@ export const crearProyecto = async (projectData) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.message || traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -161,7 +162,7 @@ export const actualizarProyecto = async (projectId, projectData) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.message || traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -204,7 +205,7 @@ export const actualizarProyectoConArchivo = async (projectId, datosActualizacion
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.message || traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -229,7 +230,7 @@ export const getTeacherProjects = async (teacherId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -273,7 +274,7 @@ export const updateProjectStatus = async (projectId, status) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.message || traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -296,7 +297,7 @@ export const obtenerMiembrosProyecto = async (projectId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -320,7 +321,7 @@ export const eliminarProyecto = async (projectId) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.message || traducirRespuesta(response.status));
     }
 
     return true;
@@ -352,7 +353,7 @@ export const eliminarProyectoPermanentemente = async (projectId) => {
       } catch (e) {
         errorData = await response.text();
       }
-      throw new Error(errorData?.message || errorData || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData?.message || errorData || traducirRespuesta(response.status));
     }
 
     return true;
@@ -383,7 +384,7 @@ export const generarQRCalificacion = async (projectId, urlFront = null) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.detail || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.message || errorData.detail || traducirRespuesta(response.status));
     }
 
     const data = await response.json();

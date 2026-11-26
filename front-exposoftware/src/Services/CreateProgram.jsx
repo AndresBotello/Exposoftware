@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "../utils/constants";
 import * as AuthService from "./AuthService";
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * Obtener todas las facultades (para seleccionar al crear programa)
@@ -22,7 +23,7 @@ export const obtenerFacultades = async () => {
       return Array.isArray(facultades) ? facultades : [];
     } else {
       const errorText = await response.text();
-      throw new Error(`Error al cargar facultades: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;
@@ -60,7 +61,7 @@ export const obtenerFacultadPorId = async (facultadId) => {
     } else if (response.status === 404) {
       throw new Error("La facultad no existe");
     } else {
-      throw new Error(`Error al cargar facultad: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;
@@ -97,7 +98,7 @@ export const obtenerProgramasPorFacultad = async (facultadId) => {
     } else if (response.status === 404) {
       return [];
     } else {
-      throw new Error(`Error al cargar programas: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;

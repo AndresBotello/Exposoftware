@@ -2,6 +2,7 @@ import { API_ENDPOINTS } from "../utils/constants";
 import { payloadCriterios, criteriosDesdeNotaUnica } from "../utils/calificacionCriterios";
 import * as AuthService from "./AuthService";
 import CacheService from "./CacheService";
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * Obtener información del docente autenticado desde /api/v1/docentes/mi-perfil
@@ -31,7 +32,7 @@ export const getTeacherProfile = async () => {
       throw new Error("No autorizado. Por favor, inicie sesión nuevamente");
     } else {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || `Error al cargar perfil: ${response.statusText}`);
+      throw new Error(errorData.detail || errorData.message || traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;
@@ -958,7 +959,7 @@ export const obtenerCalificacionPopular = async (projectId) => {
         desglose_por_rol: {}
       };
     } else {
-      throw new Error(`Error al obtener calificación popular: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
   } catch (error) {
     throw error;

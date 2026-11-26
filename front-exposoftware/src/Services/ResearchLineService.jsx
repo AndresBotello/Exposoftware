@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from '../utils/constants';
+import { traducirRespuesta } from "../utils/mensajesError";
 
 // ==================== SISTEMA DE CACHÉ Y DEDUPLICACIÓN ====================
 
@@ -57,7 +58,7 @@ const obtenerArbolCompletoConDedup = async () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -118,7 +119,7 @@ export const obtenerLineas = async () => {
       if (response.status === 500) {
         return [];
       }
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -171,7 +172,7 @@ export const obtenerLineaPorId = async (lineaId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -246,7 +247,7 @@ export const crearLinea = async (lineaData) => {
       } else if (errorData.message) {
         throw new Error(`Error: ${errorData.message}`);
       } else {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
     }
 
@@ -283,7 +284,7 @@ export const actualizarLinea = async (lineaId, lineaData) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.detail || traducirRespuesta(response.status));
     }
 
     const resultado = await response.json();
@@ -310,7 +311,7 @@ export const eliminarLinea = async (lineaId) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.detail || traducirRespuesta(response.status));
     }
 
     return true;
@@ -335,7 +336,7 @@ export const obtenerSublineas = async (lineaId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -360,7 +361,7 @@ export const obtenerSublineaPorId = async (lineaId, sublineaId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -435,7 +436,7 @@ export const crearSublinea = async (lineaId, sublineaData) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.detail || traducirRespuesta(response.status));
     }
 
     const resultado = await response.json();
@@ -471,7 +472,7 @@ export const actualizarSublinea = async (lineaId, sublineaId, sublineaData) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.detail || traducirRespuesta(response.status));
     }
 
     const resultado = await response.json();
@@ -498,7 +499,7 @@ export const eliminarSublinea = async (lineaId, sublineaId) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.detail || traducirRespuesta(response.status));
     }
 
     return true;
@@ -523,7 +524,7 @@ export const obtenerAreas = async (lineaId, sublineaId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -548,7 +549,7 @@ export const obtenerAreaPorId = async (lineaId, sublineaId, areaId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const data = await response.json();
@@ -622,7 +623,7 @@ export const crearArea = async (lineaId, sublineaId, areaData) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.detail || traducirRespuesta(response.status));
     }
 
     const resultado = await response.json();
@@ -658,7 +659,7 @@ export const actualizarArea = async (lineaId, sublineaId, areaId, areaData) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.detail || traducirRespuesta(response.status));
     }
 
     const resultado = await response.json();
@@ -685,7 +686,7 @@ export const eliminarArea = async (lineaId, sublineaId, areaId) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.detail || traducirRespuesta(response.status));
     }
 
     return true;

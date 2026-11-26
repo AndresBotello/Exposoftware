@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from '../utils/constants';
 import * as AuthService from './AuthService';
 import JSZip from 'jszip';
+import { traducirRespuesta } from "../utils/mensajesError";
 
 const getAuthHeaders = () => {
   const token = AuthService.getToken();
@@ -37,7 +38,7 @@ class CertificadosService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMsg = errorData.detail || `Error ${response.status}: ${response.statusText}`;
+      const errorMsg = errorData.detail || traducirRespuesta(response.status);
       throw new Error(errorMsg);
     }
 
@@ -84,7 +85,7 @@ class CertificadosService {
         });
 
         if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
+          throw new Error(traducirRespuesta(response.status));
         }
 
         const data = await response.json();
@@ -140,7 +141,7 @@ class CertificadosService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.detail || errorData.mensaje || `Error ${response.status}: ${response.statusText}`;
+        const errorMsg = errorData.detail || errorData.mensaje || traducirRespuesta(response.status);
         throw new Error(errorMsg);
       }
 
@@ -256,7 +257,7 @@ class CertificadosService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.detail || errorData.mensaje || `Error ${response.status}: ${response.statusText}`;
+        const errorMsg = errorData.detail || errorData.mensaje || traducirRespuesta(response.status);
         throw new Error(errorMsg);
       }
 
@@ -305,7 +306,7 @@ class CertificadosService {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.detail || errorData.mensaje || `Error ${response.status}: ${response.statusText}`;
+          const errorMsg = errorData.detail || errorData.mensaje || traducirRespuesta(response.status);
           throw new Error(errorMsg);
         }
 
@@ -351,7 +352,7 @@ class CertificadosService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.detail || errorData.mensaje || `Error ${response.status}: ${response.statusText}`;
+        const errorMsg = errorData.detail || errorData.mensaje || traducirRespuesta(response.status);
         throw new Error(errorMsg);
       }
 

@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from '../utils/constants';
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * Obtener el token de autenticación
@@ -39,7 +40,7 @@ class ResearchLinesService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -144,7 +145,7 @@ class ResearchLinesService {
         } else if (errorData.message) {
           throw new Error(`Error: ${errorData.message}`);
         } else {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
+          throw new Error(traducirRespuesta(response.status));
         }
       }
 
@@ -181,7 +182,7 @@ class ResearchLinesService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.detail || traducirRespuesta(response.status));
       }
 
       const resultado = await response.json();
@@ -208,7 +209,7 @@ class ResearchLinesService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.detail || traducirRespuesta(response.status));
       }
 
       return true;
@@ -233,7 +234,7 @@ class ResearchLinesService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const sublineas = await response.json();
@@ -257,7 +258,7 @@ class ResearchLinesService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -336,7 +337,7 @@ class ResearchLinesService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.detail || traducirRespuesta(response.status));
       }
 
       const resultado = await response.json();
@@ -372,7 +373,7 @@ class ResearchLinesService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.detail || traducirRespuesta(response.status));
       }
 
       const resultado = await response.json();
@@ -399,7 +400,7 @@ class ResearchLinesService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.detail || traducirRespuesta(response.status));
       }
 
       return true;
@@ -424,7 +425,7 @@ class ResearchLinesService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const areas = await response.json();
@@ -447,7 +448,7 @@ class ResearchLinesService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -497,7 +498,7 @@ class ResearchLinesService {
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        throw new Error(traducirRespuesta(response.status));
       }
 
       const data = await response.json();
@@ -612,7 +613,7 @@ class ResearchLinesService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.detail || traducirRespuesta(response.status));
       }
 
       const resultado = await response.json();
@@ -648,7 +649,7 @@ class ResearchLinesService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.detail || traducirRespuesta(response.status));
       }
 
       const resultado = await response.json();
@@ -675,7 +676,7 @@ class ResearchLinesService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.detail || traducirRespuesta(response.status));
       }
 
       return true;

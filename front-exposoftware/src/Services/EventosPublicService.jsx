@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from '../utils/constants';
 import { getAuthHeaders } from './AuthService';
 import CacheService from './CacheService';
+import { traducirRespuesta } from "../utils/mensajesError";
 
 /**
  * 📋 Servicio para obtener información pública de eventos
@@ -25,7 +26,7 @@ export const getAllEventos = async () => {
         });
 
         if (!response.ok) {
-          throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+          throw new Error(traducirRespuesta(response.status));
         }
 
         const result = await response.json();
@@ -66,7 +67,7 @@ export const getEventoById = async (eventoId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const result = await response.json();
@@ -149,7 +150,7 @@ export const getProyectosEventoAprobados = async (idEvento) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(traducirRespuesta(response.status));
     }
 
     const result = await response.json();

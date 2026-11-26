@@ -16,6 +16,7 @@ import { API_BASE_URL } from '../../utils/constants';
 import QRCalificacionModal from '../Teacher/QRCalificacionModal';
 import JSZip from 'jszip';
 import { confirmar } from '../../utils/confirmDialog.jsx';
+import { traducirRespuesta } from "../../utils/mensajesError";
 
 const TIPOS_ACTIVIDAD = {
   1: { label: 'Exposoftware', severity: 'success' },
@@ -164,7 +165,7 @@ export default function ProyectosTable({ proyectos, loading, globalFilter, setGl
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error response:', errorData);
-        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.message || traducirRespuesta(response.status));
       }
 
       toast.current?.show({
