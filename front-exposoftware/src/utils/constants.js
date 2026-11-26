@@ -3,6 +3,9 @@ const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
 export const API_BASE_URL = isDevelopment ? '' : (import.meta.env.VITE_API_BASE_URL || '');
 
+// Acceso de invitados (botón del login, /invited y /guest/*).
+// Cambiar a true para volver a habilitarlo.
+export const GUEST_ACCESS_ENABLED = false;
 
 // ============================================================
 // ENDPOINTS DE LA API v1 - Basado en OpenAPI
