@@ -56,7 +56,6 @@ export default function AdminRanking() {
     }
   };
 
-  const sinVotos = tableros.solo_jurado.length === 0 && tableros.jurado_y_publico.length === 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -122,15 +121,8 @@ export default function AdminRanking() {
             </div>
 
             {/* Tableros */}
-            {sinVotos && !cargando ? (
-              <div className="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-sm">
-                <i className="pi pi-inbox mb-4 block text-6xl text-gray-300"></i>
-                <p className="text-lg text-gray-600">Aún no hay votos en este evento</p>
-                <p className="mt-1 text-sm text-gray-400">
-                  Los tableros se llenarán a medida que se registren calificaciones.
-                </p>
-              </div>
-            ) : (
+            {(
+
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <TableroTop5
                   titulo="Solo jurado"
