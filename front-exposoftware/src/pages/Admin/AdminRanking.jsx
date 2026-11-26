@@ -10,8 +10,7 @@ import { useAdminAuth } from '../../hooks/useAdminAuth';
 import { useTablerosEvento } from '../../hooks/useTablerosEvento';
 import * as AuthService from '../../Services/AuthService';
 import { API_BASE_URL } from '../../utils/constants';
-import { construirLibroCalificaciones, nombreArchivoReporte } from '../../utils/reporteCalificaciones';
-import * as XLSX from 'xlsx';
+import { descargarReporteCalificaciones } from '../../utils/reporteCalificaciones';
 import EventosService from '../../Services/EventosService';
 import { elegirEventoActual, ordenarEventos, etiquetaEstadoEvento } from '../../utils/eventoActual';
 
@@ -38,7 +37,7 @@ export default function AdminRanking() {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.message || 'No se pudo generar el reporte');
-      XLSX.writeFile(construirLibroCalificaciones(body.data), nombreArchivoReporte(eventoSeleccionado?.nombre_evento));
+      await descargarReporteCalificaciones(body.data, eventoSeleccionado?.nombre_evento);
     } catch (err) {
       toast.current?.show({ severity: 'error', summary: 'Reporte', detail: err.message, life: 5000 });
     } finally {
@@ -136,7 +135,7 @@ export default function AdminRanking() {
                 </div>
                 <div className="flex items-end">
                   <Button
-                    label="Descargar reporte de calificaciones"
+                    label="Descargar reporte en Word"
                     icon="pi pi-download"
                     className="w-full"
                     loading={descargando}
