@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react';
 import { API_ENDPOINTS } from '../utils/constants';
-import { INTERVALO_TABLEROS_MS } from './useTablerosEvento';
 
 const SIN_TABLEROS = { solo_jurado: [], jurado_y_publico: [] };
 
 /**
- * Ranking en vivo de varios eventos a la vez.
+ * Ranking de varios eventos: tableros (top 5) y puntaje de cada proyecto.
  *
- * Para cada evento pide los dos tableros (top 5) y el ranking completo, que
- * trae el puntaje de cada proyecto. Se actualiza cada INTERVALO_TABLEROS_MS.
- * Devuelve `datos` como { [id_evento]: { tableros, proyectos } }, donde
- * `proyectos` está indexado por id_proyecto.
+ * No hay temporizador: se pide al montar y cada vez que `version` cambia. La
+ * versión la informa el servidor (/publicos/estado) y solo cambia con un voto
+ * nuevo o una reasignación de jurado.
+ *
+ * Devuelve `datos` como { [id_evento]: { tableros, proyectos } }, con `proyectos`
+ * indexado por id_proyecto.
  */
-export function useRankingEventos(idsEventos) {
+export function useRankingEventos(idsEventos, version) {
   const clave = idsEventos.join(',');
   const [datos, setDatos] = useState({});
   const [cargando, setCargando] = useState(false);
@@ -23,7 +24,6 @@ export function useRankingEventos(idsEventos) {
     if (ids.length === 0) return undefined;
 
     let cancelado = false;
-    let temporizador = null;
 
     const pedirJson = async (url) => {
       const response = await fetch(url, { method: 'GET', credentials: 'include' });
@@ -31,39 +31,33 @@ export function useRankingEventos(idsEventos) {
       return response.json();
     };
 
-    const cargar = async () => {
-      setCargando(true);
-      try {
-        const resultados = await Promise.all(ids.map(async (id) => {
-          const [podios, ranking] = await Promise.all([
-            pedirJson(API_ENDPOINTS.PUBLIC_TABLEROS_EVENTO(id)),
-            pedirJson(`${API_ENDPOINTS.PUBLIC_RANKING_EVENTO(id)}?limit=500`),
-          ]);
-          const proyectos = {};
-          (ranking.data || []).forEach((p) => { proyectos[p.id_proyecto] = p; });
-          return [id, { tableros: podios.data || SIN_TABLEROS, proyectos }];
-        }));
-        if (!cancelado) {
-          setDatos(Object.fromEntries(resultados));
-          setError(false);
-        }
-      } catch (err) {
-        console.error('Error cargando el ranking en vivo:', err);
+    setCargando(true);
+    Promise.all(ids.map(async (id) => {
+      const [podios, ranking] = await Promise.all([
+        pedirJson(API_ENDPOINTS.PUBLIC_TABLEROS_EVENTO(id)),
+        pedirJson(`${API_ENDPOINTS.PUBLIC_RANKING_EVENTO(id)}?limit=500`),
+      ]);
+      const proyectos = {};
+      (ranking.data || []).forEach((p) => { proyectos[p.id_proyecto] = p; });
+      return [id, { tableros: podios.data || SIN_TABLEROS, proyectos }];
+    }))
+      .then((resultados) => {
+        if (cancelado) return;
+        setDatos(Object.fromEntries(resultados));
+        setError(false);
+      })
+      .catch((err) => {
+        console.error('Error cargando el ranking:', err);
         if (!cancelado) setError(true);
-      } finally {
-        if (!cancelado) {
-          setCargando(false);
-          temporizador = setTimeout(cargar, INTERVALO_TABLEROS_MS);
-        }
-      }
-    };
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false);
+      });
 
-    cargar();
     return () => {
       cancelado = true;
-      clearTimeout(temporizador);
     };
-  }, [clave]);
+  }, [clave, version]);
 
   return { datos, cargando, error };
 }
